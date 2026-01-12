@@ -8,8 +8,7 @@
     "build:all": "npm run build -- animal-learning",
     "build:animal-learning": "ng build animal-learning --configuration production",
     "watch": "ng build --watch --configuration development",
-    "test": "ng test",
-    "download-assets": "node download-real-assets.js"
+    "test": "ng test"
   },
   "prettier": {
     "printWidth": 100,

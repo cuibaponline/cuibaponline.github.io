@@ -15,10 +15,26 @@ export class AudioService {
   // iOS audio unlock flag
   private audioUnlocked = false;
 
+  // Cache for available voices
+  private availableVoices: SpeechSynthesisVoice[] = [];
+
   constructor() {
     // Initialize Audio Context (for iOS compatibility, we'll do this on first user interaction)
     if (typeof window !== 'undefined' && 'AudioContext' in window) {
       this.audioContext = new AudioContext();
+    }
+
+    // Load voices when they become available
+    if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
+      this.loadVoices();
+      window.speechSynthesis.onvoiceschanged = () => this.loadVoices();
+    }
+  }
+
+  private loadVoices(): void {
+    if ('speechSynthesis' in window) {
+      this.availableVoices = window.speechSynthesis.getVoices();
+      console.log(`Loaded ${this.availableVoices.length} voices`);
     }
   }
 
@@ -42,6 +58,27 @@ export class AudioService {
       this.audioUnlocked = true;
     } catch (error) {
       console.error('Failed to unlock audio:', error);
+    }
+  }
+
+  // Speak only the animal name (without sound)
+  async speakNameOnly(name: string): Promise<void> {
+    if (this.isPlaying()) {
+      return; // Already playing
+    }
+
+    this.isPlaying.set(true);
+
+    try {
+      // Unlock audio on first interaction (iOS requirement)
+      await this.unlockAudio();
+
+      // Speak the name
+      await this.speakName(name);
+    } catch (error) {
+      console.error('Error speaking name:', error);
+    } finally {
+      this.isPlaying.set(false);
     }
   }
 
@@ -142,6 +179,17 @@ export class AudioService {
       utterance.rate = 0.85; // Slightly slower for clarity for toddlers
       utterance.pitch = 1.1; // Slightly higher pitch - more engaging for kids
       utterance.volume = 1.0;
+
+      // Select an available voice
+      if (this.availableVoices.length > 0) {
+        const englishVoice = this.availableVoices.find(voice => voice.lang.startsWith('en'));
+        if (englishVoice) {
+          utterance.voice = englishVoice;
+        } else {
+          // If no English voice found, use the first available voice
+          utterance.voice = this.availableVoices[0];
+        }
+      }
 
       utterance.onend = () => resolve();
       utterance.onerror = (error) => {

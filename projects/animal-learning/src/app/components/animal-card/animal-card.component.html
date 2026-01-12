@@ -1,0 +1,30 @@
+@if (currentAnimal(); as animal) {
+  <div
+    class="animal-card"
+    (click)="onCardTap()"
+    [class.tapped]="isTapped()"
+    [class.playing]="isPlaying()">
+
+    <div class="image-container">
+      <img
+        [ngSrc]="animal.imagePath"
+        [alt]="animal.name"
+        width="800"
+        height="800"
+        priority
+      />
+    </div>
+
+    <div class="animal-name">
+      {{ animal.name }}
+    </div>
+
+    <div class="tap-hint">
+      Tap anywhere
+    </div>
+  </div>
+} @else {
+  <div class="loading">
+    Loading animals...
+  </div>
+}

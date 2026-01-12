@@ -1,0 +1,51 @@
+name: Deploy to GitHub Pages
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build all projects
+        run: npm run build:all
+
+      - name: Prepare deployment directory
+        run: |
+          # Create deploy directory structure
+          mkdir -p deploy/animal-learning
+
+          # Copy landing page
+          cp landing-page/index.html deploy/
+
+          # Copy animal-learning build output
+          cp -r dist/animal-learning/browser/* deploy/animal-learning/
+
+          # Create .nojekyll file to disable Jekyll processing
+          touch deploy/.nojekyll
+
+      - name: Deploy to gh-pages
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./deploy
+          # cname: duydt2208.com  # Commented out - new account, no custom domain yet

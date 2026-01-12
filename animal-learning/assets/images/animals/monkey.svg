@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="800" height="800" viewBox="0 0 800 800" xmlns="http://www.w3.org/2000/svg">
+  <rect width="800" height="800" fill="#8B6914"/>
+  <circle cx="400" cy="350" r="200" fill="rgba(255, 255, 255, 0.3)"/>
+  <text x="400" y="550" font-family="Arial, sans-serif" font-size="80" font-weight="bold"
+        text-anchor="middle" fill="white" stroke="#000" stroke-width="2">
+    Monkey
+  </text>
+  <text x="400" y="650" font-family="Arial, sans-serif" font-size="40"
+        text-anchor="middle" fill="rgba(255, 255, 255, 0.8)">
+    (Placeholder)
+  </text>
+</svg>

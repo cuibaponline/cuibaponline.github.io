@@ -1,4 +1,4 @@
-import { Component, computed, inject, signal } from '@angular/core';
+import { Component, computed, inject, output, signal } from '@angular/core';
 import { NgOptimizedImage } from '@angular/common';
 import { AnimalService } from '../../services/animal.service';
 import { AudioService } from '../../services/audio.service';
@@ -28,6 +28,15 @@ export class AnimalCardComponent {
   // Computed signal for checking if audio is playing
   isPlaying = computed(() => this.audioService.isPlaying());
 
+  // Output for back navigation
+  backToLevels = output<void>();
+
+  // Handle back button click
+  onBackClick(event: Event): void {
+    event.stopPropagation();
+    this.backToLevels.emit();
+  }
+
   // Handle tap/click on card
   async onCardTap(): Promise<void> {
     const animal = this.currentAnimal();
@@ -53,7 +62,7 @@ export class AnimalCardComponent {
     await this.audioService.speakNameOnly(animal.name);
 
     // After 2 clicks, advance to next animal with a small delay
-    if (this.clickCount() === 2) {
+    if (this.clickCount() === 3) {
       await this.delay(500); // Small delay before advancing
       this.animalService.nextAnimal();
       this.clickCount.set(0); // Reset for the new animal

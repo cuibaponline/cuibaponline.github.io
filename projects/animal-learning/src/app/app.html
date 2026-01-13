@@ -1,1 +1,5 @@
-<app-animal-card></app-animal-card>
+@if (viewState() === 'level-select') {
+  <app-level-select (levelSelected)="onLevelSelected($event)" />
+} @else {
+  <app-animal-card (backToLevels)="onBackToLevels()" />
+}

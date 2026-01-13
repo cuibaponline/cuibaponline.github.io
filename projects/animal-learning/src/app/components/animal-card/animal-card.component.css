@@ -22,6 +22,45 @@
   pointer-events: none;
 }
 
+.back-button {
+  position: absolute;
+  top: 30px;
+  left: 30px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 16px 24px;
+  background: rgba(255, 255, 255, 0.95);
+  border: none;
+  border-radius: 50px;
+  font-size: 24px;
+  font-weight: 700;
+  color: #667eea;
+  font-family: 'Comic Sans MS', 'Chalkboard SE', 'Arial Rounded MT Bold', cursive, sans-serif;
+  cursor: pointer;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+  transition: all 0.3s ease;
+  z-index: 10;
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+}
+
+.back-button:hover {
+  background: white;
+  transform: translateX(-4px);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.25);
+}
+
+.back-button:active {
+  transform: translateX(-2px) scale(0.95);
+}
+
+.back-button svg {
+  width: 28px;
+  height: 28px;
+  stroke-width: 3;
+}
+
 .image-container {
   width: 80%;
   max-width: 600px;
@@ -108,6 +147,18 @@
     width: 85%;
     max-width: 500px;
   }
+
+  .back-button {
+    top: 20px;
+    left: 20px;
+    padding: 12px 20px;
+    font-size: 20px;
+  }
+
+  .back-button svg {
+    width: 24px;
+    height: 24px;
+  }
 }
 
 @media (max-width: 480px) {
@@ -123,5 +174,17 @@
 
   .image-container {
     width: 90%;
+  }
+
+  .back-button {
+    top: 16px;
+    left: 16px;
+    padding: 10px 16px;
+    font-size: 18px;
+  }
+
+  .back-button svg {
+    width: 20px;
+    height: 20px;
   }
 }

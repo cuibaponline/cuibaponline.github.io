@@ -1,7 +1,6 @@
 import { Component, computed, inject, output, signal } from '@angular/core';
 import { NgOptimizedImage } from '@angular/common';
-import { AnimalService } from '../../services/animal.service';
-import { AudioService } from '../../services/audio.service';
+import { AnimalService, AudioService } from '@shared/lib';
 
 @Component({
   selector: 'app-animal-card',

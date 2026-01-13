@@ -1,8 +1,6 @@
 import { Component, inject, signal } from '@angular/core';
 import { AnimalCardComponent } from './components/animal-card/animal-card.component';
-import { LevelSelectComponent } from './components/level-select/level-select.component';
-import { AnimalService } from './services/animal.service';
-import { DifficultyLevel } from './models/animal.model';
+import { LevelSelectComponent, AnimalService, DifficultyLevel } from '@shared/lib';
 
 @Component({
   selector: 'app-root',

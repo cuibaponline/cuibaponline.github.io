@@ -33,12 +33,16 @@ jobs:
         run: |
           # Create deploy directory structure
           mkdir -p deploy/animal-learning
+          mkdir -p deploy/flip-card-memory
 
           # Copy landing page
           cp landing-page/index.html deploy/
 
           # Copy animal-learning build output
           cp -r dist/animal-learning/browser/* deploy/animal-learning/
+
+          # Copy flip-card-memory build output
+          cp -r dist/flip-card-memory/browser/* deploy/flip-card-memory/
 
           # Create .nojekyll file to disable Jekyll processing
           touch deploy/.nojekyll

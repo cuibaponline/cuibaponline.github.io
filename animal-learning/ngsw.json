@@ -1,6 +1,6 @@
 {
   "configVersion": 1,
-  "timestamp": 1768232747869,
+  "timestamp": 1768315298094,
   "index": "/animal-learning/index.html",
   "assetGroups": [
     {
@@ -13,7 +13,7 @@
       "urls": [
         "/animal-learning/favicon.ico",
         "/animal-learning/index.html",
-        "/animal-learning/main-TEGMFLGO.js",
+        "/animal-learning/main-U353L7WS.js",
         "/animal-learning/manifest.webmanifest",
         "/animal-learning/styles-X4XGTYFC.css"
       ],
@@ -172,8 +172,8 @@
     "/animal-learning/icons/icon-512x512.png": "1de182f76f7329dfa8f9fcdd1fdcdd695bea6a99",
     "/animal-learning/icons/icon-72x72.png": "aa88a6096bd973be7f6d7a5489bfa6bc2463f8c4",
     "/animal-learning/icons/icon-96x96.png": "7fb8f59c30ce2ff12c700321a0b39e14b3dc8f95",
-    "/animal-learning/index.html": "e21b30e3b94bc78fd93e6237b87a62f0aae2fb6b",
-    "/animal-learning/main-TEGMFLGO.js": "d25c25460880d0fb9ce883d56d78c01fa48c617e",
+    "/animal-learning/index.html": "7f853349ee8ec659f3eb4d6e797c88d100cf78a3",
+    "/animal-learning/main-U353L7WS.js": "8d0076b8ebfd226b5ee1e8fc46fa0bd7542e6cd8",
     "/animal-learning/manifest.webmanifest": "7ad16186ca9ab56355defe00ef002c05f2100fe6",
     "/animal-learning/styles-X4XGTYFC.css": "acd898c6bf97dae83dbcceae53380fe2906f2769"
   },

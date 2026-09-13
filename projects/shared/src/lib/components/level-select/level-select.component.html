@@ -1,0 +1,35 @@
+<div class="level-select-container">
+  <h1 class="title">Choose Your Level!</h1>
+
+  <div class="levels">
+    <button
+      class="level-button easy"
+      (click)="onLevelClick('easy')"
+      aria-label="Easy level - Farm Animals">
+      <div class="emoji">🐄</div>
+      <div class="level-name">Easy</div>
+      <div class="level-desc">Farm Animals</div>
+      <div class="level-count">10 animals</div>
+    </button>
+
+    <button
+      class="level-button medium"
+      (click)="onLevelClick('medium')"
+      aria-label="Medium level - Farm and Pets">
+      <div class="emoji">🐶</div>
+      <div class="level-name">Medium</div>
+      <div class="level-desc">Farm & Pets</div>
+      <div class="level-count">16 animals</div>
+    </button>
+
+    <button
+      class="level-button hard"
+      (click)="onLevelClick('hard')"
+      aria-label="Hard level - All Animals">
+      <div class="emoji">🦁</div>
+      <div class="level-name">Hard</div>
+      <div class="level-desc">All Animals</div>
+      <div class="level-count">64 animals</div>
+    </button>
+  </div>
+</div>

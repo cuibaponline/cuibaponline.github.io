@@ -337,6 +337,7 @@ const T = {
     hintHigh: 'The sun is too high. Slide it down low!',
     hintTurn: 'Turn around! Put the sun behind your back.',
     success: 'You made a rainbow! Can you name the colors?',
+    doubleBow: 'Look up high! There is a second, fainter rainbow, with its colors flipped upside down.',
     colors: ['Red','Orange','Yellow','Green','Blue','Indigo','Violet'],
     dropTitle: 'Inside a raindrop',
     d: [
@@ -376,6 +377,7 @@ const T = {
     hintHigh: 'Mặt trời cao quá. Kéo xuống thấp nhé!',
     hintTurn: 'Quay người lại! Để mặt trời ở sau lưng.',
     success: 'Bé làm ra cầu vồng rồi! Bé kể tên các màu được không?',
+    doubleBow: 'Nhìn lên cao xem! Có một cầu vồng mờ thứ hai nữa, màu bị đảo ngược lên trên đầu.',
     colors: ['Đỏ','Cam','Vàng','Lục','Lam','Chàm','Tím'],
     dropTitle: 'Bên trong giọt mưa',
     d: [
@@ -448,7 +450,7 @@ function say(text, force) {
     const u = new SpeechSynthesisUtterance(text);
     u.lang = state.lang === 'vi' ? 'vi-VN' : 'en-US'; u.rate = 0.88; u.pitch = 1.1; u.volume = 1;
     const v = pickVoice();
-    if (v) { u.voice = v; note(null); } else if (voices.length) note('noVoice');
+    if (v) { u.voice = v; note(null); } else note(voices.length ? 'noVoice' : 'noSpeech');
     const go = () => { try { speechSynthesis.resume(); speechSynthesis.speak(u); } catch (e) {} };
     if (speechSynthesis.speaking || speechSynthesis.pending) { speechSynthesis.cancel(); setTimeout(go, 80); } else go();
   } catch (e) {}
@@ -488,10 +490,11 @@ function updateHint() {
   let key = !c.sun ? 'hintSun' : !c.rain ? 'hintRain' : !c.low ? 'hintHigh' : !c.back ? 'hintTurn' : (!state.rain && state.spraying) ? 'eleWin' : state.rainLv === 1 ? 'softBow' : 'success';
   const win = key === 'success' || key === 'softBow' || key === 'eleWin';
   $('rainSub').textContent = L.rainLv[state.rainLv];
-  $('msg').textContent = L[key];
+  const msgText = key === 'success' ? `${L[key]} ${L.doubleBow}` : L[key];
+  $('msg').textContent = msgText;
   $('legend').hidden = !win;
   $('hint').classList.toggle('win', win);
-  if (L[key] !== lastMsg) { if (lastMsg) say(L[key]); lastMsg = L[key]; }
+  if (msgText !== lastMsg) { if (lastMsg) say(msgText); lastMsg = msgText; }
   if (win && wasWin === false) chime();
   wasWin = win;
 }

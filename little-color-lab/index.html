@@ -1,0 +1,149 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#f5f8ef">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<style>
+*,*::before,*::after{box-sizing:border-box}
+body{margin:0;font-size:14px}
+img{max-width:100%}
+</style>
+<title>Little Color Lab</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;800&family=Nunito:wght@600;800&family=Patrick+Hand&display=swap">
+<style>
+/* Layout: a single column of big game cards, like picture books on a shelf. */
+:root{
+  --paper:#f5f8ef; --ink:#1e2b44; --marker:#2c68b2; --sun:#ffcd34; --card:#ffffff; --line:#d5ddca;
+  --f-display:'Baloo 2','Nunito',system-ui,sans-serif; --f-body:'Nunito',system-ui,sans-serif; --f-hand:'Patrick Hand','Comic Sans MS',cursive;
+  color-scheme:light;
+}
+body{background:var(--paper);color:var(--ink);font-family:var(--f-body)}
+main{max-width:1000px;margin:0 auto;padding-block:28px 40px;padding-inline:16px;display:flex;flex-direction:column;gap:18px}
+h1{margin:0;font-family:var(--f-display);font-weight:800;font-size:2.2rem;line-height:1.05;text-wrap:balance}
+h1 span:nth-child(1){color:#e5322d}h1 span:nth-child(2){color:#1f6fe0}h1 span:nth-child(3){color:#1fa347}
+.sub{margin:2px 0 0;font-family:var(--f-hand);font-size:1.5rem;color:var(--marker)}
+.drops{display:flex;gap:8px}
+.drops i{width:16px;height:20px;border-radius:50% 50% 50% 50%/60% 60% 40% 40%;background:var(--c)}
+a.game{display:grid;grid-template-columns:96px 1fr;gap:16px;align-items:center;text-decoration:none;color:inherit;background:var(--card);
+  border-radius:24px;padding:16px;box-shadow:0 5px 0 var(--line),0 12px 26px rgba(30,43,68,.12);transition:transform .15s}
+a.game:active{transform:scale(.98)}
+a.game:focus-visible{outline:3px solid var(--marker);outline-offset:3px}
+.thumb{width:96px;height:96px;border-radius:20px;display:grid;place-items:center}
+.thumb svg{width:72px;height:72px}
+.t1{background:#e9f4dc}.t2{background:#1c1f28}
+a.game div{min-width:0}
+a.game h2{margin:0;font-family:var(--f-display);font-weight:800;font-size:1.4rem;line-height:1.1}
+a.game .vi{margin:0;font-family:var(--f-hand);font-size:1.3rem;color:var(--marker);line-height:1.1}
+a.game p.d{margin:6px 0 0;font-size:.95rem;line-height:1.4;color:#4a5670}
+.play{display:inline-block;margin-top:8px;background:var(--sun);border-radius:12px;padding:4px 14px;font-family:var(--f-display);font-weight:800}
+
+.shelf{display:grid;grid-template-columns:1fr;gap:18px}
+@media (min-width:760px){.shelf{grid-template-columns:1fr 1fr}}
+h3.sec{margin:8px 0 0;font-family:var(--f-display);font-weight:800;font-size:1.15rem}
+h3.sec span{font-family:var(--f-hand);font-weight:400;color:var(--marker);font-size:1.2rem}
+.t3{background:#fff4d6}.t4{background:#15171e}.t5{background:#fdf1e0}.t6{background:#f3ecff}.t7{background:#e7f3ff}.t8{background:#fde8ef}
+footer{font-size:.85rem;color:#5b6780;line-height:1.5}
+</style>
+</head>
+<body>
+<main>
+  <a href="/" style="display:inline-flex;align-items:center;gap:6px;text-decoration:none;color:var(--marker);font-family:var(--f-display);font-weight:800;font-size:1rem;background:var(--card);border-radius:14px;padding:8px 14px;box-shadow:0 4px 0 var(--line);align-self:flex-start" aria-label="Back to all games">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg>
+    Back
+  </a>
+  <div class="drops" aria-hidden="true"><i style="--c:#e5322d"></i><i style="--c:#ffc81a"></i><i style="--c:#1f6fe0"></i><i style="--c:#1fa347"></i><i style="--c:#ff4fa3"></i><i style="--c:#7b3fc4"></i></div>
+  <div>
+    <h1><span>Little</span> <span>Color</span> <span>Lab</span></h1>
+    <p class="sub" lang="vi">Phòng thí nghiệm màu sắc</p>
+  </div>
+
+  <h3 class="sec">Colors in water <span lang="vi">· Màu trong nước</span></h3>
+  <div class="shelf">
+  <a class="game" href="./color-dancing/">
+    <span class="thumb t1"><svg viewBox="0 0 72 72"><path d="M18 10h36l-4 54H22z" fill="#eaf5ff" stroke="#1e2b44" stroke-width="2.5"/><path d="M20.5 24h31l-3 38h-25z" fill="#cfe8ff"/><circle cx="28" cy="22" r="4" fill="#fff" stroke="#b9c7d6"/><circle cx="36" cy="21" r="4.5" fill="#fff" stroke="#b9c7d6"/><circle cx="44" cy="22" r="4" fill="#fff" stroke="#b9c7d6"/><path d="M32 26c-3 8 4 10 0 18s3 12 1 16" stroke="#e5322d" stroke-width="4" fill="none" stroke-linecap="round"/><path d="M42 26c2 7-4 10 0 16s-2 10 1 14" stroke="#1f6fe0" stroke-width="4" fill="none" stroke-linecap="round"/></svg></span>
+    <div>
+      <h2>Color Dancing</h2>
+      <p class="vi" lang="vi">Màu sắc nhảy múa</p>
+      <p class="d">Water, dish soap and food coloring. Drop the colors and watch them swirl and mix.</p>
+      <span class="play">Play · Chơi</span>
+    </div>
+  </a>
+
+  <a class="game" href="./walking-water/">
+    <span class="thumb t7"><svg viewBox="0 0 72 72"><path d="M8 36h14l-2 24H10z" fill="#e5322d" opacity=".8"/><path d="M29 44h14l-2 16H31z" fill="#f7851e" opacity=".8"/><path d="M50 36h14l-2 24H52z" fill="#ffc81a" opacity=".85"/><path d="M15 40c2-22 20-22 21 6" stroke="#e5322d" stroke-width="4" fill="none"/><path d="M36 46c1-28 20-28 21-6" stroke="#ffc81a" stroke-width="4" fill="none"/></svg></span>
+    <div>
+      <h2>Walking Water</h2>
+      <p class="vi" lang="vi">Nước biết đi</p>
+      <p class="d">Paper towel bridges carry colored water between cups. The empty cups fill up with new mixed colors.</p>
+      <span class="play">Play · Chơi</span>
+    </div>
+  </a>
+  <a class="game" href="./rainbow-milk/">
+    <span class="thumb t8"><svg viewBox="0 0 72 72"><circle cx="36" cy="36" r="28" fill="#fff" stroke="#e8c9d4" stroke-width="3"/><path d="M36 36c-10-6-14-16-8-20" stroke="#e5322d" stroke-width="4" fill="none" stroke-linecap="round"/><path d="M36 36c10-4 18 0 18 8" stroke="#1f6fe0" stroke-width="4" fill="none" stroke-linecap="round"/><path d="M36 36c-2 10-10 14-16 10" stroke="#ffc81a" stroke-width="4" fill="none" stroke-linecap="round"/><path d="M36 36c6 8 4 16-2 18" stroke="#1fa347" stroke-width="4" fill="none" stroke-linecap="round"/><circle cx="36" cy="36" r="3" fill="none" stroke="#2c68b2" stroke-width="1.5"/></svg></span>
+    <div>
+      <h2>Rainbow Milk</h2>
+      <p class="vi" lang="vi">Sữa cầu vồng</p>
+      <p class="d">Drop colors on a plate of milk, then touch it with a soapy swab and watch the colors burst and swirl.</p>
+      <span class="play">Play · Chơi</span>
+    </div>
+  </a>
+  <a class="game" href="./paint-mixing/">
+    <span class="thumb t5"><svg viewBox="0 0 72 72"><ellipse cx="36" cy="40" rx="28" ry="20" fill="#d9a86a"/><circle cx="24" cy="34" r="6" fill="#e5322d"/><circle cx="38" cy="30" r="6" fill="#ffc81a"/><circle cx="50" cy="38" r="6" fill="#1f6fe0"/><circle cx="34" cy="48" r="7" fill="#f7851e"/><circle cx="18" cy="48" r="4" fill="#fff"/></svg></span>
+    <div>
+      <h2>Paint Mixing</h2>
+      <p class="vi" lang="vi">Pha màu</p>
+      <p class="d">Squeeze red, yellow, blue, white and black paint, mix them with a brush, then paint with your new colors.</p>
+      <span class="play">Play · Chơi</span>
+    </div>
+  </a>
+  </div>
+  <h3 class="sec">Light and color <span lang="vi">· Ánh sáng và màu sắc</span></h3>
+  <div class="shelf">
+  <a class="game" href="./light-and-color/">
+    <span class="thumb t2"><svg viewBox="0 0 72 72"><path d="M36 64L28 8h16z" fill="#fff" opacity=".15"/><rect x="12" y="52" width="48" height="10" rx="2" fill="#fff6d8"/><rect x="18" y="30" width="10" height="22" rx="3" fill="#e8262a"/><rect x="31" y="30" width="10" height="22" rx="3" fill="#ffd21f"/><rect x="44" y="30" width="10" height="22" rx="3" fill="#1f6fe0"/><circle cx="23" cy="24" r="7" fill="#e8262a" opacity=".5"/><circle cx="36" cy="24" r="7" fill="#ffd21f" opacity=".5"/><circle cx="49" cy="24" r="7" fill="#1f6fe0" opacity=".5"/></svg></span>
+    <div>
+      <h2>Light &amp; Color</h2>
+      <p class="vi" lang="vi">Ánh sáng và màu sắc</p>
+      <p class="d">Glowing bottles on a light box, and colored flashlights that change the color of fruit.</p>
+      <span class="play">Play · Chơi</span>
+    </div>
+  </a>
+
+  <a class="game" href="./rainbow-maker/">
+    <span class="thumb t4"><svg viewBox="0 0 72 72"><path d="M6 44l24-6" stroke="#fff" stroke-width="3" opacity=".85"/><path d="M30 24l12 22H18z" fill="#dfeaf5" opacity=".55" stroke="#fff"/><path d="M40 38L66 18" stroke="#ff2a1f" stroke-width="3"/><path d="M40 38L66 24" stroke="#ff8a14" stroke-width="3"/><path d="M40 38L66 30" stroke="#ffe11a" stroke-width="3"/><path d="M40 38L66 36" stroke="#2fd33a" stroke-width="3"/><path d="M40 38L66 42" stroke="#2f6bff" stroke-width="3"/><path d="M40 38L66 48" stroke="#5b3dff" stroke-width="3"/><path d="M40 38L66 54" stroke="#9b3dff" stroke-width="3"/></svg></span>
+    <div>
+      <h2>Rainbow Maker</h2>
+      <p class="vi" lang="vi">Làm cầu vồng</p>
+      <p class="d">Turn a glass prism until white light splits into a rainbow. Then mix it back to white.</p>
+      <span class="play">Play · Chơi</span>
+    </div>
+  </a>
+  <a class="game" href="./colored-shadows/">
+    <span class="thumb t4"><svg viewBox="0 0 72 72"><circle cx="28" cy="30" r="18" fill="#ff2a1f" opacity=".75"/><circle cx="44" cy="30" r="18" fill="#2fd33a" opacity=".75"/><circle cx="36" cy="44" r="18" fill="#2f6bff" opacity=".75"/><path d="M36 22l6 18H30z" fill="#fff"/></svg></span>
+    <div>
+      <h2>Colored Shadows</h2>
+      <p class="vi" lang="vi">Bóng màu</p>
+      <p class="d">Red, green and blue lamps shine on a toy rocket. Where the lights overlap, new colors and colored shadows appear.</p>
+      <span class="play">Play · Chơi</span>
+    </div>
+  </a>
+  <a class="game" href="./color-hunt/">
+    <span class="thumb t3"><svg viewBox="0 0 72 72"><circle cx="20" cy="46" r="10" fill="#e5322d"/><rect x="36" y="38" width="18" height="18" rx="3" fill="#1f6fe0"/><path d="M40 14l3 7 7 .6-5.4 4.6 1.7 7L40 29.6 33.7 33.2l1.7-7L30 21.6l7-.6z" fill="#ffc81a"/><circle cx="56" cy="22" r="7" fill="#1fa347"/></svg></span>
+    <div>
+      <h2>Color Hunt</h2>
+      <p class="vi" lang="vi">Đi tìm màu</p>
+      <p class="d">Find three red things in the playroom, then yellow, blue and green. Later the room light turns red.</p>
+      <span class="play">Play · Chơi</span>
+    </div>
+  </a>
+  </div>
+  <footer>English and Vietnamese. Works best on a phone with the sound on. Each game has a <b>?</b> button with notes for grown-ups.</footer>
+</main>
+</body>
+</html>

@@ -1,0 +1,1039 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Rainbow Maker</title>
+<meta name="description" content="A 3D rainbow simulator for Elephant Class: sunshine, rain, and the sun behind you.">
+<meta property="og:title" content="Rainbow Maker">
+<meta property="og:description" content="Make a rainbow with Elephant! A 3D science toy for kids about sunlight, raindrops and colors.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%F0%9F%8C%88%3C/text%3E%3C/svg%3E">
+<style>*,*::before,*::after{box-sizing:border-box}html,body{margin:0}[hidden]{display:none!important}</style>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Andika:wght@400;700&family=Baloo+2:wght@600;800&display=swap">
+<style>
+/* Layout: one full-bleed 3D meadow with floating toy-like panels. Three arrangements:
+   tall screens (phones upright) stack the hint card on top and the tray at the bottom;
+   wide screens (laptops, projectors) put the hint top-left and the tray bottom-right so the rainbow and the child stay clear;
+   short wide screens (phones sideways) use the same corners in a compact size. All sizes are in rem and the root size grows with the screen. */
+:root {
+  --ink: #1c2547;
+  --muted: #56617f;
+  --panel: rgba(255, 255, 255, 0.9);
+  --panel-solid: #ffffff;
+  --line: rgba(28, 37, 71, 0.14);
+  --sun: #ffc83a;
+  --sun-deep: #e59a00;
+  --rain: #2f7cf6;
+  --leaf: #23945f;
+  --sky: #9fcbf2;
+  --display: "Baloo 2", "Trebuchet MS", "Segoe UI", system-ui, sans-serif;
+  --body: "Andika", "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+  --gut: 1rem;
+  color-scheme: light;
+}
+html { font-size: clamp(16px, 1.9vmin, 30px); }
+html, body { height: 100%; }
+body { background: var(--sky); color: var(--ink); font-family: var(--body); overflow: hidden; }
+#app { position: fixed; inset: 0; }
+#scene { position: absolute; inset: 0; width: 100%; height: 100%; display: block; touch-action: none; cursor: grab; }
+#scene:active { cursor: grabbing; }
+
+button { font-family: inherit; color: inherit; cursor: pointer; -webkit-tap-highlight-color: transparent; }
+button:focus-visible, input:focus-visible { outline: 0.2rem solid var(--rain); outline-offset: 0.2rem; }
+
+/* Header */
+.overlay-top {
+  position: absolute; left: 0; right: 0; top: 0;
+  padding: calc(env(safe-area-inset-top, 0px) + 0.75rem) max(var(--gut), env(safe-area-inset-right, 0px)) 0 max(var(--gut), env(safe-area-inset-left, 0px));
+  display: flex; flex-direction: column; align-items: center; gap: 0.6rem; pointer-events: none;
+}
+.top { width: 100%; display: flex; justify-content: space-between; align-items: flex-start; gap: 0.75rem; }
+.brand { pointer-events: auto; min-width: 0; }
+.brand h1 {
+  margin: 0; font-family: var(--display); font-weight: 800; line-height: 1;
+  font-size: 2.3rem; letter-spacing: 0.01em; white-space: nowrap;
+  text-shadow: 0 0.12rem 0 #fff, 0 0.2rem 0.6rem rgba(28, 37, 71, 0.25);
+}
+.brand h1 span:nth-child(7n+1) { color: #e8322b; }
+.brand h1 span:nth-child(7n+2) { color: #f07d00; }
+.brand h1 span:nth-child(7n+3) { color: #e2b100; }
+.brand h1 span:nth-child(7n+4) { color: #1f9d4c; }
+.brand h1 span:nth-child(7n+5) { color: #1f6ff0; }
+.brand h1 span:nth-child(7n+6) { color: #4b3fcf; }
+.brand h1 span:nth-child(7n+7) { color: #9b39d6; }
+.brand p { margin: 0.25rem 0 0; font-size: 0.95rem; font-weight: 700; color: var(--ink); text-shadow: 0 1px 0 rgba(255,255,255,.9), 0 0 0.5rem rgba(255,255,255,.7); }
+.top-actions { display: flex; gap: 0.5rem; pointer-events: auto; flex-shrink: 0; }
+.chip-btn {
+  border: 0; background: var(--panel); border-radius: 999px; min-height: 2.75rem; min-width: 2.75rem;
+  padding: 0 0.85rem; font-weight: 700; font-size: 0.9rem; box-shadow: 0 0.12rem 0.5rem rgba(28,37,71,.15);
+  display: inline-flex; align-items: center; justify-content: center; gap: 0.4rem;
+}
+.chip-btn[aria-pressed="true"] { background: var(--ink); color: #fff; }
+.chip-btn .lbl { display: none; }
+.lang-long { display: none; }
+#fsBtn, #cleanBtn { display: none; }
+
+/* Hint card */
+.hint {
+  pointer-events: auto; width: min(35rem, 100%);
+  background: var(--panel); border-radius: 1.4rem; padding: 0.75rem 1rem;
+  box-shadow: 0 0.4rem 1.5rem rgba(28,37,71,.18);
+  display: grid; gap: 0.6rem;
+}
+.checks { display: flex; gap: 0.4rem; flex-wrap: wrap; }
+.check {
+  display: inline-flex; align-items: center; gap: 0.35rem; padding: 0.25rem 0.6rem 0.25rem 0.35rem;
+  border-radius: 999px; background: #eef1f7; font-size: 0.82rem; font-weight: 700; color: var(--muted);
+  transition: background .3s, color .3s;
+}
+.check .dot { width: 1.4rem; height: 1.4rem; border-radius: 50%; display: grid; place-items: center; background: #d6dbe7; color: #fff; font-size: 0.8rem; }
+.check.ok { background: #dff5e8; color: #17603e; }
+.check.ok .dot { background: var(--leaf); }
+.check .t { display: none; }
+.msg { margin: 0; font-family: var(--display); font-weight: 800; font-size: 1.3rem; line-height: 1.2; text-wrap: balance; }
+.msg-row { display: flex; gap: 0.6rem; align-items: center; }
+.msg-row .msg { flex: 1; min-width: 0; }
+.hear { border: 0; background: var(--sun); width: 3.25rem; height: 3.25rem; border-radius: 50%; font-size: 1.5rem; flex-shrink: 0; box-shadow: 0 0.12rem 0 var(--sun-deep); }
+.hear:active { transform: translateY(0.12rem); box-shadow: none; }
+.voice-note { margin: 0; font-size: 0.85rem; color: var(--muted); }
+.hint.win .checks { display: none; }
+.hint.win { box-shadow: 0 0 0 0.25rem var(--sun), 0 0.4rem 1.5rem rgba(28,37,71,.2); }
+.legend { display: flex; flex-wrap: wrap; gap: 0.4rem; }
+.legend button {
+  border: 0; border-radius: 0.75rem; padding: 0.3rem 0.65rem; font-weight: 700; font-size: 0.9rem; color: #fff;
+  text-shadow: 0 1px 1px rgba(0,0,0,.25); min-height: 2.1rem;
+}
+
+/* Control tray */
+.controls {
+  position: absolute; left: 0; right: 0; bottom: 0;
+  padding: 0 max(var(--gut), env(safe-area-inset-right, 0px)) calc(env(safe-area-inset-bottom, 0px) + 0.9rem) max(var(--gut), env(safe-area-inset-left, 0px));
+  display: flex; justify-content: center; pointer-events: none;
+}
+.tray {
+  pointer-events: auto; width: min(40rem, 100%);
+  background: var(--panel); border-radius: 1.6rem; padding: 0.75rem;
+  box-shadow: 0 0.5rem 1.9rem rgba(28,37,71,.22);
+  display: grid; gap: 0.6rem;
+}
+.toggles { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 0.4rem; }
+.tog {
+  border: 0.125rem solid var(--line); background: var(--panel-solid); border-radius: 1.1rem;
+  min-height: 4.5rem; padding: 0.35rem 0.2rem; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0.1rem;
+  font-family: var(--display); font-weight: 800; font-size: 1rem; line-height: 1.1; min-width: 0;
+  white-space: nowrap; transition: transform .12s, background .2s, border-color .2s;
+}
+.tog .ic { font-size: 1.8rem; line-height: 1; }
+.tog .sub { font-family: var(--body); font-weight: 700; font-size: 0.72rem; opacity: 0.85; }
+.tog:active { transform: scale(0.95); }
+#sunBtn[aria-pressed="true"] { background: var(--sun); border-color: var(--sun-deep); }
+#rainBtn[aria-pressed="true"] { background: var(--rain); border-color: #1a5ec9; color: #fff; }
+#turnBtn[aria-pressed="true"] { background: #ffe3c2; border-color: #f29a3a; }
+#dropBtn { background: #e7f1ff; border-color: #b9d4fb; }
+#eleBtn { background: #eef0f6; border-color: #b8c0d4; }
+#eleBtn[aria-pressed="true"] { background: #9fdcff; border-color: #3aa0e0; }
+
+.slider { display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 0.6rem; }
+.slider .end { display: flex; flex-direction: column; align-items: center; font-weight: 700; font-size: 0.8rem; color: var(--muted); min-width: 2.75rem; }
+.slider .end b { font-size: 1.4rem; line-height: 1; }
+.slider-mid { display: grid; gap: 0.1rem; min-width: 0; }
+.slider-mid .row { display: flex; justify-content: space-between; font-size: 0.8rem; font-weight: 700; color: var(--muted); font-variant-numeric: tabular-nums; }
+input[type=range] { -webkit-appearance: none; appearance: none; width: 100%; height: 2.75rem; background: transparent; margin: 0; }
+input[type=range]::-webkit-slider-runnable-track {
+  height: 0.9rem; border-radius: 999px;
+  background: linear-gradient(90deg, #ff9d5c 0%, #ffd27a 30%, #bfe3ff 60%, #7dbcf5 100%);
+}
+input[type=range]::-moz-range-track {
+  height: 0.9rem; border-radius: 999px;
+  background: linear-gradient(90deg, #ff9d5c 0%, #ffd27a 30%, #bfe3ff 60%, #7dbcf5 100%);
+}
+input[type=range]::-webkit-slider-thumb {
+  -webkit-appearance: none; width: 2.5rem; height: 2.5rem; margin-top: -0.8rem; border-radius: 50%;
+  background: radial-gradient(circle at 40% 38%, #fff6c9 0 18%, var(--sun) 45%, var(--sun-deep) 100%);
+  border: 0.19rem solid #fff; box-shadow: 0 0.12rem 0.5rem rgba(229,154,0,.6);
+}
+input[type=range]::-moz-range-thumb {
+  width: 2.25rem; height: 2.25rem; border-radius: 50%;
+  background: radial-gradient(circle at 40% 38%, #fff6c9 0 18%, var(--sun) 45%, var(--sun-deep) 100%);
+  border: 0.19rem solid #fff; box-shadow: 0 0.12rem 0.5rem rgba(229,154,0,.6);
+}
+.drag-tip { text-align: center; font-size: 0.78rem; color: var(--muted); margin: -0.25rem 0 0; }
+
+/* Phones upright: one-line title, short language label */
+@media (max-width: 480px) {
+  .brand h1 { font-size: clamp(1.15rem, 6vw, 1.5rem); }
+  .brand p { font-size: 0.82rem; }
+  .top-actions { gap: 0.35rem; }
+  .tray { padding: 0.6rem; }
+  .toggles { gap: 0.3rem; }
+  .tog { font-size: 0.68rem; min-height: 4.2rem; border-radius: 0.9rem; }
+  .tog .ic { font-size: 1.6rem; }
+  .tog .sub { font-size: 0.66rem; }
+  .msg { font-size: 1.05rem; }
+  .hint { padding: 0.55rem 0.7rem; gap: 0.45rem; border-radius: 1.1rem; }
+  .hear { width: 2.6rem; height: 2.6rem; font-size: 1.2rem; }
+  .check .dot { width: 1.2rem; height: 1.2rem; font-size: 0.7rem; }
+  .check { padding: 0.15rem 0.45rem 0.15rem 0.2rem; font-size: 0.75rem; }
+  .legend { flex-wrap: nowrap; gap: 0.25rem; }
+  .legend button { flex: 1 1 0; min-width: 0; padding: 0.2rem 0.1rem; font-size: 0.72rem; min-height: 1.9rem; border-radius: 0.6rem; white-space: nowrap; }
+  .drag-tip { display: none; }
+}
+@media (min-width: 481px) { .check .t { display: inline; } .lang-long { display: inline; } .lang-short { display: none; } }
+
+/* Wide screens: hint top-left, tray bottom-right, rainbow and child in the clear */
+@media (min-aspect-ratio: 6/5) {
+  .overlay-top { align-items: flex-start; }
+  .hint { width: min(28rem, 40vw); }
+  .controls { justify-content: flex-end; }
+  .tray { width: min(38rem, 56vw); }
+  .chip-btn .lbl { display: inline; }
+  #fsBtn, #cleanBtn { display: inline-flex; }
+}
+/* Phones sideways and other short wide screens: same corners, compact */
+@media (min-aspect-ratio: 6/5) and (max-height: 560px) {
+  html { font-size: 13px; }
+  .overlay-top { padding-top: calc(env(safe-area-inset-top, 0px) + 0.5rem); gap: 0.4rem; }
+  .brand h1 { font-size: 1.8rem; }
+  .brand p { font-size: 0.85rem; }
+  .chip-btn .lbl { display: none; }
+  .lang-long { display: none; } .lang-short { display: inline; }
+  #cleanBtn { display: none; }
+  .hint { width: min(24rem, 44vw); padding: 0.55rem 0.75rem; gap: 0.4rem; }
+  .checks { display: none; }
+  .msg { font-size: 1.1rem; }
+  .hear { width: 2.75rem; height: 2.75rem; font-size: 1.25rem; }
+  .legend button { font-size: 0.85rem; min-height: 1.9rem; padding: 0.2rem 0.5rem; }
+  .controls { padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 0.5rem); }
+  .tray { width: min(34rem, 52vw); padding: 0.5rem; gap: 0.3rem; }
+  .tog { min-height: 3.6rem; font-size: 0.85rem; }
+  .tog .ic { font-size: 1.4rem; }
+  input[type=range] { height: 2.4rem; }
+  .slider .end b { font-size: 1.1rem; }
+  .drag-tip { display: none; }
+}
+/* Teacher's clean view: only the scene, title and top buttons */
+#app.clean .hint, #app.clean .controls { display: none; }
+
+/* Sheets */
+.sheet {
+  position: absolute; inset: 0; background: rgba(20, 28, 56, 0.55);
+  display: flex; align-items: center; justify-content: center; padding: var(--gut); z-index: 10;
+}
+.card {
+  background: var(--panel-solid); border-radius: 1.6rem; width: min(48rem, 100%); max-height: 100%;
+  overflow: auto; padding: 1rem; display: grid; gap: 0.75rem; box-shadow: 0 0.75rem 2.5rem rgba(0,0,0,.3);
+}
+.card-head { display: flex; justify-content: space-between; align-items: center; gap: 0.75rem; }
+.card-head h2 { margin: 0; font-family: var(--display); font-weight: 800; font-size: 1.6rem; line-height: 1.1; }
+.icon-btn { border: 0; background: #eef1f7; width: 2.75rem; height: 2.75rem; border-radius: 50%; font-size: 1.2rem; font-weight: 700; flex-shrink: 0; }
+#dropCanvas { width: 100%; height: min(52vh, 28rem); border-radius: 1.1rem; display: block; background: #13204a; }
+.caption { margin: 0; font-family: var(--display); font-weight: 800; font-size: 1.35rem; line-height: 1.25; min-height: 2.6em; text-wrap: balance; }
+.steps { display: flex; gap: 0.4rem; }
+.steps i { flex: 1; height: 0.4rem; border-radius: 0.2rem; background: #e2e6ef; transition: background .3s; }
+.steps i.on { background: var(--rain); }
+.drop-foot { display: flex; align-items: center; justify-content: space-between; gap: 0.75rem; flex-wrap: wrap; }
+.drop-foot p { margin: 0; color: var(--muted); font-size: 0.95rem; flex: 1 1 15rem; min-width: 0; }
+.big-btn { border: 0; background: var(--rain); color: #fff; font-family: var(--display); font-weight: 800; font-size: 1.1rem; border-radius: 1rem; min-height: 3rem; padding: 0 1.4rem; }
+.grown p { margin: 0; line-height: 1.6; max-width: 65ch; }
+.grown .fact { display: grid; gap: 0.6rem; }
+.grown h3 { margin: 0.4rem 0 0; font-family: var(--display); font-weight: 800; font-size: 1.15rem; }
+.grown .num { font-variant-numeric: tabular-nums; font-weight: 700; }
+.grown kbd { font-family: var(--body); font-weight: 700; background: #eef1f7; border: 1px solid var(--line); border-bottom-width: 2px; border-radius: 0.35rem; padding: 0 0.4rem; }
+/* Drop sheet on short screens: canvas beside the words */
+@media (max-height: 560px) and (min-aspect-ratio: 6/5) {
+  .card { grid-template-columns: 1.3fr 1fr; align-items: start; }
+  .card-head, .grown .fact { grid-column: 1 / -1; }
+  #dropCanvas { height: calc(100vh - 7rem); grid-row: 2 / span 3; }
+  .grown { grid-template-columns: 1fr; }
+}
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+</head>
+<body>
+<div id="app">
+  <canvas id="scene" aria-label="3D meadow where a child watches the sky"></canvas>
+
+  <div class="overlay-top">
+  <header class="top">
+    <div class="brand">
+      <h1 id="title" aria-live="off"></h1>
+      <p data-i="tagline"></p>
+    </div>
+    <div class="top-actions">
+      <a class="chip-btn" href="/" aria-label="Back to all games" style="text-decoration:none;color:inherit"><span aria-hidden="true">⬅️</span></a>
+      <button class="chip-btn" id="speakBtn" aria-pressed="true"><span aria-hidden="true">🗣️</span><span class="lbl" data-i="readAloud"></span></button>
+      <button class="chip-btn" id="langBtn"><span class="lang-long" id="langLong"></span><span class="lang-short" id="langShort"></span></button>
+      <button class="chip-btn" id="cleanBtn" aria-pressed="false"><span aria-hidden="true">👁️</span><span class="lbl" id="cleanLbl"></span></button>
+      <button class="chip-btn" id="fsBtn"><span aria-hidden="true">⛶</span><span class="lbl" id="fsLbl"></span></button>
+      <button class="chip-btn" id="grownBtn" aria-label="For grown-ups"><span aria-hidden="true">?</span><span class="lbl" data-i="grownTitle"></span></button>
+    </div>
+  </header>
+
+  <section class="hint" id="hint" aria-live="polite">
+    <div class="checks" id="checks"></div>
+    <div class="msg-row"><p class="msg" id="msg"></p><button class="hear" id="hearBtn" aria-label="Hear it"><span aria-hidden="true">🔊</span></button></div>
+    <p class="voice-note" id="voiceNote" hidden></p>
+    <div class="legend" id="legend" hidden></div>
+  </section>
+  </div>
+
+  <nav class="controls">
+    <div class="tray">
+      <div class="toggles">
+        <button class="tog" id="sunBtn" aria-pressed="true"><span class="ic" aria-hidden="true">☀️</span><span data-i="sun"></span></button>
+        <button class="tog" id="rainBtn" aria-pressed="true"><span class="ic" aria-hidden="true">🌧️</span><span data-i="rain"></span><span class="sub" id="rainSub"></span></button>
+        <button class="tog" id="eleBtn" aria-pressed="false"><span class="ic" aria-hidden="true">🐘</span><span data-i="elephant"></span></button>
+        <button class="tog" id="turnBtn" aria-pressed="false"><span class="ic" aria-hidden="true">🔄</span><span data-i="turn"></span></button>
+        <button class="tog" id="dropBtn"><span class="ic" aria-hidden="true">💧</span><span data-i="drop"></span></button>
+      </div>
+      <div class="slider">
+        <div class="end"><b aria-hidden="true">🌅</b><span data-i="sunLow"></span></div>
+        <div class="slider-mid">
+          <label class="row" for="sunRange"><span data-i="sunHeight"></span><span id="deg">14°</span></label>
+          <input type="range" id="sunRange" min="3" max="70" value="14" step="1">
+        </div>
+        <div class="end"><b aria-hidden="true">🌞</b><span data-i="sunHigh"></span></div>
+      </div>
+      <p class="drag-tip" data-i="drag"></p>
+    </div>
+  </nav>
+
+  <div class="sheet" id="dropView" hidden>
+    <div class="card" role="dialog" aria-modal="true" aria-labelledby="dropTitle">
+      <div class="card-head"><h2 id="dropTitle" data-i="dropTitle"></h2><button class="icon-btn" id="dropClose" aria-label="Close">✕</button></div>
+      <canvas id="dropCanvas"></canvas>
+      <div class="steps" id="steps"><i></i><i></i><i></i><i></i></div>
+      <p class="caption" id="dropCaption"></p>
+      <div class="drop-foot"><p data-i="dfoot"></p><button class="big-btn" id="dropReplay" data-i="again"></button></div>
+    </div>
+  </div>
+
+  <div class="sheet" id="grownView" hidden>
+    <div class="card grown" role="dialog" aria-modal="true" aria-labelledby="grownH">
+      <div class="card-head"><h2 id="grownH" data-i="grownTitle"></h2><button class="icon-btn" id="grownClose" aria-label="Close">✕</button></div>
+      <div class="fact" id="grownBody"></div>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+(() => {
+/* ---------- words ---------- */
+const COLORS = ['#e8322b','#f58a00','#f2c200','#22a553','#1f6ff0','#4b3fcf','#9b39d6'];
+const T = {
+  en: {
+    title: 'Rainbow Maker', tagline: 'Elephant Class, can you make a rainbow?', elephant: 'Elephant',
+    sun: 'Sun', rain: 'Rain', rainLv: ['none', 'a little', 'lots'], turn: 'Turn', drop: 'Raindrop',
+    sunLow: 'Low', sunHigh: 'High', sunHeight: 'Sun height', drag: 'Drag the sky to look around',
+    readAloud: 'Talk: on', readAloudOff: 'Talk: off', noSpeech: 'This browser cannot read aloud. Try Chrome or Safari.', noVoice: 'No English voice found on this device.', muteTip: 'No sound? Turn up the volume. On iPhone and iPad, also flip the silent switch off.', langBtn: 'Tiếng Việt', langShort: 'VI', hide: 'Hide panels', show: 'Show panels', fs: 'Full screen', fsExit: 'Exit full screen', grownTitle: 'For grown-ups',
+    chk: ['Sunshine', 'Rain in front', 'Sun is low', 'Sun behind you'],
+    hintSun: 'The sun is hiding behind a cloud. Tap Sun!',
+    hintRain: 'We need water drops! Tap Rain, or ask Elephant to spray water.',
+    eleWin: 'Elephant sprayed water and made a rainbow! Can you name the colors?',
+    softBow: 'A soft rainbow! Tap Rain for lots of rain to make it brighter.',
+    hintHigh: 'The sun is too high. Slide it down low!',
+    hintTurn: 'Turn around! Put the sun behind your back.',
+    success: 'You made a rainbow! Can you name the colors?',
+    colors: ['Red','Orange','Yellow','Green','Blue','Indigo','Violet'],
+    dropTitle: 'Inside a raindrop',
+    d: [
+      'Sunlight looks white. But all the colors are hiding inside it!',
+      'The light goes into a raindrop and bends. The colors start to spread apart.',
+      'It bounces off the back of the drop, like a little mirror.',
+      'The colors come out, each one on its own path, and fly to your eyes!'
+    ],
+    dfoot: 'Millions of raindrops do this at the same time. Together they make one big rainbow.',
+    again: 'Play again', sunLabel: 'Sunlight', eyeLabel: 'Your eyes',
+    grown: `<p>A rainbow needs three things: sunshine, rain in front of you, and the sun behind you. The sun also has to be low, below <span class="num">42°</span>.</p>
+      <h3>What happens in each drop</h3>
+      <p>Sunlight enters a raindrop and bends (refraction). Each color bends a slightly different amount, so white light splits into colors (dispersion). The light reflects once off the back of the drop and leaves again. It comes out brightest at about <span class="num">42°</span> from the point directly opposite the sun, which is where the shadow of your head points.</p>
+      <h3>Why the sun must be low</h3>
+      <p>The rainbow is always a circle around your shadow. When the sun climbs above <span class="num">42°</span>, the whole circle sinks below the horizon. That is why rainbows show up in the early morning or late afternoon. Try the sun slider to see this.</p>
+      <h3>Does the amount of rain matter?</h3>
+      <p>The sun's height decides <em>where</em> the rainbow is and whether it shows at all. The rain decides <em>how bright</em> it is: more sunlit drops make a stronger bow, and a thin drizzle makes a faint one. Drop size matters too. Big drops (about 1&nbsp;mm and up) give vivid, narrow color bands. Tiny drops, like fog or mist, blur the colors into a pale, almost white "fogbow". The Rain button cycles through no rain, a little, and lots.</p>
+      <h3>The second, fainter bow</h3>
+      <p>Light that bounces twice inside the drop makes a faint bow at about <span class="num">51°</span>. Its colors are in reverse order: red is on the inside.</p>
+      <h3>Things to notice together</h3>
+      <p>In the app, the child's shadow points toward the middle of the rainbow. Real raindrops are round, not pointed like the teardrops in picture books.</p>
+      <h3>Using it in class</h3>
+      <p>On a projector, tap ⛶ Full screen. The 👁️ button hides the panels so the class sees only the meadow. With a keyboard or a presentation clicker: <kbd>S</kbd> sun, <kbd>R</kbd> rain, <kbd>E</kbd> Elephant, <kbd>T</kbd> turn around, <kbd>D</kbd> inside a raindrop, <kbd>←</kbd> <kbd>→</kbd> sun lower or higher, <kbd>Space</kbd> hear the message, <kbd>H</kbd> hide panels, <kbd>F</kbd> full screen.</p>
+      <h3>Make a real one</h3>
+      <p>On a sunny late afternoon, stand with your back to the sun and spray a garden hose into a fine mist. That is exactly what Elephant does in the app: the mist is a small cloud of drops, so a small rainbow shows up only inside the mist. In the rainy season, look east right after an afternoon shower when the sun comes back out.</p>`
+  },
+  vi: {
+    title: 'Làm Cầu Vồng', tagline: 'Lớp Elephant ơi, mình làm cầu vồng nhé!', elephant: 'Voi',
+    sun: 'Nắng', rain: 'Mưa', rainLv: ['không', 'ít', 'nhiều'], turn: 'Quay', drop: 'Giọt mưa',
+    sunLow: 'Thấp', sunHigh: 'Cao', sunHeight: 'Mặt trời cao', drag: 'Kéo bầu trời để nhìn xung quanh',
+    readAloud: 'Nói: bật', readAloudOff: 'Nói: tắt', noSpeech: 'Trình duyệt này không đọc to được. Hãy thử Chrome hoặc Safari.', noVoice: 'Thiết bị chưa có giọng đọc tiếng Việt. Có thể thêm trong Cài đặt → Ngôn ngữ/Giọng nói.', muteTip: 'Không nghe thấy? Hãy tăng âm lượng. Trên iPhone và iPad, tắt cả nút im lặng.', langBtn: 'English', langShort: 'EN', hide: 'Ẩn bảng', show: 'Hiện bảng', fs: 'Toàn màn hình', fsExit: 'Thoát toàn màn hình', grownTitle: 'Dành cho bố mẹ',
+    chk: ['Có nắng', 'Mưa phía trước', 'Mặt trời thấp', 'Nắng sau lưng'],
+    hintSun: 'Mặt trời đang trốn sau mây. Bấm nút Nắng nhé!',
+    hintRain: 'Cần có giọt nước! Bấm nút Mưa, hoặc nhờ bạn Voi phun nước.',
+    eleWin: 'Bạn Voi phun nước tạo ra cầu vồng rồi! Bé kể tên các màu được không?',
+    softBow: 'Cầu vồng mờ mờ! Bấm nút Mưa cho mưa nhiều để cầu vồng sáng hơn.',
+    hintHigh: 'Mặt trời cao quá. Kéo xuống thấp nhé!',
+    hintTurn: 'Quay người lại! Để mặt trời ở sau lưng.',
+    success: 'Bé làm ra cầu vồng rồi! Bé kể tên các màu được không?',
+    colors: ['Đỏ','Cam','Vàng','Lục','Lam','Chàm','Tím'],
+    dropTitle: 'Bên trong giọt mưa',
+    d: [
+      'Ánh nắng trông màu trắng. Nhưng mọi màu sắc đang trốn bên trong!',
+      'Ánh sáng đi vào giọt mưa và bị bẻ cong. Các màu bắt đầu tách ra.',
+      'Ánh sáng dội lại ở mặt sau giọt mưa, giống như một chiếc gương nhỏ.',
+      'Các màu đi ra, mỗi màu một đường riêng, và bay tới mắt bé!'
+    ],
+    dfoot: 'Hàng triệu giọt mưa cùng làm như vậy. Chúng ghép lại thành một cầu vồng lớn.',
+    again: 'Xem lại', sunLabel: 'Ánh nắng', eyeLabel: 'Mắt bé',
+    grown: `<p>Cầu vồng cần ba điều: có nắng, có mưa ở phía trước, và mặt trời ở sau lưng. Mặt trời cũng phải thấp, dưới <span class="num">42°</span>.</p>
+      <h3>Chuyện gì xảy ra trong mỗi giọt mưa</h3>
+      <p>Ánh nắng đi vào giọt mưa và bị bẻ cong (khúc xạ). Mỗi màu bị bẻ cong một chút khác nhau, nên ánh sáng trắng tách thành nhiều màu (tán sắc). Ánh sáng phản xạ một lần ở mặt sau giọt mưa rồi đi ra. Nó sáng nhất ở góc khoảng <span class="num">42°</span> so với điểm đối diện mặt trời, tức là nơi bóng đầu của bạn chỉ tới.</p>
+      <h3>Vì sao mặt trời phải thấp</h3>
+      <p>Cầu vồng luôn là một vòng tròn quanh bóng của bạn. Khi mặt trời lên cao hơn <span class="num">42°</span>, cả vòng tròn chìm xuống dưới đường chân trời. Vì vậy cầu vồng thường xuất hiện vào sáng sớm hoặc chiều muộn. Hãy thử thanh trượt mặt trời để thấy điều này.</p>
+      <h3>Lượng mưa có quan trọng không?</h3>
+      <p>Độ cao mặt trời quyết định cầu vồng nằm <em>ở đâu</em> và có xuất hiện hay không. Mưa quyết định cầu vồng <em>sáng</em> đến đâu: càng nhiều giọt mưa được nắng chiếu, cầu vồng càng rõ; mưa phùn lất phất thì cầu vồng mờ. Kích thước giọt cũng quan trọng. Giọt to (khoảng 1&nbsp;mm trở lên) cho màu rực rỡ. Giọt rất nhỏ như sương mù làm các màu nhòe vào nhau, thành một vòng gần như trắng gọi là "cầu vồng sương mù". Nút Mưa chuyển giữa không mưa, mưa ít và mưa nhiều.</p>
+      <h3>Cầu vồng thứ hai, mờ hơn</h3>
+      <p>Ánh sáng phản xạ hai lần trong giọt mưa tạo ra một cầu vồng mờ ở khoảng <span class="num">51°</span>. Thứ tự màu bị đảo ngược: màu đỏ nằm bên trong.</p>
+      <h3>Cùng bé quan sát</h3>
+      <p>Trong ứng dụng, bóng của bé chỉ về phía giữa cầu vồng. Giọt mưa thật có dạng gần tròn, không nhọn đầu như trong sách tranh.</p>
+      <h3>Dùng trên lớp</h3>
+      <p>Khi chiếu lên màn hình lớn, bấm ⛶ Toàn màn hình. Nút 👁️ ẩn các bảng để cả lớp chỉ thấy đồng cỏ. Dùng bàn phím hoặc bút trình chiếu: <kbd>S</kbd> nắng, <kbd>R</kbd> mưa, <kbd>E</kbd> bạn Voi, <kbd>T</kbd> quay người, <kbd>D</kbd> bên trong giọt mưa, <kbd>←</kbd> <kbd>→</kbd> mặt trời thấp hơn hoặc cao hơn, <kbd>Space</kbd> nghe lời nhắn, <kbd>H</kbd> ẩn bảng, <kbd>F</kbd> toàn màn hình.</p>
+      <h3>Tự làm cầu vồng thật</h3>
+      <p>Chiều muộn trời nắng, quay lưng về phía mặt trời và phun vòi nước thành sương mịn. Bạn Voi trong ứng dụng cũng làm y như vậy: làn sương là rất nhiều giọt nước nhỏ, nên cầu vồng nhỏ chỉ hiện ra trong vùng sương đó. Vào mùa mưa, sau cơn mưa chiều khi nắng trở lại, hãy nhìn về hướng đông.</p>`
+  }
+};
+
+const state = { lang: 'vi', sunOut: true, rain: true, rainLv: 2, facing: false, el: 14, speak: true, spraying: false };
+const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+const $ = (id) => document.getElementById(id);
+
+/* ---------- sound & voice ---------- */
+let actx = null;
+function audio() { try { if (!actx) actx = new (window.AudioContext || window.webkitAudioContext)(); if (actx.state === 'suspended') actx.resume(); } catch (e) {} return actx; }
+function chime() {
+  const a = audio(); if (!a) return;
+  [523.25, 659.25, 783.99, 1046.5, 1318.5].forEach((f, i) => {
+    const o = a.createOscillator(), g = a.createGain(), t = a.currentTime + i * 0.11;
+    o.type = 'sine'; o.frequency.value = f;
+    g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(0.16, t + 0.02); g.gain.exponentialRampToValueAtTime(0.001, t + 0.7);
+    o.connect(g).connect(a.destination); o.start(t); o.stop(t + 0.75);
+  });
+}
+let voices = [], unlocked = false;
+const hasSpeech = 'speechSynthesis' in window && 'SpeechSynthesisUtterance' in window;
+function loadVoices() { try { voices = speechSynthesis.getVoices() || []; } catch (e) {} }
+if (hasSpeech) { loadVoices(); try { speechSynthesis.addEventListener('voiceschanged', loadVoices); } catch (e) {} }
+function pickVoice() {
+  const want = state.lang === 'vi' ? 'vi' : 'en';
+  const list = voices.filter(v => (v.lang || '').toLowerCase().replace('_', '-').startsWith(want));
+  return list.find(v => /natural|google|premium|enhanced|siri/i.test(v.name)) || list.find(v => v.localService) || list[0] || null;
+}
+function note(key) { const el = $('voiceNote'); if (!key) { el.hidden = true; return; } el.textContent = T[state.lang][key]; el.hidden = false; }
+function trumpet() {
+  const a = audio(); if (!a) return;
+  const t = a.currentTime, o = a.createOscillator(), o2 = a.createOscillator(), g = a.createGain(), lp = a.createBiquadFilter();
+  o.type = 'sawtooth'; o2.type = 'square';
+  [o, o2].forEach((x, i) => { x.frequency.setValueAtTime(260 * (i ? 1.005 : 1), t); x.frequency.exponentialRampToValueAtTime(560, t + 0.18); x.frequency.setValueAtTime(560, t + 0.45); x.frequency.exponentialRampToValueAtTime(420, t + 0.8); });
+  lp.type = 'lowpass'; lp.frequency.setValueAtTime(900, t); lp.frequency.linearRampToValueAtTime(2600, t + 0.2); lp.frequency.linearRampToValueAtTime(1200, t + 0.8);
+  g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(0.12, t + 0.06); g.gain.setValueAtTime(0.12, t + 0.6); g.gain.exponentialRampToValueAtTime(0.001, t + 0.9);
+  o.connect(lp); o2.connect(lp); lp.connect(g).connect(a.destination);
+  o.start(t); o2.start(t); o.stop(t + 0.95); o2.stop(t + 0.95);
+}
+function say(text, force) {
+  if (!state.speak && !force) return;
+  if (!hasSpeech) { note('noSpeech'); return; }
+  try {
+    loadVoices();
+    const u = new SpeechSynthesisUtterance(text);
+    u.lang = state.lang === 'vi' ? 'vi-VN' : 'en-US'; u.rate = 0.88; u.pitch = 1.1; u.volume = 1;
+    const v = pickVoice();
+    if (v) { u.voice = v; note(null); } else if (voices.length) note('noVoice');
+    const go = () => { try { speechSynthesis.resume(); speechSynthesis.speak(u); } catch (e) {} };
+    if (speechSynthesis.speaking || speechSynthesis.pending) { speechSynthesis.cancel(); setTimeout(go, 80); } else go();
+  } catch (e) {}
+}
+// iPhone/iPad only allow speech that starts inside a tap, so unlock it on the first tap anywhere
+function unlockSpeech() {
+  if (unlocked || !hasSpeech) return; unlocked = true;
+  try { const u = new SpeechSynthesisUtterance(' '); u.volume = 0; speechSynthesis.speak(u); } catch (e) {}
+}
+addEventListener('pointerdown', unlockSpeech, { capture: true });
+addEventListener('keydown', unlockSpeech, { capture: true });
+
+/* ---------- UI text ---------- */
+function applyLang() {
+  const L = T[state.lang];
+  document.documentElement.lang = state.lang;
+  $('title').innerHTML = [...L.title].map(ch => ch === ' ' ? ' ' : `<span>${ch}</span>`).join('');
+  document.querySelectorAll('[data-i]').forEach(el => { el.textContent = L[el.dataset.i]; });
+  $('langLong').textContent = L.langBtn; $('langShort').textContent = L.langShort; $('langBtn').setAttribute('aria-label', L.langBtn);
+  labelClean(); labelFs();
+  $('grownBody').innerHTML = L.grown;
+  $('legend').innerHTML = L.colors.map((c, i) => `<button style="background:${COLORS[i]}" data-c="${i}">${c}</button>`).join('');
+  labelSpeak(); note(null);
+  lastMsg = ''; updateHint();
+  if (!$('dropView').hidden) $('dropCaption').textContent = L.d[dropStep];
+}
+
+let lastMsg = '', wasWin = null;
+function conditions() {
+  return { sun: state.sunOut, rain: state.rain || state.spraying, low: state.el < 42, back: !state.facing };
+}
+function updateHint() {
+  const L = T[state.lang], c = conditions();
+  const keys = ['sun', 'rain', 'low', 'back'], icons = ['☀️', '🌧️', '🌅', '🙌'];
+  $('checks').innerHTML = keys.map((k, i) =>
+    `<span class="check ${c[k] ? 'ok' : ''}" aria-label="${L.chk[i]}: ${c[k] ? '✓' : '✗'}"><span class="dot">${c[k] ? '✓' : ''}</span><span aria-hidden="true">${icons[i]}</span><span class="t">${L.chk[i]}</span></span>`).join('');
+  let key = !c.sun ? 'hintSun' : !c.rain ? 'hintRain' : !c.low ? 'hintHigh' : !c.back ? 'hintTurn' : (!state.rain && state.spraying) ? 'eleWin' : state.rainLv === 1 ? 'softBow' : 'success';
+  const win = key === 'success' || key === 'softBow' || key === 'eleWin';
+  $('rainSub').textContent = L.rainLv[state.rainLv];
+  $('msg').textContent = L[key];
+  $('legend').hidden = !win;
+  $('hint').classList.toggle('win', win);
+  if (L[key] !== lastMsg) { if (lastMsg) say(L[key]); lastMsg = L[key]; }
+  if (win && wasWin === false) chime();
+  wasWin = win;
+}
+
+/* ---------- controls ---------- */
+function setPressed(id, v) { $(id).setAttribute('aria-pressed', String(v)); }
+$('sunBtn').onclick = () => { audio(); state.sunOut = !state.sunOut; setPressed('sunBtn', state.sunOut); updateHint(); };
+$('rainBtn').onclick = () => { audio(); state.rainLv = (state.rainLv + 1) % 3; state.rain = state.rainLv > 0; setPressed('rainBtn', state.rain); updateHint(); };
+$('eleBtn').onclick = () => { audio(); startSpray(); };
+$('turnBtn').onclick = () => { audio(); state.facing = !state.facing; userYaw = 0; setPressed('turnBtn', state.facing); updateHint(); };
+$('sunRange').oninput = (e) => { audio(); state.el = +e.target.value; $('deg').textContent = state.el + '°'; updateHint(); };
+$('langBtn').onclick = () => { state.lang = state.lang === 'en' ? 'vi' : 'en'; applyLang(); };
+$('speakBtn').onclick = () => {
+  state.speak = !state.speak; setPressed('speakBtn', state.speak); labelSpeak();
+  if (state.speak) say($('msg').textContent); else { try { speechSynthesis.cancel(); } catch (e) {} note(null); }
+};
+function labelSpeak() { $('speakBtn').querySelector('.lbl').textContent = T[state.lang][state.speak ? 'readAloud' : 'readAloudOff']; $('speakBtn').setAttribute('aria-label', T[state.lang][state.speak ? 'readAloud' : 'readAloudOff']); }
+$('hearBtn').onclick = () => { say($('msg').textContent, true); if (!hasSpeech) return; setTimeout(() => { try { if (!speechSynthesis.speaking && !speechSynthesis.pending && $('voiceNote').hidden) note('muteTip'); } catch (e) {} }, 1500); };
+$('legend').onclick = (e) => { const b = e.target.closest('button'); if (b) say(b.textContent, true); };
+$('grownBtn').onclick = () => { $('grownView').hidden = false; };
+$('grownClose').onclick = () => { $('grownView').hidden = true; };
+$('grownView').onclick = (e) => { if (e.target.id === 'grownView') $('grownView').hidden = true; };
+
+/* ---------- classroom helpers ---------- */
+function labelClean() { const on = $('app').classList.contains('clean'); $('cleanLbl').textContent = T[state.lang][on ? 'show' : 'hide']; $('cleanBtn').setAttribute('aria-pressed', String(on)); $('cleanBtn').setAttribute('aria-label', T[state.lang][on ? 'show' : 'hide']); }
+function toggleClean() { $('app').classList.toggle('clean'); labelClean(); }
+$('cleanBtn').onclick = toggleClean;
+const fsOK = !!(document.fullscreenEnabled || document.webkitFullscreenEnabled);
+if (!fsOK) $('fsBtn').remove();
+function isFs() { return !!(document.fullscreenElement || document.webkitFullscreenElement); }
+function labelFs() { if (!fsOK) return; $('fsLbl').textContent = T[state.lang][isFs() ? 'fsExit' : 'fs']; $('fsBtn').setAttribute('aria-label', T[state.lang][isFs() ? 'fsExit' : 'fs']); }
+function toggleFs() {
+  if (!fsOK) return;
+  try {
+    if (isFs()) (document.exitFullscreen || document.webkitExitFullscreen).call(document);
+    else { const el = document.documentElement; const r = (el.requestFullscreen || el.webkitRequestFullscreen).call(el); if (r && r.catch) r.catch(() => {}); }
+  } catch (e) {}
+}
+if (fsOK) { $('fsBtn').onclick = toggleFs; document.addEventListener('fullscreenchange', labelFs); document.addEventListener('webkitfullscreenchange', labelFs); }
+function nudgeSun(d) { state.el = Math.max(3, Math.min(70, state.el + d)); $('sunRange').value = state.el; $('deg').textContent = state.el + '°'; updateHint(); }
+addEventListener('keydown', (e) => {
+  if (e.ctrlKey || e.metaKey || e.altKey) return;
+  if (!$('dropView').hidden || !$('grownView').hidden) return;
+  const tag = (e.target.tagName || '').toLowerCase();
+  const onSlider = e.target.id === 'sunRange';
+  const k = e.key.toLowerCase();
+  const act = {
+    s: () => $('sunBtn').click(), r: () => $('rainBtn').click(), e: () => $('eleBtn').click(), t: () => $('turnBtn').click(),
+    d: () => $('dropBtn').click(), h: toggleClean, f: toggleFs,
+    ' ': () => $('hearBtn').click(),
+    arrowleft: () => nudgeSun(-3), arrowdown: () => nudgeSun(-3), arrowright: () => nudgeSun(3), arrowup: () => nudgeSun(3)
+  }[k];
+  if (!act || onSlider || (tag === 'button' && (k === ' ' || k === 'enter'))) return;
+  e.preventDefault(); audio(); act();
+});
+
+/* ---------- three.js scene ---------- */
+const canvas = $('scene');
+const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
+let pxRatio = Math.min(window.devicePixelRatio || 1, 2), slowFrames = 0, perfSamples = 0, perfSum = 0;
+renderer.setPixelRatio(pxRatio);
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+const scene = new THREE.Scene();
+scene.fog = new THREE.Fog(0xcfe6fb, 120, 330);
+const camera = new THREE.PerspectiveCamera(55, 1, 0.1, 1200);
+const EYE = new THREE.Vector3(0, 1.6, 0);
+const V = (x, y, z) => new THREE.Vector3(x, y, z);
+
+// Sky dome with painted sun
+const skyMat = new THREE.ShaderMaterial({
+  side: THREE.BackSide, depthWrite: false, fog: false,
+  uniforms: { uTop: { value: new THREE.Color() }, uHor: { value: new THREE.Color() }, uSun: { value: V(0, 0.2, 1) }, uSunOut: { value: 1 }, uRain: { value: 1 } },
+  vertexShader: `varying vec3 vDir; void main(){ vDir = normalize(position); gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }`,
+  fragmentShader: `
+    uniform vec3 uTop, uHor, uSun; uniform float uSunOut, uRain; varying vec3 vDir;
+    void main(){
+      vec3 d = normalize(vDir);
+      float h = max(d.y, 0.0);
+      vec3 c = mix(uHor, uTop, pow(h, 0.55));
+      float front = 1.0 - smoothstep(-0.75, 0.15, d.z);
+      float storm = uRain * front * smoothstep(-0.1, 0.2, d.y + 0.05);
+      c = mix(c, vec3(0.40, 0.45, 0.55), storm * 0.6);
+      float sd = dot(d, normalize(uSun));
+      c += vec3(1.0, 0.85, 0.55) * pow(max(sd, 0.0), 14.0) * 0.4 * uSunOut;
+      c += vec3(1.0, 0.95, 0.8) * pow(max(sd, 0.0), 300.0) * 0.6 * uSunOut;
+      float disk = smoothstep(0.9983, 0.9988, sd);
+      c = mix(c, vec3(1.0, 0.97, 0.84), disk * uSunOut);
+      gl_FragColor = vec4(c, 1.0);
+    }`
+});
+const sky = new THREE.Mesh(new THREE.SphereGeometry(500, 48, 24), skyMat);
+sky.renderOrder = -10;
+scene.add(sky);
+
+// Lights
+const hemi = new THREE.HemisphereLight(0xdbeeff, 0x5d8a4a, 0.6);
+scene.add(hemi);
+const sunLight = new THREE.DirectionalLight(0xfff1d6, 0.9);
+sunLight.castShadow = true;
+sunLight.shadow.mapSize.set(1024, 1024);
+Object.assign(sunLight.shadow.camera, { left: -8, right: 8, top: 8, bottom: -8, near: 1, far: 120 });
+scene.add(sunLight, sunLight.target);
+
+// Ground and hills
+const lam = (c, o) => new THREE.MeshLambertMaterial(Object.assign({ color: c }, o || {}));
+const ground = new THREE.Mesh(new THREE.CircleGeometry(340, 64), lam(0x86c96b));
+ground.rotation.x = -Math.PI / 2; ground.receiveShadow = true; scene.add(ground);
+[[-120, -170, 90, 22, 0x6db35a], [60, -190, 110, 28, 0x5fa650], [190, -120, 80, 18, 0x74b862], [-200, -60, 90, 20, 0x69af57], [0, 180, 140, 20, 0x74b862], [-160, 140, 90, 24, 0x62a852]]
+  .forEach(([x, z, r, h, c]) => { const m = new THREE.Mesh(new THREE.SphereGeometry(1, 32, 16), lam(c)); m.scale.set(r, h, r * 0.7); m.position.set(x, -2, z); scene.add(m); });
+
+function tree(x, z, s) {
+  const g = new THREE.Group();
+  const trunk = new THREE.Mesh(new THREE.CylinderGeometry(0.22, 0.32, 1.8, 8), lam(0x8b5a36)); trunk.position.y = 0.9;
+  const c1 = new THREE.Mesh(new THREE.SphereGeometry(1.25, 14, 10), lam(0x3e9d4f)); c1.position.y = 2.4;
+  const c2 = new THREE.Mesh(new THREE.SphereGeometry(0.9, 14, 10), lam(0x4fb35d)); c2.position.set(0.5, 3.1, 0.2);
+  g.add(trunk, c1, c2); g.traverse(o => { o.castShadow = true; });
+  g.position.set(x, 0, z); g.scale.setScalar(s); scene.add(g);
+}
+[[-14, -18, 1.4], [-24, -32, 1.9], [17, -24, 1.6], [27, -11, 1.3], [-31, -7, 1.5], [12, 9, 1.2], [-11, 12, 1.4], [36, -44, 2.1], [-44, -48, 2.3], [5, 22, 1.6]]
+  .forEach(a => tree(...a));
+
+const flowerCols = [0xff5a7a, 0xffd23f, 0xffffff, 0xb57cff, 0xff8c3a];
+for (let i = 0; i < 46; i++) {
+  const r = 2.2 + Math.random() * 10, a = Math.random() * Math.PI * 2;
+  const f = new THREE.Mesh(new THREE.SphereGeometry(0.12, 8, 6), lam(flowerCols[i % flowerCols.length]));
+  f.position.set(Math.cos(a) * r, 0.14, Math.sin(a) * r); scene.add(f);
+}
+
+// The child (faces -Z, toward the rain)
+const kid = new THREE.Group();
+function part(geo, color, x, y, z) { const m = new THREE.Mesh(geo, lam(color)); m.position.set(x, y, z); m.castShadow = true; kid.add(m); return m; }
+part(new THREE.CylinderGeometry(0.33, 0.46, 0.95, 16), 0xffc628, 0, 0.95, 0);        // raincoat
+part(new THREE.SphereGeometry(0.31, 20, 16), 0xf1c29a, 0, 1.62, 0);                  // head
+const hair = part(new THREE.SphereGeometry(0.33, 20, 16, 0, Math.PI * 2, 0, Math.PI * 0.55), 0x3a2618, 0, 1.66, 0.03);
+part(new THREE.SphereGeometry(0.045, 8, 6), 0x1c2547, -0.11, 1.66, -0.28);          // eyes
+part(new THREE.SphereGeometry(0.045, 8, 6), 0x1c2547, 0.11, 1.66, -0.28);
+part(new THREE.CylinderGeometry(0.1, 0.1, 0.5, 8), 0x2f5bd3, -0.15, 0.32, 0);        // legs
+part(new THREE.CylinderGeometry(0.1, 0.1, 0.5, 8), 0x2f5bd3, 0.15, 0.32, 0);
+part(new THREE.BoxGeometry(0.22, 0.16, 0.34), 0xe8322b, -0.15, 0.08, -0.04);         // boots
+part(new THREE.BoxGeometry(0.22, 0.16, 0.34), 0xe8322b, 0.15, 0.08, -0.04);
+const armL = part(new THREE.CylinderGeometry(0.09, 0.09, 0.62, 8), 0xffc628, -0.42, 1.1, -0.08); armL.rotation.set(-0.5, 0, -0.35);
+const armR = part(new THREE.CylinderGeometry(0.09, 0.09, 0.62, 8), 0xffc628, 0.42, 1.1, -0.08); armR.rotation.set(-0.5, 0, 0.35);
+scene.add(kid);
+
+// Elephant, the class mascot, standing beside the child
+const ele = new THREE.Group();
+const eleGrey = 0x9aa8c2, eleDark = 0x7f8daa;
+function ep(geo, color, x, y, z, parent) { const m = new THREE.Mesh(geo, lam(color)); m.position.set(x, y, z); m.castShadow = true; (parent || ele).add(m); return m; }
+const eBody = ep(new THREE.SphereGeometry(1, 24, 18), eleGrey, 0, 1.45, 0.2); eBody.scale.set(1.05, 0.95, 1.35);
+ep(new THREE.SphereGeometry(0.72, 24, 18), eleGrey, 0, 2.2, -1.25);                     // head
+[[-0.55, -0.6], [0.55, -0.6], [-0.55, 0.95], [0.55, 0.95]].forEach(([x, z]) => {
+  ep(new THREE.CylinderGeometry(0.3, 0.32, 1.0, 12), eleDark, x, 0.5, z);
+  ep(new THREE.CylinderGeometry(0.33, 0.33, 0.08, 12), 0xe9e4da, x, 0.04, z);           // toenails
+});
+function ear(side) {
+  const pivot = new THREE.Group(); pivot.position.set(0.55 * side, 2.3, -1.1); ele.add(pivot);
+  const outer = ep(new THREE.SphereGeometry(0.62, 18, 14), eleGrey, 0.35 * side, -0.05, 0.05, pivot); outer.scale.set(0.9, 1, 0.16);
+  const inner = ep(new THREE.SphereGeometry(0.46, 18, 14), 0xf3a6b8, 0.37 * side, -0.05, -0.05, pivot); inner.scale.set(0.9, 1, 0.1);
+  return pivot;
+}
+const earL = ear(-1), earR = ear(1);
+ep(new THREE.SphereGeometry(0.08, 10, 8), 0x1c2547, -0.3, 2.38, -1.88);                // eyes
+ep(new THREE.SphereGeometry(0.08, 10, 8), 0x1c2547, 0.3, 2.38, -1.88);
+ep(new THREE.SphereGeometry(0.03, 8, 6), 0xffffff, -0.27, 2.42, -1.95);
+ep(new THREE.SphereGeometry(0.03, 8, 6), 0xffffff, 0.33, 2.42, -1.95);
+ep(new THREE.SphereGeometry(0.1, 10, 8), 0xf5a3b5, -0.46, 2.12, -1.8).scale.set(1, 0.6, 0.5);   // cheeks
+ep(new THREE.SphereGeometry(0.1, 10, 8), 0xf5a3b5, 0.46, 2.12, -1.8).scale.set(1, 0.6, 0.5);
+const tail = ep(new THREE.CylinderGeometry(0.04, 0.06, 0.6, 6), eleDark, 0, 1.5, 1.55); tail.rotation.x = 0.5;
+const scarf = ep(new THREE.TorusGeometry(0.62, 0.12, 10, 24), 0xffc628, 0, 1.75, -0.95); scarf.rotation.x = Math.PI / 2 + 0.35;
+// trunk: a bendy tube on a pivot so it can lift to spray
+const trunkPivot = new THREE.Group(); trunkPivot.position.set(0, 2.0, -1.85); ele.add(trunkPivot);
+const trunkCurve = new THREE.CatmullRomCurve3([V(0, 0, 0), V(0, -0.45, -0.25), V(0, -0.75, -0.55), V(0, -0.6, -0.95), V(0, -0.2, -1.15)]);
+const trunk = new THREE.Mesh(new THREE.TubeGeometry(trunkCurve, 24, 0.17, 10), lam(eleGrey)); trunk.castShadow = true; trunkPivot.add(trunk);
+const trunkTip = new THREE.Object3D(); trunkTip.position.set(0, -0.2, -1.2); trunkPivot.add(trunkTip);
+ele.position.set(-3, 0, -7); ele.scale.setScalar(1.05); ele.rotation.y = Math.PI / 2 + 0.35;
+scene.add(ele);
+
+// Water spray
+const SPRAY = 700, sprayPos = new Float32Array(SPRAY * 3).fill(-100), sprayVel = new Float32Array(SPRAY * 3), sprayAlive = new Uint8Array(SPRAY);
+const sprayGeo = new THREE.BufferGeometry(); sprayGeo.setAttribute('position', new THREE.BufferAttribute(sprayPos, 3));
+const sprayMat = new THREE.PointsMaterial({ color: 0xe6f3ff, size: 0.09, transparent: true, opacity: 0.85, depthWrite: false });
+const spray = new THREE.Points(sprayGeo, sprayMat); spray.frustumCulled = false; scene.add(spray);
+let sprayTime = 0, emitAcc = 0, mistAmt = 0;
+const mistC = V(-7, 1.5, -10), tipW = V(0, 0, 0);
+function startSpray() {
+  sprayTime = 5; state.spraying = true; setPressed('eleBtn', true); trumpet(); updateHint();
+}
+
+// Clouds
+function cloud(color, s) {
+  const g = new THREE.Group(), m = lam(color, { transparent: true, opacity: 1 });
+  [[0, 0, 0, 1.3], [1.4, -0.2, 0.2, 1.0], [-1.4, -0.25, 0, 1.0], [0.7, 0.55, -0.2, 0.9], [-0.6, 0.5, 0.3, 0.85], [2.4, -0.4, 0, 0.7], [-2.3, -0.45, 0.1, 0.7]]
+    .forEach(([x, y, z, r]) => { const b = new THREE.Mesh(new THREE.SphereGeometry(r, 16, 12), m); b.position.set(x, y, z); b.scale.y = 0.8; g.add(b); });
+  g.scale.setScalar(s); g.userData.mat = m; scene.add(g); return g;
+}
+[[-90, 60, 60, 7], [110, 70, 30, 8], [150, 55, -60, 6], [-140, 65, -20, 7]].forEach(([x, y, z, s]) => { const c = cloud(0xffffff, s); c.position.set(x, y, z); });
+const storm = [];
+[[-50, 58, -80, 9], [-15, 64, -95, 11], [25, 60, -85, 10], [60, 56, -75, 8], [0, 52, -70, 7], [-80, 50, -70, 7], [85, 52, -90, 8]]
+  .forEach(([x, y, z, s]) => { const c = cloud(0x8a93a6, s); c.position.set(x, y, z); c.userData.base = s; storm.push(c); });
+const sunCloud = cloud(0xb4bccb, 12);
+
+// Rain
+const DROPS = 2400, rainPos = new Float32Array(DROPS * 6), rainSpeed = new Float32Array(DROPS);
+const box = { x0: -70, x1: 70, y0: 0, y1: 55, z0: -95, z1: -22 };
+function resetDrop(i, top) {
+  const x = box.x0 + Math.random() * (box.x1 - box.x0), z = box.z0 + Math.random() * (box.z1 - box.z0);
+  const y = top ? box.y1 : box.y0 + Math.random() * (box.y1 - box.y0);
+  rainPos.set([x, y, z, x - 0.06, y - 1.3, z], i * 6); rainSpeed[i] = 32 + Math.random() * 14;
+}
+for (let i = 0; i < DROPS; i++) resetDrop(i, false);
+const rainGeo = new THREE.BufferGeometry();
+rainGeo.setAttribute('position', new THREE.BufferAttribute(rainPos, 3));
+const rainMat = new THREE.LineBasicMaterial({ color: 0xdde9fb, transparent: true, opacity: 0.6, fog: false });
+const rain = new THREE.LineSegments(rainGeo, rainMat);
+rain.frustumCulled = false; scene.add(rain);
+
+// Rainbow: a sheet facing the child's eye, coloured by viewing angle from the anti-solar point
+const RB_D = 60;
+const rbMat = new THREE.ShaderMaterial({
+  transparent: true, depthWrite: false, side: THREE.DoubleSide, fog: false,
+  uniforms: { uD: { value: RB_D }, uAlpha: { value: 0 }, uSweep: { value: 0 }, uR: { value: RB_D * Math.tan(55 * Math.PI / 180) }, uMist: { value: 0 }, uMistC: { value: V(0, 0, -1) }, uEye: { value: EYE.clone() }, uGF: { value: 2 } },
+  vertexShader: `varying vec2 vP; varying vec3 vW;
+    void main(){ vP = position.xy; vW = (modelMatrix * vec4(position, 1.0)).xyz; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }`,
+  fragmentShader: `
+    uniform float uD, uAlpha, uSweep, uR, uMist, uGF; uniform vec3 uMistC, uEye; varying vec2 vP; varying vec3 vW;
+    vec3 hue(float h){ vec3 k = clamp(abs(mod(h * 6.0 + vec3(0.0, 4.0, 2.0), 6.0) - 3.0) - 1.0, 0.0, 1.0); return mix(k, vec3(1.0), 0.1); }
+    void main(){
+      if (vW.y < 0.0) discard;
+      float ang = degrees(atan(length(vP) / uD));
+      float t1 = (42.9 - ang) / 3.0;
+      float a1 = smoothstep(0.0, 0.14, t1) * (1.0 - smoothstep(0.86, 1.0, t1));
+      float t2 = (ang - 50.4) / 3.4;
+      float a2 = smoothstep(0.0, 0.15, t2) * (1.0 - smoothstep(0.85, 1.0, t2)) * 0.4;
+      float inner = smoothstep(12.0, 30.0, ang) * (1.0 - smoothstep(34.0, 40.5, ang)) * 0.1;
+      vec3 col = hue(clamp(t1, 0.0, 1.0) * 0.76) * a1 + hue(clamp(t2, 0.0, 1.0) * 0.76) * a2 + vec3(1.0) * inner;
+      float sumA = a1 + a2 + inner;
+      if (sumA < 0.001) discard;
+      col /= sumA;
+      float a = max(max(a1, a2), inner);
+      float edge = mix(-1.1, 1.1, uSweep) * uR;
+      float sw = 1.0 - smoothstep(edge - 8.0, edge, vP.x);
+      float g = smoothstep(0.0, uGF, vW.y);
+      if (uMist > 0.5) {
+        float cm = dot(normalize(vW - uEye), normalize(uMistC - uEye));
+        g *= smoothstep(0.90, 0.965, cm);
+      }
+      gl_FragColor = vec4(col, a * uAlpha * sw * g * 0.88);
+    }`
+});
+const rainbow = new THREE.Mesh(new THREE.PlaneGeometry(220, 220), rbMat);
+rainbow.renderOrder = 5; scene.add(rainbow);
+// A small rainbow that only lives inside Elephant's water spray (same angles, much closer)
+const MIST_D = 7;
+const mistMat = rbMat.clone();
+Object.assign(mistMat.uniforms.uD, { value: MIST_D });
+mistMat.uniforms.uR.value = MIST_D * Math.tan(55 * Math.PI / 180);
+mistMat.uniforms.uMist.value = 1; mistMat.uniforms.uGF.value = 0.25; mistMat.uniforms.uSweep.value = 1;
+const mistBow = new THREE.Mesh(new THREE.PlaneGeometry(26, 26), mistMat);
+mistBow.renderOrder = 6; scene.add(mistBow);
+
+/* ---------- animation state ---------- */
+const anim = { el: state.el, sun: 1, rain: 1, bow: 0, sweep: reduce ? 1 : 0, face: 0 };
+let userYaw = 0, lastT = performance.now(), wasBow = false;
+const cLowTop = new THREE.Color(0.36, 0.56, 0.86), cHighTop = new THREE.Color(0.22, 0.52, 0.95);
+const cLowHor = new THREE.Color(1.0, 0.8, 0.6), cHighHor = new THREE.Color(0.78, 0.9, 1.0);
+const tmpA = new THREE.Color(), tmpB = new THREE.Color();
+const approach = (a, b, k, dt) => a + (b - a) * (1 - Math.exp(-k * dt));
+const sstep = (x) => x * x * (3 - 2 * x);
+
+function sunDir(elDeg) { const e = elDeg * Math.PI / 180; return V(0, Math.sin(e), Math.cos(e)); }
+
+function resize() {
+  const w = innerWidth, h = innerHeight;
+  // keep the pixel count reasonable on big projector and 4K screens
+  const budget = 3.2e6, pr = Math.min(pxRatio, Math.sqrt(budget / Math.max(1, w * h)));
+  renderer.setPixelRatio(Math.max(0.6, pr));
+  renderer.setSize(w, h, false);
+  camera.aspect = w / h;
+  camera.fov = camera.aspect < 0.8 ? 82 : camera.aspect < 1.2 ? 64 : 55;
+  camera.updateProjectionMatrix();
+}
+addEventListener('resize', resize); resize();
+
+// Drag to look around
+let drag = null;
+canvas.addEventListener('pointerdown', (e) => { drag = { x: e.clientX, y: e.clientY, yaw: userYaw }; canvas.setPointerCapture(e.pointerId); });
+canvas.addEventListener('pointermove', (e) => { if (!drag) return; userYaw = Math.max(-1.1, Math.min(1.1, drag.yaw + (e.clientX - drag.x) * 0.005)); });
+const ray = new THREE.Raycaster(), ndc = new THREE.Vector2();
+canvas.addEventListener('pointerup', (e) => {
+  if (drag && Math.hypot(e.clientX - drag.x, e.clientY - drag.y) < 8) {
+    const r = canvas.getBoundingClientRect();
+    ndc.set(((e.clientX - r.left) / r.width) * 2 - 1, -((e.clientY - r.top) / r.height) * 2 + 1);
+    ray.setFromCamera(ndc, camera);
+    if (ray.intersectObject(ele, true).length) { audio(); startSpray(); }
+  }
+  drag = null;
+});
+canvas.addEventListener('pointercancel', () => { drag = null; });
+
+function frame(now) {
+  const rawDt = (now - lastT) / 1000; lastT = now;
+  const dt = Math.min(rawDt, 0.05);
+  // older school laptops: lower the resolution if frames are slow
+  if (rawDt > 0 && rawDt < 1 && !document.hidden) {
+    perfSum += rawDt; perfSamples++;
+    if (perfSamples === 90) {
+      if (perfSum / perfSamples > 1 / 28 && pxRatio > 0.65) { pxRatio = Math.max(0.65, pxRatio * 0.75); resize(); }
+      perfSum = 0; perfSamples = 0;
+    }
+  }
+  anim.el = approach(anim.el, state.el, 8, dt);
+  anim.sun = approach(anim.sun, state.sunOut ? 1 : 0, 4, dt);
+  anim.rain = approach(anim.rain, state.rainLv / 2, 2.5, dt);
+  anim.face = approach(anim.face, state.facing ? 1 : 0, reduce ? 30 : 2.6, dt);
+
+  const s = sunDir(anim.el);
+  const f = THREE.MathUtils.smoothstep(anim.el, 4, 38);
+  tmpA.copy(cLowTop).lerp(cHighTop, f); tmpB.copy(cLowHor).lerp(cHighHor, f);
+  const dim = 0.72 + 0.28 * anim.sun;
+  tmpA.multiplyScalar(dim); tmpB.multiplyScalar(dim);
+  skyMat.uniforms.uTop.value.copy(tmpA); skyMat.uniforms.uHor.value.copy(tmpB);
+  skyMat.uniforms.uSun.value.copy(s); skyMat.uniforms.uSunOut.value = anim.sun; skyMat.uniforms.uRain.value = 0.35 + 0.65 * anim.rain;
+  scene.fog.color.copy(tmpB);
+  sky.position.copy(camera.position);
+
+  sunLight.position.copy(s).multiplyScalar(60);
+  sunLight.intensity = 0.15 + 0.85 * anim.sun;
+  sunLight.color.setRGB(1, 0.86 + 0.14 * f, 0.72 + 0.28 * f);
+  hemi.intensity = 0.5 + 0.15 * f;
+
+  sunCloud.position.copy(EYE).addScaledVector(s, 150);
+  sunCloud.lookAt(EYE);
+  sunCloud.scale.setScalar(12 * (1 - anim.sun) + 0.001);
+
+  const rainK = Math.min(1, anim.rain * 2);
+  storm.forEach(c => { c.userData.mat.opacity = rainK; c.visible = rainK > 0.02; });
+  rainGeo.setDrawRange(0, Math.round(DROPS * (0.25 + 0.75 * anim.rain)) * 2);
+  rainMat.opacity = 0.6 * rainK; rain.visible = rainK > 0.02;
+  if (rain.visible) {
+    for (let i = 0; i < DROPS; i++) {
+      const o = i * 6, dy = rainSpeed[i] * dt;
+      rainPos[o + 1] -= dy; rainPos[o + 4] -= dy;
+      if (rainPos[o + 4] < 0) resetDrop(i, true);
+    }
+    rainGeo.attributes.position.needsUpdate = true;
+  }
+
+  // Rainbow
+  const bowOn = state.sunOut && state.rain && state.el < 42;
+  if (bowOn && !wasBow && !reduce) anim.sweep = 0;
+  wasBow = bowOn;
+  anim.bow = approach(anim.bow, bowOn ? 1 : 0, 2.2, dt);
+  anim.sweep = reduce ? 1 : Math.min(1, anim.sweep + dt / 1.8);
+  const anti = s.clone().negate();
+  rainbow.position.copy(EYE).addScaledVector(anti, RB_D);
+  rainbow.lookAt(EYE);
+  rbMat.uniforms.uAlpha.value = anim.bow * anim.sun * Math.min(1, 0.15 + anim.rain * 0.85);
+  rbMat.uniforms.uSweep.value = sstep(anim.sweep);
+  rainbow.visible = rbMat.uniforms.uAlpha.value > 0.005;
+
+  // Elephant spray
+  if (sprayTime > 0) {
+    sprayTime -= dt;
+    if (sprayTime <= 0) { state.spraying = false; setPressed('eleBtn', false); updateHint(); }
+  }
+  const lift = approach(trunkPivot.rotation.x, sprayTime > 0 ? 1.15 : 0, 6, dt);
+  trunkPivot.rotation.x = lift;
+  ele.updateMatrixWorld(true); trunkTip.getWorldPosition(tipW);
+  if (sprayTime > 0) {
+    emitAcc += dt * 320;
+    for (let i = 0; i < SPRAY && emitAcc >= 1; i++) {
+      if (sprayAlive[i]) continue;
+      emitAcc -= 1; sprayAlive[i] = 1;
+      const o = i * 3, sp = 8.5 + Math.random() * 2;
+      sprayPos[o] = tipW.x; sprayPos[o + 1] = tipW.y; sprayPos[o + 2] = tipW.z;
+      sprayVel[o] = (-0.6 + (Math.random() - 0.5) * 0.35) * sp;
+      sprayVel[o + 1] = (0.45 + (Math.random() - 0.5) * 0.3) * sp;
+      sprayVel[o + 2] = (-0.55 + (Math.random() - 0.5) * 0.3) * sp;
+    }
+    emitAcc = Math.min(emitAcc, 5);
+  }
+  let alive = 0, mx = 0, my = 0, mz = 0;
+  for (let i = 0; i < SPRAY; i++) {
+    if (!sprayAlive[i]) continue;
+    const o = i * 3;
+    sprayVel[o + 1] -= 9.8 * dt;
+    sprayPos[o] += sprayVel[o] * dt; sprayPos[o + 1] += sprayVel[o + 1] * dt; sprayPos[o + 2] += sprayVel[o + 2] * dt;
+    if (sprayPos[o + 1] < 0) { sprayAlive[i] = 0; sprayPos[o + 1] = -100; continue; }
+    alive++; mx += sprayPos[o]; my += sprayPos[o + 1]; mz += sprayPos[o + 2];
+  }
+  if (alive) { mistC.lerp(V(mx / alive, my / alive, mz / alive), 0.2); }
+  sprayGeo.attributes.position.needsUpdate = true;
+  mistAmt = approach(mistAmt, Math.min(1, alive / 250), 5, dt);
+  mistBow.position.copy(EYE).addScaledVector(anti, MIST_D);
+  mistBow.lookAt(EYE);
+  mistMat.uniforms.uMistC.value.copy(mistC);
+  mistMat.uniforms.uAlpha.value = mistAmt * anim.sun * (state.el < 42 ? 1 : 0) * 0.95;
+  mistBow.visible = mistMat.uniforms.uAlpha.value > 0.005;
+
+  // Camera orbits the child; rain view looks away from the sun, sun view looks at it
+  const e = sstep(anim.face);
+  const phi = Math.PI * e + 0.32 + userYaw * 0.15;
+  const r = 6.8;
+  camera.position.set(Math.sin(phi) * r, 2.5 - 0.2 * e, Math.cos(phi) * r);
+  const pitchRain = camera.aspect < 0.8 ? 0.22 : 0.14, pitchSun = Math.min(anim.el, 55) * Math.PI / 180 * 0.85;
+  const pitch = pitchRain + (pitchSun - pitchRain) * e;
+  const baseYaw = camera.aspect < 0.8 ? -0.17 : camera.aspect < 1.2 ? -0.1 : 0;   // narrow screens: turn a little left so Elephant stays in view
+  const yaw = Math.PI * e + userYaw + baseYaw * (1 - e);
+  const dir = V(Math.sin(yaw) * Math.cos(pitch), Math.sin(pitch), -Math.cos(yaw) * Math.cos(pitch));
+  camera.lookAt(camera.position.clone().add(dir));
+
+  // Little bounce when the rainbow is showing and the child can see it
+  const mistOn = state.spraying && state.sunOut && state.el < 42;
+  const joy = (bowOn || mistOn) && !state.facing ? 1 : 0;
+  kid.position.y = joy * Math.abs(Math.sin(now / 260)) * 0.08;
+  armL.rotation.z = -0.35 - joy * 0.9; armR.rotation.z = 0.35 + joy * 0.9;
+  const flap = Math.sin(now / 140) * (0.15 + 0.35 * joy);
+  earL.rotation.y = -flap; earR.rotation.y = flap;
+  tail.rotation.z = Math.sin(now / 200) * 0.4;
+  ele.position.y = 0 + joy * Math.abs(Math.sin(now / 300)) * 0.06;
+
+  renderer.render(scene, camera);
+  requestAnimationFrame(frame);
+}
+
+/* ---------- inside a raindrop ---------- */
+const dc = $('dropCanvas'), dctx = dc.getContext('2d');
+let dropStep = 0, dropStart = 0, dropRaf = 0;
+const DROP_T = [1.6, 1.6, 1.4, 1.8];
+function refract(d, n, eta) {
+  const ci = -(d[0] * n[0] + d[1] * n[1]), k = 1 - eta * eta * (1 - ci * ci), f = eta * ci - Math.sqrt(Math.max(k, 0));
+  const v = [eta * d[0] + f * n[0], eta * d[1] + f * n[1]], l = Math.hypot(v[0], v[1]); return [v[0] / l, v[1] / l];
+}
+const hit = (P, d) => { const s = -2 * (P[0] * d[0] + P[1] * d[1]); return [P[0] + d[0] * s, P[1] + d[1] * s]; };
+function dropPaths(R) {
+  const b = 0.86 * R, P1 = [-Math.sqrt(R * R - b * b), b];
+  return COLORS.map((col, k) => {
+    const n = 1.331 + (k / 6) * 0.13;                     // real spread is 1.331–1.343; widened ~10× so kids can see it
+    const t = refract([1, 0], [P1[0] / R, P1[1] / R], 1 / n);
+    const P2 = hit(P1, t), n2 = [P2[0] / R, P2[1] / R], dd = t[0] * n2[0] + t[1] * n2[1];
+    const rr = [t[0] - 2 * dd * n2[0], t[1] - 2 * dd * n2[1]];
+    const P3 = hit(P2, rr), o = refract(rr, [-P3[0] / R, -P3[1] / R], n);
+    return { col, P1, P2, P3, o };
+  });
+}
+function sizeDrop() {
+  const r = dc.getBoundingClientRect(), dpr = Math.min(window.devicePixelRatio || 1, 2);
+  dc.width = Math.round(r.width * dpr); dc.height = Math.round(r.height * dpr);
+  dctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  return { w: r.width, h: r.height };
+}
+function seg(ctx, a, b, f) { ctx.beginPath(); ctx.moveTo(a[0], a[1]); ctx.lineTo(a[0] + (b[0] - a[0]) * f, a[1] + (b[1] - a[1]) * f); ctx.stroke(); }
+function drawDrop(t) {
+  const { w, h } = sizeDrop.cache;
+  const ctx = dctx, R = Math.min(w, h) * 0.25, cx = w * 0.6, cy = h * 0.4;
+  const X = (p) => [cx + p[0], cy - p[1]];
+  const L = T[state.lang];
+  ctx.clearRect(0, 0, w, h);
+  const bg = ctx.createLinearGradient(0, 0, 0, h); bg.addColorStop(0, '#1d3270'); bg.addColorStop(1, '#0f1a3d');
+  ctx.fillStyle = bg; ctx.fillRect(0, 0, w, h);
+  // sun
+  const sy = cy - 0.86 * R;
+  const sg = ctx.createRadialGradient(0, sy, 0, 0, sy, R * 0.7); sg.addColorStop(0, '#fff7cf'); sg.addColorStop(0.45, '#ffc83a'); sg.addColorStop(1, 'rgba(255,200,58,0)');
+  ctx.fillStyle = sg; ctx.beginPath(); ctx.arc(0, sy, R * 0.7, 0, Math.PI * 2); ctx.fill();
+  ctx.fillStyle = '#ffe9a8'; ctx.font = `800 ${Math.max(14, R * 0.15)}px ${getComputedStyle(document.body).getPropertyValue('--display')}`;
+  ctx.fillText(L.sunLabel, 10, sy - R * 0.2 - 6);
+  // drop
+  const dg = ctx.createRadialGradient(cx - R * 0.3, cy - R * 0.3, R * 0.1, cx, cy, R);
+  dg.addColorStop(0, 'rgba(210,235,255,0.55)'); dg.addColorStop(1, 'rgba(120,180,255,0.25)');
+  ctx.fillStyle = dg; ctx.strokeStyle = 'rgba(200,230,255,0.9)'; ctx.lineWidth = 3;
+  ctx.beginPath(); ctx.arc(cx, cy, R, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+  ctx.fillStyle = 'rgba(255,255,255,0.7)'; ctx.beginPath(); ctx.ellipse(cx - R * 0.45, cy - R * 0.45, R * 0.12, R * 0.07, -0.7, 0, Math.PI * 2); ctx.fill();
+
+  const paths = dropPaths(R);
+  const tt = [0, ...DROP_T.map((_, i) => DROP_T.slice(0, i + 1).reduce((a, b) => a + b, 0))];
+  const part = (i) => Math.max(0, Math.min(1, (t - tt[i]) / DROP_T[i]));
+  const p0 = part(0), p1 = part(1), p2 = part(2), p3 = part(3);
+  dropStep = t < tt[1] ? 0 : t < tt[2] ? 1 : t < tt[3] ? 2 : 3;
+
+  ctx.lineCap = 'round';
+  // white beam
+  ctx.shadowColor = '#fff'; ctx.shadowBlur = 16; ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 8;
+  const P1c = X(paths[0].P1);
+  seg(ctx, [0, P1c[1]], P1c, p0);
+  ctx.shadowBlur = 10;
+  // exit length that keeps the face on the canvas
+  const ex = paths[3], P3c = X(ex.P3), od = [ex.o[0], -ex.o[1]];
+  const margin = R * 0.5;
+  const lenX = od[0] < 0 ? (P3c[0] - margin) / -od[0] : 1e9, lenY = od[1] > 0 ? (h - margin - P3c[1]) / od[1] : 1e9;
+  const len = Math.max(R * 0.6, Math.min(R * 2, lenX, lenY));
+  paths.forEach(p => {
+    ctx.strokeStyle = p.col; ctx.shadowColor = p.col; ctx.lineWidth = 3.5;
+    const a = X(p.P1), b = X(p.P2), c = X(p.P3);
+    if (p1 > 0) seg(ctx, a, b, p1);
+    if (p2 > 0) seg(ctx, b, c, p2);
+    if (p3 > 0) seg(ctx, c, [c[0] + p.o[0] * len, c[1] - p.o[1] * len], p3);
+  });
+  ctx.shadowBlur = 0;
+  // face
+  if (p3 > 0.6) {
+    const fx = P3c[0] + od[0] * (len + R * 0.22), fy = P3c[1] + od[1] * (len + R * 0.22), fr = R * 0.2;
+    ctx.globalAlpha = Math.min(1, (p3 - 0.6) / 0.3);
+    ctx.fillStyle = '#f1c29a'; ctx.beginPath(); ctx.arc(fx, fy, fr, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = '#3a2618'; ctx.beginPath(); ctx.arc(fx, fy - fr * 0.1, fr * 1.02, Math.PI * 1.05, Math.PI * 1.95); ctx.fill();
+    ctx.fillStyle = '#1c2547';
+    ctx.beginPath(); ctx.arc(fx - fr * 0.35 + od[0] * -fr * 0.1, fy + fr * 0.05, fr * 0.13, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.arc(fx + fr * 0.35 + od[0] * -fr * 0.1, fy + fr * 0.05, fr * 0.13, 0, Math.PI * 2); ctx.fill();
+    ctx.strokeStyle = '#c0504d'; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(fx, fy + fr * 0.3, fr * 0.3, 0.2, Math.PI - 0.2); ctx.stroke();
+    ctx.fillStyle = '#ffffff'; ctx.textAlign = 'center';
+    ctx.fillText(L.eyeLabel, Math.max(50, fx), fy - fr - 14);
+    ctx.textAlign = 'start'; ctx.globalAlpha = 1;
+  }
+}
+function showStep() {
+  $('dropCaption').textContent = T[state.lang].d[dropStep];
+  [...$('steps').children].forEach((el, i) => el.classList.toggle('on', i <= dropStep));
+}
+function playDrop() {
+  cancelAnimationFrame(dropRaf);
+  sizeDrop.cache = sizeDrop();
+  dropStart = performance.now();
+  const total = DROP_T.reduce((a, b) => a + b, 0) + 0.4;
+  let shown = -1;
+  const tick = (now) => {
+    const t = reduce ? total : (now - dropStart) / 1000;
+    drawDrop(Math.min(t, total));
+    if (dropStep !== shown) { if (shown !== -1) say(T[state.lang].d[dropStep]); shown = dropStep; showStep(); }
+    if (t < total && !$('dropView').hidden) dropRaf = requestAnimationFrame(tick);
+  };
+  dropRaf = requestAnimationFrame(tick);
+}
+$('dropBtn').onclick = () => { audio(); $('dropView').hidden = false; say(T[state.lang].d[0]); requestAnimationFrame(playDrop); };
+$('dropReplay').onclick = () => { say(T[state.lang].d[0]); playDrop(); };
+$('dropClose').onclick = () => { $('dropView').hidden = true; cancelAnimationFrame(dropRaf); try { speechSynthesis.cancel(); } catch (e) {} };
+$('dropView').onclick = (e) => { if (e.target.id === 'dropView') $('dropClose').onclick(); };
+addEventListener('resize', () => { if (!$('dropView').hidden) { sizeDrop.cache = sizeDrop(); drawDrop(99); } });
+addEventListener('keydown', (e) => { if (e.key === 'Escape') { $('grownView').hidden = true; if (!$('dropView').hidden) $('dropClose').onclick(); } });
+
+applyLang();
+requestAnimationFrame(frame);
+})();
+</script>
+</body>
+</html>

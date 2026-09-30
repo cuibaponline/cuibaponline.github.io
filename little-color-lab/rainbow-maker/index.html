@@ -1,0 +1,871 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#191c24">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<style>
+*,*::before,*::after{box-sizing:border-box}
+body{margin:0;font-size:14px}
+img{max-width:100%}
+</style>
+<title>Rainbow Maker</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;800&family=Nunito:wght@600;800&family=Patrick+Hand&display=swap">
+<style>
+/* Layout: full-bleed 3D dark classroom; tools on top, bilingual bubble, turn/sing/prism controls + 7 color swatches at the bottom. Deliberately single light-UI theme over a dark scene. */
+:root{
+  --room:#171a22;
+  --ink:#1e2b44;
+  --marker:#2c68b2;
+  --sun:#ffcd34;
+  --card:#ffffff;
+  --line:#d8dde6;
+  --soft:#eef1f6;
+  --shadow:rgba(10,14,24,.35);
+  --c-red:#ff2a1f; --c-orange:#ff8a14; --c-yellow:#ffe11a; --c-green:#2fd33a; --c-blue:#1f8bff; --c-indigo:#4b3cff; --c-violet:#a23dff;
+  --f-display:'Baloo 2','Nunito',system-ui,sans-serif;
+  --f-body:'Nunito',system-ui,-apple-system,'Segoe UI',sans-serif;
+  --f-hand:'Patrick Hand','Comic Sans MS','Chalkboard SE',cursive;
+  color-scheme:light;
+}
+[hidden]{display:none!important}
+html,body{height:100%;overflow:hidden}
+body{background:var(--room);color:var(--ink);font-family:var(--f-body);-webkit-tap-highlight-color:transparent;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;touch-action:manipulation}
+#c{position:fixed;inset:0;width:100%;height:100%;display:block;touch-action:none;outline:none}
+button{font:inherit;color:inherit;cursor:pointer;border:0;background:none}
+button:focus-visible{outline:3px solid var(--sun);outline-offset:3px}
+
+.hud{position:fixed;inset:0;pointer-events:none;display:flex;flex-direction:column;justify-content:space-between;
+  padding:calc(env(safe-area-inset-top,0px) + 12px) 16px calc(env(safe-area-inset-bottom,0px) + 12px);gap:10px}
+.hud > *{pointer-events:auto}
+.top{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;pointer-events:none}
+.top > *{pointer-events:auto}
+.title{display:flex;align-items:center;gap:8px;background:var(--card);border-radius:18px;padding:4px 14px 5px 8px;min-height:48px;box-shadow:0 4px 0 var(--line),0 8px 20px var(--shadow);min-width:0}
+.title .arc{width:34px;height:20px;flex:none}
+.title span{display:flex;flex-direction:column;min-width:0}
+.title b{font-family:var(--f-display);font-weight:800;font-size:1.02rem;line-height:1.05;white-space:nowrap}
+.title i{font-style:normal;font-family:var(--f-hand);font-size:1rem;line-height:1;color:var(--marker);white-space:nowrap}
+.tools{display:flex;gap:8px;flex:none}
+.tool{min-width:48px;height:48px;border-radius:14px;background:var(--card);display:grid;place-items:center;padding:0 12px;
+  box-shadow:0 4px 0 var(--line),0 8px 18px var(--shadow);font-family:var(--f-display);font-weight:800;font-size:.95rem;white-space:nowrap}
+.tool svg{width:24px;height:24px}
+.tool[aria-pressed="false"] .on{display:none}.tool[aria-pressed="true"] .off{display:none}
+
+.col{flex:1;display:flex;flex-direction:column;gap:10px;align-items:center;pointer-events:none}
+.bubble{pointer-events:auto;max-width:min(560px,100%);background:var(--card);border-radius:22px;padding:10px 12px 10px 18px;
+  display:flex;align-items:center;gap:12px;box-shadow:0 5px 0 var(--line),0 10px 24px var(--shadow)}
+.bubble .txt{min-width:0}
+.bubble .en{margin:0;font-family:var(--f-display);font-weight:800;font-size:1.25rem;line-height:1.15;text-wrap:balance}
+.bubble .vi{margin:2px 0 0;font-family:var(--f-hand);font-size:1.3rem;line-height:1.1;color:var(--marker);text-wrap:balance}
+.say{flex:none;width:46px;height:46px;border-radius:50%;background:var(--marker);color:#fff;display:grid;place-items:center}
+.say svg{width:24px;height:24px}
+
+.tray{align-self:center;max-width:100%;background:var(--card);border-radius:26px;padding:10px 12px;display:flex;flex-wrap:wrap;
+  justify-content:center;align-items:center;gap:10px 14px;box-shadow:0 6px 0 var(--line),0 12px 30px var(--shadow)}
+.group{display:flex;gap:6px;align-items:stretch}
+.act{min-width:74px;min-height:62px;border-radius:18px;background:var(--soft);display:flex;flex-direction:column;align-items:center;justify-content:center;
+  padding:4px 8px;box-shadow:inset 0 -4px 0 var(--line);transition:transform .15s,background .2s}
+.act svg{width:28px;height:28px}
+.act b{font-family:var(--f-display);font-weight:800;font-size:.86rem;line-height:1.05;white-space:nowrap}
+.act i{font-style:normal;font-family:var(--f-hand);font-size:.92rem;line-height:1;color:var(--marker);white-space:nowrap}
+.act[aria-pressed="true"]{background:var(--sun)}
+.act.turn{background:#e3efff}
+.act.turn svg{width:34px;height:34px}
+.act:active,.sw:active{transform:scale(.94)}
+.swatches{display:flex;gap:4px}
+.sw{width:44px;min-height:56px;border-radius:14px;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;gap:2px;padding:4px 0;transition:background .2s,transform .15s}
+.sw .dot{width:26px;height:26px;border-radius:50%;background:var(--c);box-shadow:0 0 0 3px #fff,0 0 0 5px var(--line)}
+.sw b{font-family:var(--f-display);font-weight:800;font-size:.66rem;line-height:1;white-space:nowrap}
+.sw i{font-style:normal;font-family:var(--f-hand);font-size:.84rem;line-height:1;color:var(--marker);white-space:nowrap}
+.sw[aria-pressed="true"]{background:#fff2c2;box-shadow:inset 0 0 0 3px var(--sun)}
+.sw[aria-pressed="true"] .dot{box-shadow:0 0 0 3px #fff,0 0 0 5px var(--sun),0 0 14px 4px var(--c)}
+
+.overlay{position:fixed;inset:0;display:grid;place-items:center;padding:16px;background:rgba(23,26,34,.72);backdrop-filter:blur(4px);z-index:5}
+.start{background:var(--card);border-radius:28px;padding:22px 26px 26px;text-align:center;max-width:420px;box-shadow:0 16px 40px var(--shadow)}
+.start h2{margin:0;font-family:var(--f-display);font-weight:800;font-size:2rem;line-height:1.05}
+.start .vi{margin:2px 0 12px;font-family:var(--f-hand);font-size:1.6rem;color:var(--marker)}
+.start p.note{margin:0 0 16px;font-size:.95rem;line-height:1.45;color:#4a5670}
+.go{background:var(--sun);border-radius:20px;padding:12px 26px;font-family:var(--f-display);font-weight:800;font-size:1.4rem;
+  box-shadow:inset 0 -5px 0 rgba(0,0,0,.12);display:inline-flex;flex-direction:column;align-items:center;line-height:1.05}
+.go i{font-style:normal;font-family:var(--f-hand);font-size:1.2rem;font-weight:400}
+.spectrum{height:14px;border-radius:7px;margin:0 auto 14px;width:180px;background:linear-gradient(90deg,var(--c-red),var(--c-orange),var(--c-yellow),var(--c-green),var(--c-blue),var(--c-indigo),var(--c-violet))}
+
+.sheet{position:fixed;inset:0;z-index:6;display:grid;place-items:center;padding:16px;background:rgba(10,14,24,.5)}
+.sheet .box{background:var(--card);border-radius:24px;max-width:620px;width:100%;max-height:100%;overflow:auto;padding:20px 22px 22px}
+.sheet h2{margin:0 0 4px;font-family:var(--f-display);font-weight:800;font-size:1.5rem}
+.sheet h3{margin:16px 0 4px;font-family:var(--f-display);font-weight:800;font-size:1.1rem}
+.sheet p,.sheet li{font-size:.98rem;line-height:1.5;max-width:65ch}
+.sheet p{margin:4px 0}
+.sheet .vi{color:var(--marker)}
+.sheet ul{margin:4px 0;padding-left:20px}
+.sheet .x{float:right;width:44px;height:44px;border-radius:50%;background:var(--soft);display:grid;place-items:center;font-weight:800;font-size:1.2rem}
+.err{max-width:420px;text-align:center;font-size:1rem;line-height:1.5}
+
+@media (max-width:620px){
+  .hud{gap:8px}
+  .title{padding:3px 10px 4px 6px;min-height:44px;gap:6px}
+  .title .arc{width:28px;height:17px}
+  .title b{font-size:.9rem}.title i{font-size:.9rem}
+  .tools{gap:6px}
+  .tool{min-width:42px;height:42px;padding:0 8px;font-size:.8rem;border-radius:12px}
+  .tool svg{width:22px;height:22px}
+  .bubble{align-self:stretch;padding:8px 8px 8px 14px;border-radius:18px;gap:8px;justify-content:space-between}
+  .bubble .en{font-size:1.02rem}.bubble .vi{font-size:1.12rem}
+  .say{width:42px;height:42px}
+  .tray{align-self:stretch;flex-direction:column;padding:8px;gap:8px;border-radius:22px}
+  .group,.swatches{width:100%;justify-content:space-between;gap:4px}
+  .group > *,.swatches > *{flex:1 1 0;min-width:0}
+  .sw{width:auto}
+  .act{min-width:0;min-height:54px;padding:4px 2px}
+  .act b{font-size:.8rem}.act i{font-size:.84rem}
+  .act svg{width:24px;height:24px}.act.turn svg{width:30px;height:30px}
+}
+@media (max-width:400px){ .tools #langBtn{display:none} .title .arc{display:none} }
+@media (max-height:520px){
+  .top{position:absolute;top:calc(env(safe-area-inset-top,0px) + 10px);left:16px;right:16px}
+  .col{padding-top:58px;align-items:flex-start}
+  .bubble{max-width:min(520px,50%);padding:6px 8px 6px 12px}
+  .bubble .en{font-size:.98rem}.bubble .vi{font-size:1.05rem}
+  .say{width:38px;height:38px}
+  .tray{padding:6px 10px;gap:8px}
+  .act{min-height:50px;min-width:62px;padding:3px 6px}
+  .act svg{width:22px;height:22px}.act.turn svg{width:26px;height:26px}
+  .sw{min-height:50px;width:40px}
+  .sw .dot{width:22px;height:22px}
+}
+</style>
+</head>
+<body>
+<canvas id="c" tabindex="-1" aria-label="3D darkened classroom with a flashlight, a glass prism and a white screen that can show a rainbow"></canvas>
+
+<div class="hud">
+  <div class="top">
+    <div class="title">
+      <svg class="arc" viewBox="0 0 34 20" aria-hidden="true"><g fill="none" stroke-width="2.4"><path d="M3 19a14 14 0 0 1 28 0" stroke="#ff2a1f"/><path d="M5.5 19a11.5 11.5 0 0 1 23 0" stroke="#ff8a14"/><path d="M8 19a9 9 0 0 1 18 0" stroke="#ffe11a"/><path d="M10.5 19a6.5 6.5 0 0 1 13 0" stroke="#2fd33a"/><path d="M13 19a4 4 0 0 1 8 0" stroke="#1f8bff"/></g></svg>
+      <span><b>Rainbow Maker</b><i lang="vi">Làm cầu vồng</i></span>
+    </div>
+    <div class="tools">
+      <a class="tool" href="../" aria-label="Back to Little Color Lab" title="Back" style="text-decoration:none;color:inherit">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg>
+      </a>
+      <button class="tool" id="langBtn" aria-label="Voice language">EN + VI</button>
+      <button class="tool" id="muteBtn" aria-pressed="true" aria-label="Sound">
+        <svg class="on" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9h4l5-4v14l-5-4H4z" fill="currentColor"/><path d="M16.5 8.5a5 5 0 0 1 0 7M19 6a8.5 8.5 0 0 1 0 12"/></svg>
+        <svg class="off" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9h4l5-4v14l-5-4H4z" fill="currentColor"/><path d="M17 9l5 6M22 9l-5 6"/></svg>
+      </button>
+      <button class="tool" id="infoBtn" aria-label="For grown-ups">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><circle cx="12" cy="12" r="9.5"/><path d="M9.3 9.3a2.8 2.8 0 1 1 3.9 2.6c-.8.4-1.2 1-1.2 1.8v.5"/><circle cx="12" cy="17.3" r=".6" fill="currentColor"/></svg>
+      </button>
+    </div>
+  </div>
+
+  <div class="col">
+    <div class="bubble" role="status" aria-live="polite">
+      <div class="txt">
+        <p class="en" id="tipEn">Turn the glass prism to make a rainbow!</p>
+        <p class="vi" id="tipVi" lang="vi">Xoay lăng kính để làm cầu vồng nhé!</p>
+      </div>
+      <button class="say" id="sayBtn" aria-label="Say it again">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9h4l5-4v14l-5-4H4z" fill="currentColor"/><path d="M16.5 8.5a5 5 0 0 1 0 7"/></svg>
+      </button>
+    </div>
+  </div>
+
+  <nav class="tray" aria-label="Controls">
+    <div class="group" id="turnUI">
+      <button class="act turn" id="turnL" aria-label="Turn the prism left / Xoay trái">
+        <svg viewBox="0 0 32 32" fill="none" stroke="#1e2b44" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M9 9.5A10 10 0 1 1 6.3 19"/><path d="M4 6v7h7" /><path d="M16 11l5 9h-10z" fill="#bfe6ff" stroke-width="2"/></svg>
+        <b>Turn</b><i lang="vi">Xoay</i>
+      </button>
+      <button class="act turn" id="turnR" aria-label="Turn the prism right / Xoay phải">
+        <svg viewBox="0 0 32 32" fill="none" stroke="#1e2b44" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M23 9.5A10 10 0 1 0 25.7 19"/><path d="M28 6v7h-7"/><path d="M16 11l5 9h-10z" fill="#bfe6ff" stroke-width="2"/></svg>
+        <b>Turn</b><i lang="vi">Xoay</i>
+      </button>
+      <button class="act" id="singBtn" aria-pressed="false">
+        <svg viewBox="0 0 24 24"><g fill="none" stroke-width="2.2" stroke-linecap="round"><path d="M2 20a10 10 0 0 1 20 0" stroke="#ff2a1f"/><path d="M5 20a7 7 0 0 1 14 0" stroke="#ffe11a"/><path d="M8 20a4 4 0 0 1 8 0" stroke="#1f8bff"/></g><path d="M15 2v7.5" stroke="#1e2b44" stroke-width="1.8"/><path d="M15 2l4 1.2v2L15 4z" fill="#1e2b44"/><ellipse cx="13.4" cy="9.8" rx="2" ry="1.5" fill="#1e2b44"/></svg>
+        <b>Sing</b><i lang="vi">Hát cầu vồng</i>
+      </button>
+    </div>
+    <div class="swatches" id="swatchUI" role="group" aria-label="Rainbow colors"></div>
+    <div class="group" id="toggleUI">
+      <button class="act" id="prism2Btn" aria-pressed="false">
+        <svg viewBox="0 0 24 24"><path d="M6 3l5 9H1z" fill="#dff3ff" stroke="#1e2b44" stroke-width="1.5" stroke-linejoin="round"/><path d="M18 21l-5-9h10z" fill="#dff3ff" stroke="#1e2b44" stroke-width="1.5" stroke-linejoin="round"/><path d="M10 9l5 5" stroke="#ff2a1f" stroke-width="1.4"/><path d="M9.5 10l5 4" stroke="#2fd33a" stroke-width="1.4"/><path d="M9 11l5 3" stroke="#a23dff" stroke-width="1.4"/></svg>
+        <b>Add prism</b><i lang="vi">Thêm lăng kính</i>
+      </button>
+      <button class="act" id="roomBtn" aria-pressed="false">
+        <svg viewBox="0 0 24 24"><path d="M12 2a6.5 6.5 0 0 0-3.8 11.8c.6.5.8 1.1.8 1.7V17h6v-1.5c0-.6.3-1.2.8-1.7A6.5 6.5 0 0 0 12 2z" fill="#ffe27a" stroke="#1e2b44" stroke-width="1.6"/><path d="M9.5 20h5M10.5 22.5h3" stroke="#1e2b44" stroke-width="1.8" stroke-linecap="round"/></svg>
+        <b>Room light</b><i lang="vi">Đèn phòng</i>
+      </button>
+    </div>
+  </nav>
+</div>
+
+<div class="overlay" id="startScreen">
+  <div class="start">
+    <div class="spectrum" aria-hidden="true"></div>
+    <h2>Rainbow Maker</h2>
+    <p class="vi" lang="vi">Làm cầu vồng</p>
+    <p class="note" id="loadNote">Turning off the classroom lights…</p>
+    <button class="go" id="goBtn" disabled>Let's play! <i lang="vi">Chơi thôi!</i></button>
+  </div>
+</div>
+
+<div class="sheet" id="info" hidden>
+  <div class="box" role="dialog" aria-labelledby="infoTitle">
+    <button class="x" id="infoClose" aria-label="Close">✕</button>
+    <h2 id="infoTitle">For grown-ups</h2>
+    <p class="vi" lang="vi">Dành cho ba mẹ</p>
+
+    <h3>How to play</h3>
+    <p>Tap the big turn buttons, or drag on the glass prism, to turn it. When it is at the right angle, the white flashlight beam fans out into a rainbow on the white screen. Tap a color on the screen (or in the tray) to hear its name. "Sing" reads all seven colors in order. "Add prism" puts a second, upside-down prism in the colored light and turns it white again. Drag anywhere else to look around.</p>
+    <p class="vi" lang="vi">Bấm nút xoay, hoặc kéo trên lăng kính, để xoay nó. Khi xoay đúng góc, chùm sáng trắng tách ra thành cầu vồng trên màn trắng. Chạm vào một màu để nghe tên màu. Nút "Hát cầu vồng" đọc cả bảy màu. Nút "Thêm lăng kính" đặt lăng kính thứ hai (úp ngược) để gộp các màu lại thành ánh sáng trắng.</p>
+
+    <h3>Why it happens</h3>
+    <p>White light is really all the colors of the rainbow traveling together. When light goes from air into glass and out again it bends (refraction). Each color bends a slightly different amount: red bends the least and violet the most. So the colors spread apart into a band: red, orange, yellow, green, blue, indigo, violet. This spreading is called dispersion. A second prism turned the other way bends the colors back together, and together they look white again. Raindrops act like tiny prisms: with the sun behind you, sunlight bends inside the drops and makes a real rainbow in the sky.</p>
+    <p class="vi" lang="vi">Ánh sáng trắng thật ra là tất cả các màu cầu vồng đi cùng nhau. Khi ánh sáng đi từ không khí vào thủy tinh rồi ra ngoài, nó bị bẻ cong (khúc xạ). Mỗi màu bị bẻ cong một chút khác nhau: đỏ bị lệch ít nhất, tím bị lệch nhiều nhất, nên các màu tách ra: đỏ, cam, vàng, lục, lam, chàm, tím (hiện tượng tán sắc). Lăng kính thứ hai úp ngược gộp các màu lại, nên lại thấy ánh sáng trắng. Giọt mưa cũng giống những lăng kính nhỏ xíu: khi mặt trời ở sau lưng mình, ánh nắng đi qua các giọt mưa tạo ra cầu vồng thật trên bầu trời.</p>
+
+    <h3>Questions to ask</h3>
+    <ul>
+      <li>Which color is at the top of the rhyme? Which is last? <span class="vi" lang="vi">Màu nào đứng đầu? Màu nào đứng cuối?</span></li>
+      <li>Where did the colors come from? Were they hiding in the white light? <span class="vi" lang="vi">Các màu từ đâu ra? Có phải chúng trốn trong ánh sáng trắng không?</span></li>
+      <li>What happens when we add the second prism? <span class="vi" lang="vi">Khi thêm lăng kính thứ hai thì chuyện gì xảy ra?</span></li>
+      <li>When have you seen a rainbow outside? Was it after the rain? <span class="vi" lang="vi">Con đã thấy cầu vồng ở ngoài trời lúc nào? Có phải sau cơn mưa không?</span></li>
+    </ul>
+
+    <h3>Try it at home</h3>
+    <p>Put a clear glass of water on a sunny windowsill with a sheet of white paper on the floor below, and move the paper until a small rainbow appears. Tilt an old CD in sunlight or under a lamp to see rainbow colors. Outside, with the sun behind you, spray a fine mist from a garden hose and look for a rainbow in the mist. Grown-ups: help with glass and water, and remind children never to look straight at the sun.</p>
+    <p class="vi" lang="vi">Đặt một cốc nước trong lên bậu cửa sổ có nắng, để tờ giấy trắng bên dưới và dịch tờ giấy cho đến khi thấy cầu vồng nhỏ. Nghiêng một chiếc đĩa CD cũ dưới nắng hoặc dưới đèn để thấy màu cầu vồng. Ngoài trời, quay lưng về phía mặt trời rồi phun sương bằng vòi tưới cây để tìm cầu vồng. Ba mẹ nhớ giúp con khi dùng cốc thủy tinh và nước, và dặn con không nhìn thẳng vào mặt trời.</p>
+    <p style="font-size:.85rem;color:#5b6780">In the game, the prism bends each color by a real rule of refraction, just exaggerated a little so the colors spread wider. The spoken Vietnamese uses your device's Vietnamese voice; the words are always on screen.</p>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+(function(){
+'use strict';
+const $=s=>document.querySelector(s);
+
+/* ---------- content ---------- */
+// n: refractive index used for each color (dispersion exaggerated a little so the fan is easy to see)
+const COLORS=[
+  {id:'red',    en:'Red',    vi:'Đỏ',   say:'Đỏ!',                   hex:'#ff2a1f', ray:[1,0.07,0.05],  n:1.47, f:523},
+  {id:'orange', en:'Orange', vi:'Cam',  say:'Cam!',                  hex:'#ff8a14', ray:[1,0.42,0.02],  n:1.51, f:587},
+  {id:'yellow', en:'Yellow', vi:'Vàng', say:'Vàng!',                 hex:'#ffe11a', ray:[0.95,0.9,0.06],n:1.55, f:659},
+  {id:'green',  en:'Green',  vi:'Lục',  say:'Lục! Xanh lá cây.',     hex:'#2fd33a', ray:[0.1,1,0.18],   n:1.59, f:698},
+  {id:'blue',   en:'Blue',   vi:'Lam',  say:'Lam! Xanh dương.',      hex:'#1f8bff', ray:[0.08,0.55,1],  n:1.63, f:784},
+  {id:'indigo', en:'Indigo', vi:'Chàm', say:'Chàm!',                 hex:'#4b3cff', ray:[0.25,0.18,1],  n:1.67, f:880},
+  {id:'violet', en:'Violet', vi:'Tím',  say:'Tím!',                  hex:'#a23dff', ray:[0.62,0.12,1],  n:1.71, f:988},
+];
+const RHYME_EN='Red, orange, yellow, green, blue, indigo, violet!';
+const RHYME_VI='Đỏ, cam, vàng, lục, lam, chàm, tím!';
+
+/* ---------- UI build ---------- */
+const swatchUI=$('#swatchUI');
+COLORS.forEach((c,i)=>{
+  const el=document.createElement('button'); el.className='sw'; el.setAttribute('aria-pressed','false');
+  el.setAttribute('aria-label',c.en+' / '+c.vi);
+  el.innerHTML='<span class="dot" style="--c:'+c.hex+'"></span><b>'+c.en+'</b><i lang="vi">'+c.vi+'</i>';
+  el.onclick=()=>{unlock();tapColor(i);};
+  swatchUI.appendChild(el);
+});
+
+/* ---------- speech + sound ---------- */
+let soundOn=true, voiceMode='both';
+try{ const v=localStorage.getItem('rbm-voice'); if(v) voiceMode=v; if(localStorage.getItem('rbm-mute')==='1') soundOn=false; }catch(e){}
+const langBtn=$('#langBtn'), muteBtn=$('#muteBtn');
+const LANG_LABEL={both:'EN + VI',en:'EN',vi:'VI'};
+function syncTools(){ langBtn.textContent=LANG_LABEL[voiceMode]; muteBtn.setAttribute('aria-pressed',String(soundOn)); }
+syncTools();
+langBtn.onclick=()=>{ voiceMode=voiceMode==='both'?'en':voiceMode==='en'?'vi':'both'; try{localStorage.setItem('rbm-voice',voiceMode)}catch(e){} syncTools(); sayTip(); };
+muteBtn.onclick=()=>{ soundOn=!soundOn; try{localStorage.setItem('rbm-mute',soundOn?'0':'1')}catch(e){} syncTools(); if(!soundOn){try{speechSynthesis.cancel()}catch(e){}} };
+let voices=[];
+function loadVoices(){ try{ voices=window.speechSynthesis?speechSynthesis.getVoices():[]; }catch(e){} }
+try{ if(window.speechSynthesis){ loadVoices(); speechSynthesis.onvoiceschanged=loadVoices; } }catch(e){}
+const pickVoice=l=>voices.find(v=>v.lang&&v.lang.toLowerCase().replace('_','-').startsWith(l));
+function say(en,vi){
+  if(!soundOn) return;
+  try{
+    const ss=window.speechSynthesis; if(!ss) return;
+    const busyNow=ss.speaking||ss.pending; ss.cancel();
+    const q=[];
+    if(voiceMode!=='vi') q.push({t:en,l:'en-US',v:pickVoice('en-us')||pickVoice('en')});
+    if(voiceMode!=='en') q.push({t:vi,l:'vi-VN',v:pickVoice('vi')});
+    const go=()=>q.forEach(o=>{ const u=new SpeechSynthesisUtterance(o.t); u.lang=o.l; if(o.v) u.voice=o.v; u.rate=o.l==='vi-VN'?0.95:0.92; u.pitch=1.15; ss.speak(u); });
+    if(busyNow) setTimeout(go,80); else go();
+  }catch(e){}
+}
+let ac=null;
+function unlock(){ if(!ac){ try{ ac=new (window.AudioContext||window.webkitAudioContext)(); }catch(e){} } if(ac&&ac.state==='suspended') ac.resume(); }
+function tone(f0,f1,dur,vol,type){
+  if(!soundOn||!ac) return;
+  const t=ac.currentTime,o=ac.createOscillator(),g=ac.createGain();
+  o.type=type||'sine'; o.frequency.setValueAtTime(f0,t); o.frequency.exponentialRampToValueAtTime(f1,t+dur);
+  g.gain.setValueAtTime(vol,t); g.gain.exponentialRampToValueAtTime(0.0001,t+dur);
+  o.connect(g).connect(ac.destination); o.start(t); o.stop(t+dur+0.02);
+}
+const click=()=>{ tone(1200,700,0.05,0.12,'square'); try{ if(soundOn&&navigator.vibrate) navigator.vibrate(12);}catch(e){} };
+const tick=()=>tone(900,600,0.04,0.07,'triangle');
+const whoosh=()=>tone(300,900,0.25,0.08,'triangle');
+const sparkle=()=>{ [880,1175,1568].forEach((f,i)=>setTimeout(()=>tone(f,f,0.22,0.1,'triangle'),i*90)); };
+const fanfare=()=>{ COLORS.forEach((c,i)=>setTimeout(()=>tone(c.f,c.f,0.28,0.09,'triangle'),i*85)); setTimeout(()=>{ tone(1047,1047,0.6,0.08,'sine'); tone(1319,1319,0.6,0.06,'sine'); tone(1568,1568,0.6,0.05,'sine'); },7*85+40); };
+
+let tip={en:'',vi:''};
+function setTip(en,vi,speak){ tip={en,vi}; if(typeof refitSoon==='function') refitSoon(); $('#tipEn').textContent=en; $('#tipVi').textContent=vi; if(speak!==false) say(en,vi); }
+function sayTip(){ say(tip.en,tip.vi); }
+$('#sayBtn').onclick=()=>{unlock();sayTip();};
+$('#infoBtn').onclick=()=>{ $('#info').hidden=false; };
+$('#infoClose').onclick=()=>{ $('#info').hidden=true; };
+$('#info').addEventListener('click',e=>{ if(e.target.id==='info') $('#info').hidden=true; });
+
+if(typeof THREE==='undefined'){
+  $('#loadNote').className='err';
+  $('#loadNote').textContent='The 3D engine could not load. Check the internet connection and open the page again.';
+  return;
+}
+
+/* ============================================================
+   OPTICS (top view: world x / z, light travels at height BEAM_Y)
+   ============================================================ */
+const BEAM_Y=0.5, PRISM_SIDE=0.9, PRISM_H=1.0;
+const SCREEN_Z=-2.8, SX0=-1.05, SX1=2.95, WALL_Z=-3.2;
+const IN_ANG=40*Math.PI/180, D0=[Math.cos(IN_ANG),-Math.sin(IN_ANG)];
+const SLIT=[-D0[0]*1.75,-D0[1]*1.75];          // where the white light sheet starts
+const BEST=58*Math.PI/180;                     // angle with a lovely rainbow
+const P2_HOME={x:0.175,z:-0.975,a:BEST+Math.PI+10*Math.PI/180};
+const P2_AWAY={x:3.7,z:-0.3,a:BEST+Math.PI+0.9};
+const prism1={x:0,z:0,a:90*Math.PI/180};
+const prism2={x:P2_AWAY.x,z:P2_AWAY.z,a:P2_AWAY.a,on:false,show:false};
+
+function triVerts(p){ const R=PRISM_SIDE/Math.sqrt(3), v=[]; for(let k=0;k<3;k++){ const a=p.a+Math.PI/2+k*2*Math.PI/3; v.push([p.x+R*Math.cos(a),p.z+R*Math.sin(a)]); } return v; }
+function segHit(o,d,a,b){ const ex=b[0]-a[0],ez=b[1]-a[1]; const den=d[0]*ez-d[1]*ex; if(Math.abs(den)<1e-9) return null;
+  const wx=a[0]-o[0],wz=a[1]-o[1]; const t=(wx*ez-wz*ex)/den, u=(wx*d[1]-wz*d[0])/den; return (t>1e-5&&u>=0&&u<=1)?{t,u}:null; }
+// returns {pts:[[x,z]...], kinds:[segment kind], screenX|null, firstRefl}
+function trace(n,prisms){
+  let o=SLIT.slice(), d=D0.slice(), inside=-1, outs=0; const pts=[o.slice()], kinds=[]; let screenX=null, firstRefl=null;
+  for(let step=0;step<9;step++){
+    let best=null;
+    prisms.forEach((V,pi)=>{ for(let k=0;k<3;k++){ const h=segHit(o,d,V[k],V[(k+1)%3]); if(h&&(!best||h.t<best.t)) best={t:h.t,pi,a:V[k],b:V[(k+1)%3]}; } });
+    const kind=inside>=0?'glass':(outs===0?'white':(outs===1?'fan':'after'));
+    if(inside<0){
+      // screen board, then back wall
+      let tS=null; if(d[1]<-1e-6){ const t=(SCREEN_Z-o[1])/d[1], x=o[0]+d[0]*t; if(x>=SX0&&x<=SX1) tS=t; }
+      if(tS!==null&&(!best||tS<best.t)){ pts.push([o[0]+d[0]*tS,SCREEN_Z]); kinds.push(kind); screenX=o[0]+d[0]*tS; return {pts,kinds,screenX,firstRefl,outs}; }
+      if(!best){ let t=2.4; if(d[1]<-1e-6) t=Math.min(t,(WALL_Z-o[1])/d[1]); pts.push([o[0]+d[0]*t,o[1]+d[1]*t]); kinds.push(kind); return {pts,kinds,screenX,firstRefl,outs,end:true}; }
+    }
+    if(!best){ return {pts,kinds,screenX,firstRefl,outs}; }
+    const p=[o[0]+d[0]*best.t,o[1]+d[1]*best.t]; pts.push(p); kinds.push(kind);
+    let N=[-(best.b[1]-best.a[1]),best.b[0]-best.a[0]]; const L=Math.hypot(N[0],N[1]); N=[N[0]/L,N[1]/L];
+    let cosi=-(N[0]*d[0]+N[1]*d[1]); if(cosi<0){ N=[-N[0],-N[1]]; cosi=-cosi; }
+    const entering=inside<0, eta=entering?1/n:n, k=1-eta*eta*(1-cosi*cosi);
+    if(entering&&!firstRefl&&outs===0) firstRefl={p:p.slice(),d:[d[0]+2*cosi*N[0],d[1]+2*cosi*N[1]]};
+    if(k<0){ d=[d[0]+2*cosi*N[0],d[1]+2*cosi*N[1]]; }
+    else { const f=eta*cosi-Math.sqrt(k); d=[eta*d[0]+f*N[0],eta*d[1]+f*N[1]]; if(entering) inside=best.pi; else { inside=-1; outs++; } }
+    o=p;
+  }
+  return {pts,kinds,screenX,firstRefl,outs};
+}
+let traces=[], lightState='none', spread=0;
+function computeOptics(){
+  const ps=[triVerts(prism1)]; if(prism2.show) ps.push(triVerts(prism2));
+  traces=COLORS.map(c=>trace(c.n,ps));
+  const xs=traces.map(t=>t.screenX), hitAll=xs.every(x=>x!==null), some=xs.some(x=>x!==null);
+  spread=hitAll?Math.max(...xs)-Math.min(...xs):0;
+  const bentApart=traces.some(t=>t.outs>=1);
+  if(hitAll&&spread>0.6) lightState='rainbow';
+  else if(hitAll&&prism2.show&&traces.every(t=>t.outs>=2)) lightState='white';
+  else if(some&&spread>0.2||(!hitAll&&some&&bentApart)) lightState='almost';
+  else lightState='none';
+}
+
+/* ============================================================
+   SCENE
+   ============================================================ */
+const canvas=$('#c');
+const renderer=new THREE.WebGLRenderer({canvas,antialias:true});
+renderer.setPixelRatio(Math.min(2,window.devicePixelRatio||1));
+const scene=new THREE.Scene();
+const camera=new THREE.PerspectiveCamera(40,1,0.1,100);
+const DARK=new THREE.Color(0x12141b), LIT=new THREE.Color(0xeef0ea);
+scene.background=DARK.clone();
+
+const hemi=new THREE.HemisphereLight(0xffffff,0xb9c4d6,0.14); scene.add(hemi);
+const sunL=new THREE.DirectionalLight(0xffffff,0); sunL.position.set(3,9,6); scene.add(sunL);
+
+function canvasTex(w,h,draw){ const c=document.createElement('canvas'); c.width=w; c.height=h; draw(c.getContext('2d'),w,h); const t=new THREE.CanvasTexture(c); t.anisotropy=4; return t; }
+const phong=o=>new THREE.MeshPhongMaterial(o), lambert=o=>new THREE.MeshLambertMaterial(o);
+const hitMat=new THREE.MeshBasicMaterial({transparent:true,opacity:0,depthWrite:false,colorWrite:false});
+function hitVol(r,h,y){ const m=new THREE.Mesh(new THREE.CylinderGeometry(r,r,h,12),hitMat); m.position.y=y; return m; }
+const glowTex=canvasTex(128,128,(x,w,h)=>{ const g=x.createRadialGradient(64,64,0,64,64,64); g.addColorStop(0,'rgba(255,255,255,1)'); g.addColorStop(0.35,'rgba(255,255,255,.7)'); g.addColorStop(1,'rgba(255,255,255,0)'); x.fillStyle=g; x.fillRect(0,0,w,h); });
+// soft line across v (for light ribbons)
+const ribbonTex=canvasTex(4,64,(x,w,h)=>{ const g=x.createLinearGradient(0,0,0,h); g.addColorStop(0,'rgba(0,0,0,1)'); g.addColorStop(0.3,'rgb(90,90,90)'); g.addColorStop(0.5,'#fff'); g.addColorStop(0.7,'rgb(90,90,90)'); g.addColorStop(1,'rgba(0,0,0,1)'); x.fillStyle=g; x.fillRect(0,0,w,h); });
+// soft band on the screen (feathered sides and ends)
+const bandTex=canvasTex(64,64,(x,w,h)=>{ const g=x.createLinearGradient(0,0,w,0); g.addColorStop(0,'#000'); g.addColorStop(0.22,'#fff'); g.addColorStop(0.78,'#fff'); g.addColorStop(1,'#000'); x.fillStyle=g; x.fillRect(0,0,w,h);
+  x.globalCompositeOperation='multiply'; const v=x.createLinearGradient(0,0,0,h); v.addColorStop(0,'#000'); v.addColorStop(0.15,'#fff'); v.addColorStop(0.85,'#fff'); v.addColorStop(1,'#000'); x.fillStyle=v; x.fillRect(0,0,w,h); });
+
+/* room + table */
+function buildRoom(){
+  const wood=canvasTex(256,256,(x,w,h)=>{ x.fillStyle='#b99468'; x.fillRect(0,0,w,h);
+    for(let i=0;i<8;i++){ x.fillStyle=i%2?'#b28c60':'#c09c70'; x.fillRect(0,i*32,w,31); x.fillStyle='rgba(70,45,20,.25)'; x.fillRect(0,i*32+31,w,1); } });
+  wood.wrapS=wood.wrapT=THREE.RepeatWrapping; wood.repeat.set(7,7);
+  const floor=new THREE.Mesh(new THREE.PlaneGeometry(40,40),phong({map:wood,shininess:30}));
+  floor.rotation.x=-Math.PI/2; floor.position.y=-1.5; scene.add(floor);
+  const tableTex=canvasTex(256,256,(x,w,h)=>{ x.fillStyle='#d9c7a4'; x.fillRect(0,0,w,h); for(let i=0;i<60;i++){ x.strokeStyle='rgba(120,90,50,'+(0.04+Math.random()*0.06)+')'; x.lineWidth=1+Math.random()*2; const y=Math.random()*h; x.beginPath(); x.moveTo(0,y); x.bezierCurveTo(w*0.3,y+Math.random()*10-5,w*0.6,y+Math.random()*10-5,w,y); x.stroke(); } });
+  tableTex.wrapS=tableTex.wrapT=THREE.RepeatWrapping; tableTex.repeat.set(2,2);
+  const top=new THREE.Mesh(new THREE.BoxGeometry(6.4,0.1,6.2),phong({map:tableTex,shininess:20}));
+  top.position.set(0.3,-0.05,-0.6); scene.add(top);
+  const edge=new THREE.Mesh(new THREE.BoxGeometry(6.4,0.5,0.06),lambert({color:0x8a6a44})); edge.position.set(0.3,-0.35,2.5); scene.add(edge);
+  const tiles=canvasTex(256,256,(x,w,h)=>{ x.fillStyle='#f3f4ef'; x.fillRect(0,0,w,h); x.strokeStyle='#d4d8cf'; x.lineWidth=4;
+    for(let i=0;i<=4;i++){ x.beginPath(); x.moveTo(i*64,0); x.lineTo(i*64,h); x.stroke(); x.beginPath(); x.moveTo(0,i*64); x.lineTo(w,i*64); x.stroke(); } });
+  tiles.wrapS=tiles.wrapT=THREE.RepeatWrapping; tiles.repeat.set(12,0.9);
+  const tw=new THREE.Mesh(new THREE.PlaneGeometry(40,1.8),lambert({map:tiles})); tw.position.set(0,-0.6,WALL_Z-0.3); scene.add(tw);
+  const wall=new THREE.Mesh(new THREE.PlaneGeometry(40,14),lambert({color:0xf2f2ee})); wall.position.set(0,7.3,WALL_Z-0.31); scene.add(wall);
+  const pw=canvasTex(128,128,(x)=>{ x.translate(64,64); for(let k=0;k<4;k++){ x.rotate(Math.PI/2); x.fillStyle=k%2?'#e0342f':'#c4221e'; x.beginPath(); x.moveTo(0,0); x.lineTo(0,-56); x.quadraticCurveTo(40,-40,0,0); x.fill(); } x.fillStyle='#ffd21f'; x.beginPath(); x.arc(0,0,9,0,7); x.fill(); });
+  for(let i=0;i<11;i++){ const m=new THREE.Mesh(new THREE.PlaneGeometry(0.5,0.5),lambert({map:pw,transparent:true})); m.position.set(-3.7+i*0.8,2.7+Math.sin(i*0.8)*0.08,WALL_Z-0.28); m.rotation.z=i*0.5; scene.add(m); }
+  // a paper rainbow poster on the wall (left)
+  const poster=canvasTex(256,160,(x,w,h)=>{ x.fillStyle='#fffdf5'; x.fillRect(0,0,w,h); x.lineWidth=11; COLORS.forEach((c,i)=>{ x.strokeStyle=c.hex; x.beginPath(); x.arc(w/2,h-18,100-i*11,Math.PI,0); x.stroke(); });
+    x.fillStyle='#fff'; [[60,140],[196,140]].forEach(([cx,cy])=>{ x.beginPath(); x.arc(cx,cy,18,0,7); x.arc(cx+20,cy-6,16,0,7); x.arc(cx-20,cy-4,14,0,7); x.fill(); }); });
+  const pm=new THREE.Mesh(new THREE.PlaneGeometry(1.3,0.81),lambert({map:poster})); pm.position.set(-2.5,1.6,WALL_Z-0.28); scene.add(pm);
+}
+
+/* flashlight + slit card on a stack of books */
+let lens, lensGlow, flashlight;
+function buildFlashlight(){
+  flashlight=new THREE.Group(); flashlight.userData.action='flash';
+  const dirAng=Math.atan2(D0[1],D0[0]);
+  const base=[SLIT[0]-D0[0]*0.75,SLIT[1]-D0[1]*0.75];
+  const books=new THREE.Group();
+  [[0xd8413a,0.16],[0x2f7fd6,0.14],[0xf0b82a,0.12]].forEach(([c,h],i)=>{ const b=new THREE.Mesh(new THREE.BoxGeometry(1.0-i*0.06,h,0.7-i*0.04),phong({color:c,shininess:20})); b.position.y=[0.08,0.23,0.36][i]; b.rotation.y=(i-1)*0.12; books.add(b);
+    const pages=new THREE.Mesh(new THREE.BoxGeometry(0.96-i*0.06,h*0.8,0.02),lambert({color:0xf7f1e0})); pages.position.set(0,b.position.y,(0.7-i*0.04)/2); pages.rotation.y=b.rotation.y; books.add(pages); });
+  books.position.set(base[0],0,base[1]); books.rotation.y=-dirAng; flashlight.add(books);
+  const torch=new THREE.Group();
+  const body=new THREE.Mesh(new THREE.CylinderGeometry(0.1,0.1,0.62,20),phong({color:0x3b4150,shininess:60})); body.rotation.z=Math.PI/2; body.position.x=-0.3;
+  const head=new THREE.Mesh(new THREE.CylinderGeometry(0.16,0.11,0.2,24),phong({color:0x4a5162,shininess:60})); head.rotation.z=Math.PI/2; head.position.x=0.08;
+  const btn=new THREE.Mesh(new THREE.BoxGeometry(0.08,0.03,0.05),phong({color:0xffcd34})); btn.position.set(-0.25,0.1,0);
+  lens=new THREE.Mesh(new THREE.CircleGeometry(0.15,24),new THREE.MeshBasicMaterial({color:0xffffff})); lens.rotation.y=Math.PI/2; lens.position.x=0.181;
+  lensGlow=new THREE.Mesh(new THREE.PlaneGeometry(0.9,0.9),new THREE.MeshBasicMaterial({map:glowTex,color:0xfff6e0,transparent:true,opacity:0.8,blending:THREE.AdditiveBlending,depthWrite:false}));
+  lensGlow.rotation.y=Math.PI/2; lensGlow.position.x=0.19;
+  torch.add(body,head,btn,lens,lensGlow);
+  torch.position.set(base[0],BEAM_Y,base[1]); torch.rotation.y=-dirAng; flashlight.add(torch);
+  // black card with a narrow slit
+  const card=new THREE.Group(); const cm=phong({color:0x22252c,shininess:10});
+  const l=new THREE.Mesh(new THREE.BoxGeometry(0.02,0.62,0.25),cm); l.position.z=-0.15;
+  const r=new THREE.Mesh(new THREE.BoxGeometry(0.02,0.62,0.25),cm); r.position.z=0.15;
+  const foot=new THREE.Mesh(new THREE.BoxGeometry(0.2,0.03,0.55),cm); foot.position.y=-0.3;
+  card.add(l,r,foot); card.position.set(SLIT[0],0.33,SLIT[1]); card.rotation.y=-dirAng; flashlight.add(card);
+  flashlight.add((()=>{ const h=hitVol(0.55,0.9,0.4); h.position.x=base[0]; h.position.z=base[1]; return h; })());
+  scene.add(flashlight);
+}
+
+/* glass prisms */
+function makePrism(){
+  const g=new THREE.Group();
+  const R=PRISM_SIDE/Math.sqrt(3), s=new THREE.Shape();
+  for(let k=0;k<3;k++){ const a=Math.PI/2+k*2*Math.PI/3; const px=R*Math.cos(a), py=-R*Math.sin(a); if(k===0) s.moveTo(px,py); else s.lineTo(px,py); }
+  s.closePath();
+  const geo=new THREE.ExtrudeGeometry(s,{depth:PRISM_H,bevelEnabled:false}); geo.rotateX(-Math.PI/2);
+  const glass=new THREE.Mesh(geo,phong({color:0xcfeeff,emissive:0x1d2f40,transparent:true,opacity:0.34,shininess:140,specular:0xffffff,depthWrite:false,side:THREE.DoubleSide}));
+  glass.renderOrder=3;
+  const edges=new THREE.LineSegments(new THREE.EdgesGeometry(geo),new THREE.LineBasicMaterial({color:0xcfefff,transparent:true,opacity:0.85}));
+  const glow=new THREE.Mesh(new THREE.PlaneGeometry(1.6,1.6),new THREE.MeshBasicMaterial({map:glowTex,color:0xdff2ff,transparent:true,opacity:0.0,blending:THREE.AdditiveBlending,depthWrite:false}));
+  glow.rotation.x=-Math.PI/2; glow.position.y=0.012; glow.renderOrder=2;
+  const hv=hitVol(0.52,1.04,0.52);
+  g.add(glass,edges,glow,hv); g.userData={glass,glow,edges};
+  return g;
+}
+let prismMesh1, prismMesh2;
+
+/* white screen on legs */
+let screenBoard, screenPaper;
+const SCREEN_Y0=0.08, SCREEN_Y1=1.45;
+function buildScreen(){
+  screenBoard=new THREE.Group(); screenBoard.userData.action='screen';
+  const w=SX1-SX0, h=SCREEN_Y1-SCREEN_Y0, cx=(SX0+SX1)/2, cy=(SCREEN_Y0+SCREEN_Y1)/2;
+  screenPaper=new THREE.Mesh(new THREE.PlaneGeometry(w,h),lambert({color:0xffffff,emissive:0x2e3038}));
+  screenPaper.position.set(cx,cy,SCREEN_Z);
+  const frameM=phong({color:0x9aa3b2,shininess:40});
+  const back=new THREE.Mesh(new THREE.BoxGeometry(w+0.12,h+0.12,0.05),frameM); back.position.set(cx,cy,SCREEN_Z-0.035);
+  [-1,1].forEach(sx=>{ const leg=new THREE.Mesh(new THREE.BoxGeometry(0.06,0.14,0.5),frameM); leg.position.set(cx+sx*(w/2-0.2),0.07,SCREEN_Z); screenBoard.add(leg); });
+  screenBoard.add(back,screenPaper);
+  scene.add(screenBoard);
+}
+
+/* colored bands on the screen */
+const bands=[];
+function buildBands(){
+  COLORS.forEach((c,i)=>{
+    const m=new THREE.Mesh(new THREE.PlaneGeometry(1,1),new THREE.MeshBasicMaterial({alphaMap:bandTex,color:new THREE.Color(c.hex),transparent:true,depthWrite:false}));
+    m.position.z=SCREEN_Z+0.012+i*0.0005; m.renderOrder=8; m.visible=false; scene.add(m);
+    const halo=new THREE.Mesh(new THREE.PlaneGeometry(1,1),new THREE.MeshBasicMaterial({map:glowTex,color:new THREE.Color(c.hex),transparent:true,opacity:0,blending:THREE.AdditiveBlending,depthWrite:false}));
+    halo.position.z=SCREEN_Z+0.02; halo.renderOrder=9; scene.add(halo);
+    const spot=new THREE.Mesh(new THREE.PlaneGeometry(0.5,0.5),new THREE.MeshBasicMaterial({map:glowTex,color:new THREE.Color(c.hex),transparent:true,opacity:0,blending:THREE.AdditiveBlending,depthWrite:false}));
+    spot.renderOrder=8; scene.add(spot);
+    bands.push({m,halo,spot,x:0,w:0.2,hl:0,shown:0});
+  });
+}
+
+/* ---------- glowing light ribbons: one merged, additive geometry ---------- */
+const MAXSEG=80;
+const rPos=new Float32Array(MAXSEG*8*3), rCol=new Float32Array(MAXSEG*8*3), rUV=new Float32Array(MAXSEG*8*2);
+let ribbons, ribbonMat, segCount=0;
+function buildRibbons(){
+  const idx=[];
+  for(let s=0;s<MAXSEG;s++){ const b=s*8; idx.push(b,b+1,b+2, b+2,b+1,b+3, b+4,b+5,b+6, b+6,b+5,b+7);
+    for(let q=0;q<2;q++){ const o=(b+q*4)*2; rUV.set([0,0, 0,1, 1,0, 1,1],o); } }
+  const g=new THREE.BufferGeometry();
+  g.setAttribute('position',new THREE.BufferAttribute(rPos,3));
+  g.setAttribute('color',new THREE.BufferAttribute(rCol,3));
+  g.setAttribute('uv',new THREE.BufferAttribute(rUV,2));
+  g.setIndex(idx);
+  ribbonMat=new THREE.MeshBasicMaterial({map:ribbonTex,vertexColors:true,transparent:true,blending:THREE.AdditiveBlending,depthWrite:false,side:THREE.DoubleSide});
+  ribbons=new THREE.Mesh(g,ribbonMat); ribbons.frustumCulled=false; ribbons.renderOrder=6; scene.add(ribbons);
+}
+const sheetH=s=>0.08+0.3*s;   // the light sheet gets taller as it spreads out from the slit
+function addSeg(a,b,s0,s1,col,k,w){
+  if(segCount>=MAXSEG) return;
+  const dx=b[0]-a[0], dz=b[1]-a[1], L=Math.hypot(dx,dz)||1, px=-dz/L*w/2, pz=dx/L*w/2;
+  const h0=sheetH(s0)/2, h1=sheetH(s1)/2, o=segCount*8*3;
+  const V=[ a[0],BEAM_Y-h0,a[1], a[0],BEAM_Y+h0,a[1], b[0],BEAM_Y-h1,b[1], b[0],BEAM_Y+h1,b[1],
+            a[0]-px,BEAM_Y,a[1]-pz, a[0]+px,BEAM_Y,a[1]+pz, b[0]-px,BEAM_Y,b[1]-pz, b[0]+px,BEAM_Y,b[1]+pz ];
+  rPos.set(V,o);
+  for(let v=0;v<8;v++){ const kk=v<4?k:k*1.3; rCol[o+v*3]=col[0]*kk; rCol[o+v*3+1]=col[1]*kk; rCol[o+v*3+2]=col[2]*kk; }
+  segCount++;
+}
+function rebuildRibbons(){
+  segCount=0;
+  const lightK=roomOn?0.45:1;
+  // white incoming sheet (one ribbon: all colors together)
+  const t0=traces[0];
+  if(t0&&t0.pts.length>1){
+    const a=t0.pts[0], b=t0.pts[1];
+    addSeg(a,b,0,Math.hypot(b[0]-a[0],b[1]-a[1]),[1,0.97,0.9],0.62*lightK,0.12);
+    if(t0.firstRefl){ const p=t0.firstRefl.p, d=t0.firstRefl.d, s=Math.hypot(p[0]-SLIT[0],p[1]-SLIT[1]);
+      addSeg(p,[p[0]+d[0]*1.3,p[1]+d[1]*1.3],s,s+1.3,[1,1,1],0.1*lightK,0.1); }
+  }
+  traces.forEach((t,ci)=>{
+    let s=Math.hypot(t.pts[1][0]-t.pts[0][0],t.pts[1][1]-t.pts[0][1]);
+    const hl=bands[ci].hl;
+    for(let j=1;j<t.pts.length-1;j++){
+      const a=t.pts[j], b=t.pts[j+1], L=Math.hypot(b[0]-a[0],b[1]-a[1]), kind=t.kinds[j];
+      let k=kind==='glass'?0.34:kind==='after'?0.3:0.62;
+      if(lightState!=='rainbow'&&kind==='fan'&&!prism2.show) k=0.5;
+      k*=(1+hl*1.2)*lightK;
+      addSeg(a,b,s,s+L,COLORS[ci].ray,k,kind==='glass'?0.07:0.1);
+      s+=L;
+    }
+  });
+  const g=ribbons.geometry; g.setDrawRange(0,segCount*12);
+  g.attributes.position.needsUpdate=true; g.attributes.color.needsUpdate=true;
+  g.computeBoundingSphere();
+}
+function updateBands(dt){
+  const rainbow=lightState==='rainbow';
+  const xs=traces.map(t=>t.screenX);
+  const lightK=roomOn?0.5:1;
+  bands.forEach((B,i)=>{
+    const x=xs[i], t=traces[i];
+    B.hl=Math.max(0,B.hl-dt*0.9);
+    if(x===null){ B.m.visible=false; B.halo.material.opacity=0;
+      // light that misses the screen makes a faint colored spot where it lands
+      const e=t.pts[t.pts.length-1]; B.spot.visible=!!t.end&&t.pts.length>2;
+      if(B.spot.visible){ B.spot.position.set(e[0],BEAM_Y,e[1]+0.02); B.spot.material.opacity=0.35*lightK; const up=Math.abs(e[1]-WALL_Z)<0.05; B.spot.rotation.set(0,0,0); if(!up) B.spot.visible=false; }
+      return; }
+    B.spot.visible=false;
+    let w, k;
+    if(rainbow){ const l=i>0&&xs[i-1]!==null?Math.abs(xs[i-1]-x):null, r=i<6&&xs[i+1]!==null?Math.abs(xs[i+1]-x):null;
+      const gap=l!==null&&r!==null?(l+r)/2:(l||r||0.18); w=Math.max(0.13,gap*1.35); k=1; }
+    else if(spread<0.35){ // colors land together: one white patch
+      if(i!==3){ B.m.visible=false; B.halo.material.opacity=0; B.x=x; return; }
+      w=0.36+spread; k=0.95; }
+    else { w=0.22; k=0.7; }
+    const s=Math.hypot(x-SLIT[0],SCREEN_Z-SLIT[1]), h=Math.min(SCREEN_Y1-SCREEN_Y0-0.1,sheetH(s)*1.05);
+    B.x=x; B.w=w; B.m.visible=true;
+    const by=Math.max(BEAM_Y,SCREEN_Y0+0.05+h/2); B.m.position.set(x,by,B.m.position.z);
+    const pulse=1+B.hl*0.25;
+    B.m.scale.set(w*pulse,h*(1+B.hl*0.12),1);
+    B.m.material.color.set(!rainbow&&spread<0.35?0xfff8ec:COLORS[i].hex); B.m.material.opacity=Math.min(1,k*lightK*(1+B.hl*0.6));
+    B.halo.position.set(x,by,SCREEN_Z+0.02); B.halo.scale.set(w*3.2,h*1.5,1);
+    B.halo.material.opacity=B.hl*0.9;
+  });
+}
+
+/* celebration sparkles */
+const PN=70; const pPos=new Float32Array(PN*3), pVel=new Float32Array(PN*3), pCol=new Float32Array(PN*3); let pLife=0, puffs;
+function buildPuffs(){
+  const g=new THREE.BufferGeometry(); g.setAttribute('position',new THREE.BufferAttribute(pPos,3)); g.setAttribute('color',new THREE.BufferAttribute(pCol,3));
+  puffs=new THREE.Points(g,new THREE.PointsMaterial({size:0.12,map:glowTex,vertexColors:true,transparent:true,opacity:0,blending:THREE.AdditiveBlending,depthWrite:false}));
+  puffs.frustumCulled=false; puffs.renderOrder=10; scene.add(puffs);
+}
+function burst(){
+  const cx=(Math.min(...bands.map(b=>b.x))+Math.max(...bands.map(b=>b.x)))/2;
+  for(let i=0;i<PN;i++){ const c=new THREE.Color(COLORS[i%7].hex);
+    pPos[i*3]=cx+(Math.random()-0.5)*1.2; pPos[i*3+1]=BEAM_Y+(Math.random()-0.5)*0.6; pPos[i*3+2]=SCREEN_Z+0.1;
+    pVel[i*3]=(Math.random()-0.5)*1.4; pVel[i*3+1]=0.6+Math.random()*1.6; pVel[i*3+2]=0.3+Math.random()*0.9;
+    pCol[i*3]=c.r; pCol[i*3+1]=c.g; pCol[i*3+2]=c.b; }
+  puffs.geometry.attributes.color.needsUpdate=true; pLife=1.6;
+}
+function updatePuffs(dt){
+  if(pLife<=0){ puffs.material.opacity=0; return; }
+  pLife-=dt;
+  for(let i=0;i<PN;i++){ pVel[i*3+1]-=2.2*dt; for(let k=0;k<3;k++) pPos[i*3+k]+=pVel[i*3+k]*dt; }
+  puffs.geometry.attributes.position.needsUpdate=true; puffs.material.opacity=Math.min(1,pLife);
+}
+
+function placePrisms(){
+  prismMesh1.position.set(prism1.x,0,prism1.z); prismMesh1.rotation.y=-prism1.a;
+  prismMesh2.position.set(prism2.x,0,prism2.z); prismMesh2.rotation.y=-prism2.a; prismMesh2.visible=prism2.show;
+}
+
+/* ---------- layout + camera ---------- */
+let portrait=false;
+function layout(){ portrait=innerWidth/innerHeight<0.9; }
+let fitR=9, offX=0, offY=0;
+const target=new THREE.Vector3(), V=(x,y,z)=>new THREE.Vector3(x,y,z);
+let yaw=0, pitch=0;
+function keyPoints(){
+  return [V(-2.55,0,1.95),V(-2.1,0.7,1.5),V(-0.55,1.0,0.5),V(0.55,1.0,-0.5),V(0.6,0,0.4),
+    V(SX0,SCREEN_Y1,SCREEN_Z),V(SX1,SCREEN_Y1,SCREEN_Z),V(SX0,0,SCREEN_Z),V(SX1,0,SCREEN_Z),V(0.8,1,-1.2)];
+}
+function aimCamera(R){
+  const p=(portrait?0.5:0.4)+pitch;
+  camera.position.set(target.x+R*Math.sin(yaw)*Math.cos(p),target.y+R*Math.sin(p),target.z+R*Math.cos(yaw)*Math.cos(p));
+  camera.lookAt(target);
+}
+function freeBand(){
+  const w=innerWidth,h=innerHeight; let r={top:h*0.2,bot:h*0.75,left:12,right:w-12};
+  try{ const b=$('.bubble').getBoundingClientRect(), t=$('.top').getBoundingClientRect(), tr=$('.tray').getBoundingClientRect();
+    const below={top:Math.max(t.bottom,b.bottom)+4,bot:tr.top-4,left:12,right:w-12};
+    const beside={top:t.bottom+4,bot:tr.top-4,left:b.right+8,right:w-12};
+    const score=q=>Math.min(q.right-q.left,(q.bot-q.top)*1.5);
+    r=score(beside)>score(below)*1.15?beside:below;
+    if(r.bot-r.top<h*0.25){ r={top:h*0.2,bot:h*0.75,left:12,right:w-12}; }
+  }catch(e){}
+  return r;
+}
+function fitCamera(){
+  const w=innerWidth,h=innerHeight;
+  camera.aspect=w/h; camera.fov=portrait?44:38;
+  target.set(-0.1,0.5,-0.6);
+  const sy=yaw, sp=pitch; yaw=0; pitch=0;
+  const band=freeBand(), allowX=(band.right-band.left)/w*0.96, allowY=(band.bot-band.top)/h*0.94, pts=keyPoints(), v=new THREE.Vector3();
+  let R=9, box=null; camera.clearViewOffset();
+  for(let it=0;it<6;it++){
+    aimCamera(R); camera.updateProjectionMatrix(); camera.updateMatrixWorld();
+    box={x0:1e9,x1:-1e9,y0:1e9,y1:-1e9};
+    pts.forEach(p=>{ v.copy(p).project(camera); box.x0=Math.min(box.x0,v.x); box.x1=Math.max(box.x1,v.x); box.y0=Math.min(box.y0,v.y); box.y1=Math.max(box.y1,v.y); });
+    const k=Math.max((box.x1-box.x0)/2/allowX,(box.y1-box.y0)/2/allowY);
+    R=Math.max(4.5,Math.min(30,R*Math.min(2,Math.max(0.5,k))));
+  }
+  fitR=R; offX=((box.x0+box.x1)/2+1)/2*w-(band.left+band.right)/2; offY=(1-(box.y0+box.y1)/2)/2*h-(band.top+band.bot)/2;
+  yaw=sy; pitch=sp;
+}
+function placeCamera(){
+  const w=innerWidth,h=innerHeight;
+  renderer.setSize(w,h,false);
+  aimCamera(fitR); camera.setViewOffset(w,h,offX,offY,w,h); camera.updateProjectionMatrix();
+}
+let resizeT=0;
+function onResize(){ layout(); fitCamera(); placeCamera(); }
+let refitT=0, lastBubbleH=0;
+function refitSoon(){ clearTimeout(refitT); refitT=setTimeout(()=>{ const hb=$('.bubble').offsetHeight; if(Math.abs(hb-lastBubbleH)>20){ lastBubbleH=hb; fitCamera(); placeCamera(); } },60); }
+function onResizeSoon(){ clearTimeout(resizeT); resizeT=setTimeout(onResize,120); }
+
+/* ---------- tweens ---------- */
+const tweens=[];
+function tween(dur,fn,done){ tweens.push({t:0,dur,fn,done}); }
+const ease=t=>t<0.5?4*t*t*t:1-Math.pow(-2*t+2,3)/2;
+
+/* ============================================================
+   ACTIONS
+   ============================================================ */
+let roomOn=false, seenRainbow=false, lastSpoken='', lastHintAt=0, turning=false, singing=false, singTimers=[];
+const STEP=8*Math.PI/180;
+function normA(a){ const P=2*Math.PI/3; return ((a%P)+P)%P; }   // a triangle looks the same every 120 degrees
+
+function react(fromUser){
+  const st=lightState;
+  if(st==='rainbow'){
+    if(lastSpoken==='rainbow') return;
+    lastSpoken='rainbow';
+    burst();
+    if(!seenRainbow){ seenRainbow=true; fanfare();
+      setTip('A rainbow! White light is made of colors: '+RHYME_EN.toLowerCase(),'Cầu vồng rồi! Ánh sáng trắng có nhiều màu: '+RHYME_VI.toLowerCase());
+    } else { sparkle(); setTip('A rainbow again! Tap a color on the screen.','Lại có cầu vồng! Chạm vào một màu trên màn nhé.'); }
+    return;
+  }
+  if(st==='white'){
+    if(lastSpoken==='white') return; lastSpoken='white'; sparkle();
+    setTip('White again! The second prism mixes all the colors back together. White light is all the colors together!','Lại thành màu trắng! Lăng kính thứ hai gộp các màu lại với nhau. Ánh sáng trắng là tất cả các màu gộp lại!');
+    return;
+  }
+  if(!fromUser) { lastSpoken=st; return; }
+  const now=performance.now(), quiet=now-lastHintAt<3500&&lastSpoken===st;
+  lastSpoken=st; lastHintAt=now;
+  if(st==='almost') setTip('Almost! Keep turning!','Gần được rồi! Xoay tiếp nào!',!quiet);
+  else if(prism2.show) setTip('Keep turning! Find the colors again.','Xoay tiếp nào! Tìm lại các màu nhé.',!quiet);
+  else setTip('The light just goes through. Keep turning!','Ánh sáng chỉ đi thẳng qua thôi. Xoay tiếp nào!',!quiet);
+}
+function turnBy(delta){
+  if(turning) return;
+  unlock(); tick(); stopSing();
+  turning=true; const a0=prism1.a;
+  tween(0.32,p=>{ prism1.a=a0+delta*ease(p); dirty=true; },()=>{ prism1.a=normA(prism1.a); turning=false; dirty=true; computeOptics(); react(true); });
+}
+function tapColor(i){
+  stopSing();
+  bands[i].hl=1; dirty=true; tone(COLORS[i].f,COLORS[i].f,0.3,0.1,'triangle');
+  setSwatch(i);
+  const c=COLORS[i];
+  if(lightState==='rainbow') setTip(c.en+'!',c.say);
+  else setTip(c.en+'! Turn the prism to find it in the rainbow.',c.say+' Xoay lăng kính để tìm màu này nhé.');
+}
+let swT=0;
+function setSwatch(i){ clearTimeout(swT); [...swatchUI.children].forEach((b,k)=>b.setAttribute('aria-pressed',String(k===i))); if(i>=0&&!singing) swT=setTimeout(()=>setSwatch(-1),1400); }
+function stopSing(){ if(!singing) return; singing=false; singTimers.forEach(clearTimeout); singTimers=[]; $('#singBtn').setAttribute('aria-pressed','false'); setSwatch(-1); }
+function sing(){
+  unlock();
+  if(singing){ stopSing(); return; }
+  singing=true; $('#singBtn').setAttribute('aria-pressed','true');
+  setTip(RHYME_EN,RHYME_VI,false);
+  const gap=voiceMode==='both'&&soundOn?1500:900;
+  COLORS.forEach((c,i)=>{ singTimers.push(setTimeout(()=>{ bands[i].hl=1.3; dirty=true; setSwatch(i); tone(c.f,c.f,0.35,0.1,'triangle'); say(c.en,c.vi); },300+i*gap)); });
+  singTimers.push(setTimeout(()=>{ singing=false; $('#singBtn').setAttribute('aria-pressed','false'); setSwatch(-1); sparkle();
+    bands.forEach(b=>b.hl=0.8); dirty=true;
+    if(lightState==='rainbow') setTip('That is the rainbow! '+RHYME_EN,'Đó là cầu vồng! '+RHYME_VI,false);
+    else setTip('Now turn the prism to make the rainbow!','Giờ xoay lăng kính để làm cầu vồng nhé!'); },300+7*gap+300));
+}
+function togglePrism2(){
+  unlock(); stopSing();
+  if(p2Moving) return;
+  click(); whoosh();
+  const on=!prism2.on; prism2.on=on; $('#prism2Btn').setAttribute('aria-pressed',String(on));
+  lastSpoken='';
+  if(on){
+    prism2.show=true; p2Moving=true;
+    const a0=prism1.a, fixA=BEST+Math.round((a0-BEST)/(2*Math.PI/3))*(2*Math.PI/3), needTurn=Math.abs(fixA-a0)>0.01;
+    if(needTurn) tween(0.6,p=>{ prism1.a=a0+(fixA-a0)*ease(p); dirty=true; },()=>{ prism1.a=normA(prism1.a); });
+    const from={...P2_AWAY};
+    setTip('Here comes another prism, upside down!','Thêm một lăng kính nữa, úp ngược lại!');
+    tween(1.2,p=>{ const e=ease(p); prism2.x=from.x+(P2_HOME.x-from.x)*e; prism2.z=from.z+(P2_HOME.z-from.z)*e; prism2.a=from.a+(P2_HOME.a-from.a)*e; dirty=true; },
+      ()=>{ p2Moving=false; computeOptics(); react(true); });
+  } else {
+    p2Moving=true;
+    const from={x:prism2.x,z:prism2.z,a:prism2.a};
+    tween(1.0,p=>{ const e=ease(p); prism2.x=from.x+(P2_AWAY.x-from.x)*e; prism2.z=from.z+(P2_AWAY.z-from.z)*e; prism2.a=from.a+(P2_AWAY.a-from.a)*e; dirty=true; },
+      ()=>{ p2Moving=false; prism2.show=false; dirty=true; computeOptics();
+        if(lightState==='rainbow'){ lastSpoken='rainbow'; sparkle(); burst(); setTip('One prism: the colors spread out into a rainbow again!','Một lăng kính: các màu lại tách ra thành cầu vồng!'); }
+        else { lastSpoken=''; react(true); } });
+  }
+}
+let p2Moving=false;
+function setRoom(on,speak){
+  roomOn=on; $('#roomBtn').setAttribute('aria-pressed',String(on));
+  hemi.intensity=on?0.8:0.14; sunL.intensity=on?0.5:0; dirty=true;
+  if(speak){ click(); setTip(on?'Room light on. The rainbow is harder to see!':'Room light off. Now the rainbow shines!',on?'Bật đèn phòng. Khó nhìn thấy cầu vồng hơn!':'Tắt đèn phòng. Giờ cầu vồng sáng rực!'); }
+}
+$('#turnL').onclick=()=>turnBy(-STEP);
+$('#turnR').onclick=()=>turnBy(STEP);
+$('#singBtn').onclick=()=>sing();
+$('#prism2Btn').onclick=()=>togglePrism2();
+$('#roomBtn').onclick=()=>{unlock();setRoom(!roomOn,true);};
+
+function doAction(a,e){
+  unlock(); if(!a) return;
+  if(a==='prism1') turnBy(-STEP);
+  else if(a==='prism2'){ click(); setTip('This prism is upside down. It mixes the colors back into white.','Lăng kính này úp ngược. Nó gộp các màu lại thành màu trắng.'); }
+  else if(a==='flash'){ click(); setTip('The flashlight makes white light. The black card makes it a thin sheet.','Đèn pin phát ra ánh sáng trắng. Tấm bìa đen làm cho chùm sáng mỏng lại.'); }
+  else if(a==='screen'){
+    if(lightState==='rainbow'&&e){ let best=-1, bd=1e9; bands.forEach((B,i)=>{ const d=Math.abs(B.x-e.x); if(d<bd){ bd=d; best=i; } }); if(best>=0&&bd<0.45){ tapColor(best); return; } }
+    click();
+    if(lightState==='white') setTip('White light! All the colors are mixed together.','Ánh sáng trắng! Tất cả các màu gộp lại với nhau.');
+    else setTip('Turn the prism to paint a rainbow here!','Xoay lăng kính để vẽ cầu vồng lên đây nhé!');
+  }
+}
+
+/* ---------- pointer: drag the prism to turn it, drag elsewhere to look around, tap to use ---------- */
+const ray=new THREE.Raycaster(), ndc=new THREE.Vector2();
+let down=null;
+function hitAction(e){
+  const r=canvas.getBoundingClientRect();
+  ndc.set(((e.clientX-r.left)/r.width)*2-1,-((e.clientY-r.top)/r.height)*2+1);
+  ray.setFromCamera(ndc,camera);
+  const list=[prismMesh1,flashlight,screenBoard]; if(prism2.show) list.push(prismMesh2);
+  const hits=ray.intersectObjects(list,true);
+  let first=null;
+  for(const h of hits){ let o=h.object; while(o){ if(o.userData&&o.userData.action){ const r={a:o.userData.action,p:h.point};
+        // a tap on a lit color band wins even if the glass prism is in front of it
+        if(r.a==='screen'&&lightState==='rainbow'&&bands.some(B=>Math.abs(B.x-h.point.x)<B.w*0.6)) return r;
+        if(!first) first=r; break; } o=o.parent; } }
+  return first;
+}
+canvas.addEventListener('pointerdown',e=>{
+  const h=hitAction(e);
+  down={x:e.clientX,y:e.clientY,yaw,pitch,drag:false,prism:!!(h&&h.a==='prism1')&&!turning,a0:prism1.a,lastStep:0};
+  canvas.setPointerCapture(e.pointerId);
+});
+canvas.addEventListener('pointermove',e=>{
+  if(down){ const dx=e.clientX-down.x, dy=e.clientY-down.y;
+    if(!down.drag&&Math.hypot(dx,dy)>9){ down.drag=true; if(down.prism){ unlock(); stopSing(); } }
+    if(down.drag){
+      if(down.prism){
+        prism1.a=down.a0-dx*0.009; dirty=true;
+        const st=Math.round(prism1.a/(4*Math.PI/180)); if(st!==down.lastStep){ down.lastStep=st; tone(700,650,0.025,0.03,'triangle'); }
+        computeOptics(); if(lightState==='rainbow'||lightState==='white') react(true);
+      } else { yaw=Math.max(-0.8,Math.min(0.8,down.yaw-dx*0.006)); pitch=Math.max(-0.25,Math.min(0.3,down.pitch+dy*0.004)); placeCamera(); }
+    } }
+  else if(e.pointerType==='mouse'){ const h=hitAction(e); canvas.style.cursor=h?(h.a==='prism1'?'ew-resize':'pointer'):'grab'; }
+});
+canvas.addEventListener('pointerup',e=>{
+  if(down){
+    if(!down.drag){ const h=hitAction(e); if(h) doAction(h.a,h.p); }
+    else if(down.prism){ prism1.a=normA(prism1.a); dirty=true; computeOptics(); react(true); }
+  }
+  down=null;
+});
+canvas.addEventListener('pointercancel',()=>{ if(down&&down.prism){ prism1.a=normA(prism1.a); dirty=true; } down=null; });
+
+/* ---------- loop ---------- */
+let simT=0, dirty=true; const clock=new THREE.Clock();
+function frame(){
+  const dt=Math.min(0.1,clock.getDelta()); simT+=dt;
+  for(let i=tweens.length-1;i>=0;i--){ const tw=tweens[i]; tw.t+=dt; const p=Math.min(1,tw.t/tw.dur); tw.fn(p); if(p>=1){ tweens.splice(i,1); tw.done&&tw.done(); } }
+  scene.background.lerp(roomOn?LIT:DARK,Math.min(1,dt*6));
+  const anyHl=bands.some(b=>b.hl>0);
+  if(dirty||anyHl){ placePrisms(); computeOptics(); rebuildRibbons(); dirty=false; }
+  updateBands(dt); updatePuffs(dt);
+  ribbonMat.opacity=0.92+0.08*Math.sin(simT*3.1);
+  const g1=prismMesh1.userData.glow.material; g1.opacity=(roomOn?0.15:0.45)+0.05*Math.sin(simT*2);
+  prismMesh2.userData.glow.material.opacity=prism2.show?(roomOn?0.1:0.3):0;
+  lensGlow.material.opacity=roomOn?0.4:0.85;
+  renderer.render(scene,camera);
+  requestAnimationFrame(frame);
+}
+async function keepAwake(){ try{ if(navigator.wakeLock) await navigator.wakeLock.request('screen'); }catch(e){} }
+async function boot(){
+  try{ await Promise.race([document.fonts.load('800 20px "Baloo 2"'),new Promise(r=>setTimeout(r,2000))]); }catch(e){}
+  buildRoom(); buildFlashlight(); buildScreen(); buildBands(); buildRibbons(); buildPuffs();
+  prismMesh1=makePrism(); prismMesh1.userData.action='prism1'; scene.add(prismMesh1);
+  prismMesh2=makePrism(); prismMesh2.userData.action='prism2'; scene.add(prismMesh2);
+  placePrisms(); computeOptics(); lastSpoken=lightState; rebuildRibbons();
+  onResize();
+  addEventListener('resize',onResizeSoon); addEventListener('orientationchange',onResizeSoon);
+  try{ if(window.visualViewport) visualViewport.addEventListener('resize',onResizeSoon); }catch(e){}
+  requestAnimationFrame(frame);
+  $('#loadNote').textContent='The classroom is dark. A flashlight shines white light at a glass prism. Can you turn it to make a rainbow?';
+  $('#goBtn').disabled=false;
+}
+$('#goBtn').onclick=()=>{
+  unlock(); $('#startScreen').hidden=true; keepAwake();
+  document.addEventListener('visibilitychange',()=>{ if(document.visibilityState==='visible') keepAwake(); });
+  onResize();
+  setTip('Turn the glass prism to make a rainbow!','Xoay lăng kính để làm cầu vồng nhé!');
+};
+boot();
+})();
+</script>
+</body>
+</html>

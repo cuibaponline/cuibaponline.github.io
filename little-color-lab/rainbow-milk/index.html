@@ -1,0 +1,963 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#f5f8ef">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<style>
+*,*::before,*::after{box-sizing:border-box}
+body{margin:0;font-size:14px}
+img{max-width:100%}
+</style>
+<title>Rainbow Milk</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;800&family=Nunito:wght@600;800&family=Patrick+Hand&display=swap">
+<style>
+/* Layout: full-bleed 3D kitchen table seen from above, a plate of milk filling the width; title + tools on top, bilingual bubble, dropper/tool tray at the bottom. Deliberately single warm light theme. */
+:root{
+  --table:#c9a57a;      /* wooden table */
+  --ink:#1e2b44;
+  --marker:#2c68b2;
+  --sun:#ffcd34;
+  --milk:#fbf8f0;
+  --card:#ffffff;
+  --line:#e2d8c8;
+  --shadow:rgba(60,40,20,.22);
+  --f-display:'Baloo 2','Nunito',system-ui,sans-serif;
+  --f-body:'Nunito',system-ui,-apple-system,'Segoe UI',sans-serif;
+  --f-hand:'Patrick Hand','Comic Sans MS','Chalkboard SE',cursive;
+  color-scheme:light;
+}
+[hidden]{display:none!important}
+html,body{height:100%;overflow:hidden}
+body{background:var(--table);color:var(--ink);font-family:var(--f-body);-webkit-tap-highlight-color:transparent;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;touch-action:manipulation}
+#c{position:fixed;inset:0;width:100%;height:100%;display:block;touch-action:none;outline:none}
+button{font:inherit;color:inherit;cursor:pointer;border:0;background:none}
+button:focus-visible{outline:3px solid var(--marker);outline-offset:3px}
+
+.hud{position:fixed;inset:0;pointer-events:none;display:flex;flex-direction:column;justify-content:space-between;
+  padding:calc(env(safe-area-inset-top,0px) + 12px) 16px calc(env(safe-area-inset-bottom,0px) + 12px);gap:10px}
+.hud > *{pointer-events:auto}
+.top{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;pointer-events:none}
+.top > *{pointer-events:auto}
+.brand{background:var(--card);border-radius:18px;padding:6px 16px 8px;box-shadow:0 4px 0 var(--line),0 8px 20px var(--shadow);min-width:0}
+.brand h1{margin:0;font-family:var(--f-display);font-weight:800;font-size:1.45rem;line-height:1.05;letter-spacing:-.01em;white-space:nowrap;
+  background:linear-gradient(90deg,#e5322d,#f7851e 22%,#d9a400 40%,#1fa347 58%,#1f6fe0 78%,#7b3fc4);-webkit-background-clip:text;background-clip:text;color:transparent}
+.brand p{margin:0;font-family:var(--f-hand);font-size:1.2rem;color:var(--marker);line-height:1.1;white-space:nowrap}
+.tools{display:flex;gap:8px;flex:none}
+.tool{min-width:48px;height:48px;border-radius:14px;background:var(--card);display:grid;place-items:center;padding:0 12px;
+  box-shadow:0 4px 0 var(--line),0 8px 18px var(--shadow);font-family:var(--f-display);font-weight:800;font-size:.95rem;white-space:nowrap}
+.tool svg{width:24px;height:24px}
+.tool[aria-pressed="false"] .on{display:none}.tool[aria-pressed="true"] .off{display:none}
+
+.col{flex:1;display:flex;flex-direction:column;gap:10px;align-items:center;pointer-events:none}
+.bubble{pointer-events:auto;max-width:min(560px,100%);background:var(--card);border-radius:22px;padding:10px 12px 10px 18px;
+  display:flex;align-items:center;gap:12px;box-shadow:0 5px 0 var(--line),0 10px 24px var(--shadow)}
+.bubble .txt{min-width:0}
+.bubble .en{margin:0;font-family:var(--f-display);font-weight:800;font-size:1.25rem;line-height:1.15;text-wrap:balance}
+.bubble .vi{margin:2px 0 0;font-family:var(--f-hand);font-size:1.3rem;line-height:1.1;color:var(--marker);text-wrap:balance}
+.say{flex:none;width:46px;height:46px;border-radius:50%;background:var(--marker);color:#fff;display:grid;place-items:center}
+.say svg{width:24px;height:24px}
+
+.tray{align-self:center;max-width:100%;background:var(--card);border-radius:26px;padding:10px 12px;display:flex;flex-wrap:wrap;
+  justify-content:center;align-items:center;gap:10px 14px;box-shadow:0 6px 0 var(--line),0 12px 30px var(--shadow)}
+.colors{display:flex;gap:6px}
+.cbtn{width:54px;min-height:64px;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;gap:2px;padding:4px 0;border-radius:14px;transition:background .2s,transform .15s}
+.cbtn[aria-pressed="true"]{background:#fff2c2;box-shadow:inset 0 0 0 3px var(--sun)}
+.cbtn b{font-family:var(--f-display);font-weight:800;font-size:.72rem;line-height:1}
+.cbtn i{font-style:normal;font-family:var(--f-hand);font-size:.85rem;line-height:.95;color:var(--marker);text-align:center;min-height:1.9em;display:flex;align-items:flex-start;justify-content:center}
+.drp{display:flex;flex-direction:column;align-items:center}
+.drp .tipc{width:0;height:0;border-left:5px solid transparent;border-right:5px solid transparent;border-bottom:10px solid var(--c)}
+.drp .ring{width:14px;height:5px;border-radius:2px;background:var(--c);filter:brightness(1.15)}
+.drp .glass{width:24px;height:24px;border-radius:7px 7px 9px 9px;background:var(--c);box-shadow:inset -5px -4px 0 rgba(0,0,0,.18),inset 4px 3px 0 rgba(255,255,255,.35)}
+.acts{display:flex;gap:8px}
+.act{min-width:78px;min-height:62px;border-radius:18px;background:#f3ede3;display:flex;flex-direction:column;align-items:center;justify-content:center;
+  padding:4px 8px;box-shadow:inset 0 -4px 0 var(--line);transition:transform .15s,background .2s}
+.act svg{width:28px;height:28px}
+.act b{font-family:var(--f-display);font-weight:800;font-size:.86rem;line-height:1.05;white-space:nowrap}
+.act i{font-style:normal;font-family:var(--f-hand);font-size:.92rem;line-height:1;color:var(--marker);white-space:nowrap}
+.act[aria-pressed="true"]{background:#fff2c2;box-shadow:inset 0 0 0 3px var(--sun)}
+.act:active,.cbtn:active{transform:scale(.94)}
+.next{background:var(--sun)!important;animation:nudge 1.4s ease-in-out infinite}
+@keyframes nudge{0%,100%{transform:scale(1)}50%{transform:scale(1.07)}}
+@media (prefers-reduced-motion:reduce){.next{animation:none!important}}
+
+.overlay{position:fixed;inset:0;display:grid;place-items:center;padding:16px;background:rgba(80,56,30,.45);backdrop-filter:blur(4px);z-index:5}
+.start{background:var(--card);border-radius:28px;padding:22px 26px 26px;text-align:center;max-width:420px;box-shadow:0 6px 0 var(--line),0 16px 40px var(--shadow)}
+.start h2{margin:0;font-family:var(--f-display);font-weight:800;font-size:2rem;line-height:1.05}
+.start .vi{margin:2px 0 12px;font-family:var(--f-hand);font-size:1.6rem;color:var(--marker)}
+.start p.note{margin:0 0 16px;font-size:.95rem;line-height:1.45;color:#5a5448}
+.go{background:var(--sun);border-radius:20px;padding:12px 26px;font-family:var(--f-display);font-weight:800;font-size:1.4rem;
+  box-shadow:inset 0 -5px 0 rgba(0,0,0,.12);display:inline-flex;flex-direction:column;align-items:center;line-height:1.05}
+.go i{font-style:normal;font-family:var(--f-hand);font-size:1.2rem;font-weight:400}
+.dish{width:130px;height:130px;margin:0 auto 12px;border-radius:50%;background:
+  radial-gradient(circle at 30% 34%,#e5322d 0 9%,transparent 16%),radial-gradient(circle at 62% 28%,#ffc81a 0 9%,transparent 16%),
+  radial-gradient(circle at 74% 58%,#1f6fe0 0 9%,transparent 16%),radial-gradient(circle at 48% 74%,#1fa347 0 9%,transparent 16%),
+  radial-gradient(circle at 24% 62%,#ff4fa3 0 8%,transparent 15%),radial-gradient(circle at 50% 50%,#7b3fc4 0 7%,transparent 13%),var(--milk);
+  box-shadow:0 0 0 8px #fff,0 0 0 11px #bcd7f2,0 8px 18px var(--shadow)}
+
+.sheet{position:fixed;inset:0;z-index:6;display:grid;place-items:center;padding:16px;background:rgba(40,28,14,.4)}
+.sheet .box{background:var(--card);border-radius:24px;max-width:620px;width:100%;max-height:100%;overflow:auto;padding:20px 22px 22px;box-shadow:0 16px 40px var(--shadow)}
+.sheet h2{margin:0 0 4px;font-family:var(--f-display);font-weight:800;font-size:1.5rem}
+.sheet h3{margin:16px 0 4px;font-family:var(--f-display);font-weight:800;font-size:1.1rem}
+.sheet p,.sheet li{font-size:.98rem;line-height:1.5;max-width:65ch}
+.sheet p{margin:4px 0}
+.sheet .vi{color:var(--marker)}
+.sheet ul{margin:4px 0;padding-left:20px}
+.sheet .x{float:right;width:44px;height:44px;border-radius:50%;background:#f3ede3;display:grid;place-items:center;font-weight:800;font-size:1.2rem}
+.err{max-width:420px;text-align:center;font-size:1rem;line-height:1.5}
+
+@media (max-width:620px){
+  .hud{gap:8px}
+  .brand{padding:4px 12px 6px;border-radius:14px;flex:0 1 auto;overflow:hidden}
+  .brand h1{font-size:1.15rem}.brand p{font-size:1rem}
+  .tools{gap:6px}
+  .tool{min-width:42px;height:42px;padding:0 9px;font-size:.82rem;border-radius:12px}
+  .tool svg{width:22px;height:22px}
+  .bubble{align-self:stretch;padding:8px 8px 8px 14px;border-radius:18px;gap:8px;justify-content:space-between}
+  .bubble .en{font-size:1.02rem}.bubble .vi{font-size:1.12rem}
+  .say{width:42px;height:42px}
+  .tray{align-self:stretch;flex-direction:column;padding:8px;gap:6px;border-radius:22px}
+  .colors,.acts{width:100%;justify-content:space-between;gap:4px}
+  .cbtn{width:auto;flex:1 1 0;min-width:0}
+  .act{flex:1 1 0;min-width:0;min-height:56px;padding:4px 2px;border-radius:16px}
+  .act svg{width:24px;height:24px}
+  .act b{font-size:.8rem}.act i{font-size:.84rem;white-space:normal;text-align:center}
+}
+@media (max-width:360px){ .cbtn b{display:none} .tools #langBtn{display:none} }
+@media (max-height:520px){
+  .brand{display:none}
+  .dish{width:70px;height:70px;margin-bottom:8px}
+  .start{padding:14px 22px 18px}
+  .start .vi{margin-bottom:6px}
+  .start p.note{margin-bottom:10px}
+  .top{position:absolute;top:calc(env(safe-area-inset-top,0px) + 10px);right:16px}
+  .col{align-items:flex-start}
+  .bubble{max-width:min(420px,calc(100% - 210px));padding:6px 8px 6px 12px}
+  .bubble .en{font-size:.98rem}.bubble .vi{font-size:1.05rem}
+  .say{width:38px;height:38px}
+  .tray{padding:6px 10px;gap:8px;flex-wrap:nowrap}
+  .cbtn{min-height:56px;width:56px}
+  .act{min-height:52px;min-width:66px}
+}
+</style>
+</head>
+<body>
+<canvas id="c" tabindex="-1" aria-label="3D table seen from above with a white plate of milk, food coloring droppers and a cotton swab"></canvas>
+
+<div class="hud">
+  <div class="top">
+    <div class="brand">
+      <h1>Rainbow Milk</h1>
+      <p lang="vi">Sữa cầu vồng</p>
+    </div>
+    <div class="tools">
+      <a class="tool" href="../" aria-label="Back to Little Color Lab" title="Back" style="text-decoration:none;color:inherit">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg>
+      </a>
+      <button class="tool" id="langBtn" aria-label="Voice language">EN + VI</button>
+      <button class="tool" id="muteBtn" aria-pressed="true" aria-label="Sound">
+        <svg class="on" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9h4l5-4v14l-5-4H4z" fill="currentColor"/><path d="M16.5 8.5a5 5 0 0 1 0 7M19 6a8.5 8.5 0 0 1 0 12"/></svg>
+        <svg class="off" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9h4l5-4v14l-5-4H4z" fill="currentColor"/><path d="M17 9l5 6M22 9l-5 6"/></svg>
+      </button>
+      <button class="tool" id="infoBtn" aria-label="For grown-ups">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><circle cx="12" cy="12" r="9.5"/><path d="M9.3 9.3a2.8 2.8 0 1 1 3.9 2.6c-.8.4-1.2 1-1.2 1.8v.5"/><circle cx="12" cy="17.3" r=".6" fill="currentColor"/></svg>
+      </button>
+    </div>
+  </div>
+
+  <div class="col">
+    <div class="bubble" role="status" aria-live="polite">
+      <div class="txt">
+        <p class="en" id="tipEn">Colors are on the milk. Tap the soap swab, then touch the milk!</p>
+        <p class="vi" id="tipVi" lang="vi">Có màu trên sữa rồi. Chọn tăm bông xà phòng, rồi chạm vào sữa nhé!</p>
+      </div>
+      <button class="say" id="sayBtn" aria-label="Say it again">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9h4l5-4v14l-5-4H4z" fill="currentColor"/><path d="M16.5 8.5a5 5 0 0 1 0 7"/></svg>
+      </button>
+    </div>
+  </div>
+
+  <nav class="tray" aria-label="Experiment tools">
+    <div class="colors" id="colors" role="group" aria-label="Food coloring"></div>
+    <div class="acts">
+      <button class="act" id="btnSoap" aria-pressed="false">
+        <svg viewBox="0 0 24 24"><path d="M5.5 19.5L17.5 5" stroke="#9fb8d6" stroke-width="2.2" stroke-linecap="round"/><ellipse cx="18.6" cy="3.9" rx="2.1" ry="3" transform="rotate(40 18.6 3.9)" fill="#fff" stroke="#1e2b44" stroke-width="1.4"/><ellipse cx="4.6" cy="20.4" rx="2.1" ry="3" transform="rotate(40 4.6 20.4)" fill="#fff3a8" stroke="#1e2b44" stroke-width="1.4"/><circle cx="9" cy="21" r="1.5" fill="#bfe6ff" stroke="#2c68b2" stroke-width=".9"/><circle cx="2.6" cy="15.2" r="1.2" fill="#bfe6ff" stroke="#2c68b2" stroke-width=".9"/></svg>
+        <b>Soap swab</b><i lang="vi">Tăm bông xà phòng</i>
+      </button>
+      <button class="act" id="btnStir">
+        <svg viewBox="0 0 24 24" fill="none" stroke-linecap="round"><ellipse cx="12" cy="15" rx="9" ry="5" stroke="#1e2b44" stroke-width="1.8" fill="#fbf8f0"/><path d="M7 15.5c1.5 2 8.5 2 10-.5" stroke="#e5322d" stroke-width="1.8"/><path d="M8.5 13.5c2-1.6 6-1.6 7.5.3" stroke="#1f6fe0" stroke-width="1.8"/><path d="M15 2.5l-2.5 12" stroke="#b98a55" stroke-width="3"/></svg>
+        <b>Stir</b><i lang="vi">Khuấy</i>
+      </button>
+      <button class="act" id="btnNew">
+        <svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="11" cy="14" rx="9" ry="6" fill="#fff" stroke="#1e2b44" stroke-width="1.8"/><ellipse cx="11" cy="14" rx="5.6" ry="3.4" fill="#fbf8f0" stroke="#bcd7f2" stroke-width="1.4"/><path d="M21.5 7.5a7 7 0 0 0-4-4.5" stroke="#2c68b2" stroke-width="2"/><path d="M22 2.8v4.9h-4.8" stroke="#2c68b2" stroke-width="2"/></svg>
+        <b>New plate</b><i lang="vi">Đĩa mới</i>
+      </button>
+    </div>
+  </nav>
+</div>
+
+<div class="overlay" id="startScreen">
+  <div class="start">
+    <div class="dish" aria-hidden="true"></div>
+    <h2>Rainbow Milk</h2>
+    <p class="vi" lang="vi">Sữa cầu vồng</p>
+    <p class="note" id="loadNote">Pouring the milk…</p>
+    <button class="go" id="goBtn" disabled>Let's play! <i lang="vi">Chơi thôi!</i></button>
+  </div>
+</div>
+
+<div class="sheet" id="info" hidden>
+  <div class="box" role="dialog" aria-labelledby="infoTitle">
+    <button class="x" id="infoClose" aria-label="Close">✕</button>
+    <h2 id="infoTitle">For grown-ups</h2>
+    <p class="vi" lang="vi">Dành cho ba mẹ</p>
+
+    <h3>How to play</h3>
+    <ul>
+      <li>Tap a <b>color</b> in the tray to drop it on the milk. Then tap anywhere on the milk to drop more of that color.</li>
+      <li>Tap <b>Soap swab</b>, then touch the milk. The colors rush away from the soap and keep swirling. Touch again for smaller pushes.</li>
+      <li><b>Stir</b> swirls everything into spirals. <b>New plate</b> starts again with clean milk. Drag the table to turn it a little.</li>
+    </ul>
+    <p class="vi" lang="vi">Chạm vào một màu để nhỏ lên sữa, rồi chạm vào sữa để nhỏ thêm. Chọn tăm bông xà phòng rồi chạm vào sữa: các màu chạy ra xa và xoáy tròn. Khuấy để tạo hình xoắn ốc. Đĩa mới để làm lại.</p>
+
+    <h3>Why does it happen?</h3>
+    <p>The top of the milk is like a thin stretchy skin (surface tension) that holds the food coloring in place. Milk also has tiny drops of fat. Dish soap weakens the skin right where it touches, so the stronger skin around it pulls the surface away from the soap, carrying the colors toward the edge of the plate. The soap also grabs onto the fat, and as the soap spreads and mixes, the milk keeps moving and swirling for a while. When the soap has spread everywhere, the show slows down. Whole milk (more fat) works best.</p>
+    <p class="vi" lang="vi">Mặt sữa giống một lớp “da” mỏng co giãn (sức căng bề mặt) giữ các giọt màu đứng yên. Trong sữa có những hạt chất béo nhỏ. Nước rửa chén làm lớp da yếu đi ngay chỗ chạm vào, nên phần mặt sữa xung quanh kéo ra xa, mang theo các màu chạy về mép đĩa. Xà phòng còn bám vào chất béo, nên sữa tiếp tục chuyển động và xoáy một lúc. Khi xà phòng đã lan khắp đĩa thì màu chạy chậm lại. Sữa tươi nguyên kem (nhiều béo) cho kết quả đẹp nhất.</p>
+
+    <h3>Questions to ask</h3>
+    <ul>
+      <li>What happens when the soap touches the milk? <span class="vi" lang="vi">Khi xà phòng chạm vào sữa thì sao?</span></li>
+      <li>Where do the colors run to? <span class="vi" lang="vi">Các màu chạy đi đâu?</span></li>
+      <li>Where red and blue meet, what color do you see? <span class="vi" lang="vi">Chỗ màu đỏ gặp màu xanh dương, con thấy màu gì?</span></li>
+      <li>Why is the second touch smaller? <span class="vi" lang="vi">Vì sao lần chạm thứ hai yếu hơn?</span></li>
+    </ul>
+
+    <h3>Try it at home</h3>
+    <p>Pour a thin layer of whole milk into a plate. Add a few drops of food coloring near the middle. Dip a cotton swab in dish soap and touch it to the milk, then hold it still and watch. A grown-up helps with the soap, and nobody drinks the milk afterwards.</p>
+    <p class="vi" lang="vi">Đổ một lớp mỏng sữa tươi nguyên kem vào đĩa. Nhỏ vài giọt màu thực phẩm gần giữa đĩa. Nhúng tăm bông vào nước rửa chén rồi chạm vào sữa, giữ yên và quan sát. Ba mẹ giúp bé phần nước rửa chén, và không uống sữa sau khi làm thí nghiệm nhé.</p>
+    <p style="font-size:.85rem;color:#6b6252">The spoken Vietnamese uses your device's Vietnamese voice. If you hear no Vietnamese, the device may not have one installed; the words are always on screen.</p>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+(function(){
+'use strict';
+const $=s=>document.querySelector(s);
+
+/* ---------- content ---------- */
+// T = how much of red, green, blue light a full-strength drop lets through (paint-like mixing)
+const COLORS=[
+  {id:'red',    en:'Red',    vi:'Đỏ',         vil:'đỏ',         hex:'#e5322d', T:[0.93,0.12,0.14]},
+  {id:'yellow', en:'Yellow', vi:'Vàng',       vil:'vàng',       hex:'#ffc81a', T:[1.00,0.84,0.08]},
+  {id:'blue',   en:'Blue',   vi:'Xanh dương', vil:'xanh dương', hex:'#1f6fe0', T:[0.08,0.40,0.93]},
+  {id:'green',  en:'Green',  vi:'Xanh lá',    vil:'xanh lá',    hex:'#1fa347', T:[0.10,0.62,0.22]},
+  {id:'pink',   en:'Pink',   vi:'Hồng',       vil:'hồng',       hex:'#ff4fa3', T:[1.00,0.32,0.62]},
+  {id:'purple', en:'Purple', vi:'Tím',        vil:'tím',        hex:'#7b3fc4', T:[0.46,0.15,0.78]},
+];
+COLORS.forEach(c=>{ c.k=c.T.map(t=>-Math.log(Math.max(0.02,t))); });
+
+/* ---------- UI: color droppers ---------- */
+const colorsEl=$('#colors');
+COLORS.forEach((c,i)=>{
+  const b=document.createElement('button');
+  b.className='cbtn'; b.setAttribute('aria-pressed','false');
+  b.setAttribute('aria-label',c.en+' food coloring / Màu '+c.vil);
+  b.innerHTML='<span class="drp" style="--c:'+c.hex+'"><span class="tipc"></span><span class="ring"></span><span class="glass"></span></span><b>'+c.en+'</b><i lang="vi">'+c.vi+'</i>';
+  b.addEventListener('click',()=>{unlock();pickColor(i,true);});
+  colorsEl.appendChild(b);
+});
+
+/* ---------- speech + sound ---------- */
+let soundOn=true, voiceMode='both';
+try{ const v=localStorage.getItem('rbm-voice'); if(v) voiceMode=v; if(localStorage.getItem('rbm-mute')==='1') soundOn=false; }catch(e){}
+const langBtn=$('#langBtn'), muteBtn=$('#muteBtn');
+const LANG_LABEL={both:'EN + VI',en:'EN',vi:'VI'};
+function syncTools(){ langBtn.textContent=LANG_LABEL[voiceMode]||'EN + VI'; muteBtn.setAttribute('aria-pressed',String(soundOn)); }
+syncTools();
+langBtn.onclick=()=>{ voiceMode=voiceMode==='both'?'en':voiceMode==='en'?'vi':'both'; try{localStorage.setItem('rbm-voice',voiceMode)}catch(e){} syncTools(); sayTip(); };
+muteBtn.onclick=()=>{ soundOn=!soundOn; try{localStorage.setItem('rbm-mute',soundOn?'0':'1')}catch(e){} syncTools(); if(!soundOn){try{speechSynthesis.cancel()}catch(e){}} };
+let voices=[];
+function loadVoices(){ try{ voices=window.speechSynthesis?speechSynthesis.getVoices():[]; }catch(e){} }
+try{ if(window.speechSynthesis){ loadVoices(); speechSynthesis.onvoiceschanged=loadVoices; } }catch(e){}
+const pickVoice=l=>voices.find(v=>v.lang&&v.lang.toLowerCase().replace('_','-').startsWith(l));
+function say(en,vi){
+  if(!soundOn) return;
+  try{
+    const ss=window.speechSynthesis; if(!ss) return;
+    const busyNow=ss.speaking||ss.pending; ss.cancel();
+    const q=[];
+    if(voiceMode!=='vi') q.push({t:en,l:'en-US',v:pickVoice('en-us')||pickVoice('en')});
+    if(voiceMode!=='en') q.push({t:vi,l:'vi-VN',v:pickVoice('vi')});
+    const go=()=>q.forEach(o=>{ const u=new SpeechSynthesisUtterance(o.t); u.lang=o.l; if(o.v) u.voice=o.v; u.rate=o.l==='vi-VN'?0.95:0.92; u.pitch=1.15; ss.speak(u); });
+    if(busyNow) setTimeout(go,80); else go();
+  }catch(e){}
+}
+let ac=null;
+function unlock(){ if(!ac){ try{ ac=new (window.AudioContext||window.webkitAudioContext)(); }catch(e){} } if(ac&&ac.state==='suspended') ac.resume(); }
+function tone(f0,f1,dur,vol,type){
+  if(!soundOn||!ac) return;
+  const t=ac.currentTime,o=ac.createOscillator(),g=ac.createGain();
+  o.type=type||'sine'; o.frequency.setValueAtTime(f0,t); o.frequency.exponentialRampToValueAtTime(f1,t+dur);
+  g.gain.setValueAtTime(vol,t); g.gain.exponentialRampToValueAtTime(0.0001,t+dur);
+  o.connect(g).connect(ac.destination); o.start(t); o.stop(t+dur+0.02);
+}
+function noise(dur,f0,f1,vol){
+  if(!soundOn||!ac) return;
+  const len=Math.floor(ac.sampleRate*dur), buf=ac.createBuffer(1,len,ac.sampleRate), d=buf.getChannelData(0);
+  for(let i=0;i<len;i++) d[i]=Math.random()*2-1;
+  const s=ac.createBufferSource(); s.buffer=buf;
+  const f=ac.createBiquadFilter(); f.type='bandpass'; f.Q.value=1.1;
+  const g=ac.createGain(), t=ac.currentTime;
+  f.frequency.setValueAtTime(f0,t); f.frequency.exponentialRampToValueAtTime(f1,t+dur);
+  g.gain.setValueAtTime(0.0001,t); g.gain.linearRampToValueAtTime(vol,t+Math.min(0.12,dur*0.3)); g.gain.exponentialRampToValueAtTime(0.0001,t+dur);
+  s.connect(f).connect(g).connect(ac.destination); s.start(t);
+}
+const buzz=ms=>{ try{ if(soundOn&&navigator.vibrate) navigator.vibrate(ms); }catch(e){} };
+const click=()=>{ tone(1200,700,0.05,0.1,'square'); buzz(10); };
+const plop=()=>{ buzz(14); tone(950,260,0.12,0.22); setTimeout(()=>tone(520,1100,0.07,0.07),50); };
+const whoosh=k=>{ buzz(35); noise(1.0,250,2600,0.22*k+0.05); [1047,1319,1568,2093].forEach((f,i)=>setTimeout(()=>tone(f,f*1.02,0.3,0.06*k+0.02,'triangle'),140+i*85)); };
+const swish=()=>noise(2.8,320,520,0.12);
+const chime=()=>{ tone(660,660,0.25,0.13,'triangle'); setTimeout(()=>tone(880,880,0.25,0.13,'triangle'),140); setTimeout(()=>tone(1175,1175,0.4,0.13,'triangle'),280); };
+
+/* ---------- tips ---------- */
+let tip={en:'',vi:''};
+function setTip(en,vi,speak){ tip={en,vi}; $('#tipEn').textContent=en; $('#tipVi').textContent=vi; if(typeof refitSoon==='function') refitSoon(); if(speak!==false) say(en,vi); }
+function sayTip(){ say(tip.en,tip.vi); }
+$('#sayBtn').onclick=()=>{unlock();sayTip();};
+$('#infoBtn').onclick=()=>{ $('#info').hidden=false; };
+$('#infoClose').onclick=()=>{ $('#info').hidden=true; };
+$('#info').addEventListener('click',e=>{ if(e.target.id==='info') $('#info').hidden=true; });
+
+if(typeof THREE==='undefined'){
+  $('#loadNote').className='err';
+  $('#loadNote').textContent='The 3D engine could not load. Check the internet connection and open the page again.';
+  return;
+}
+
+/* ============================================================
+   2D FLUID ON THE MILK SURFACE (Stam stable fluids)
+   velocity grid N x N, dye grid M x M (finer, for crisp streaks)
+   ============================================================ */
+const N=96, NN=N*N, M=160, MM=M*M;
+const RC=N/2-1.5;                  // milk radius in velocity cells
+const u=new Float32Array(NN), v=new Float32Array(NN), u0=new Float32Array(NN), v0=new Float32Array(NN);
+const p=new Float32Array(NN), dv=new Float32Array(NN), S=new Float32Array(NN), w=new Float32Array(NN), aw=new Float32Array(NN);
+const mask=new Uint8Array(NN), nb=new Float32Array(NN), rimW=new Float32Array(NN);
+let fluid, fI, fJ, rimSum=0;
+(function(){
+  const C=(N-1)/2, list=[];
+  for(let j=0;j<N;j++) for(let i=0;i<N;i++){ const d=Math.hypot(i-C,j-C), k=j*N+i; if(d<RC){ mask[k]=1; list.push(k); } }
+  fluid=Int32Array.from(list); fI=new Float32Array(list.length); fJ=new Float32Array(list.length);
+  list.forEach((k,n)=>{ fI[n]=k%N; fJ[n]=(k-k%N)/N; const d=Math.hypot(fI[n]-C,fJ[n]-C);
+    nb[k]=mask[k+1]+mask[k-1]+mask[k+N]+mask[k-N];
+    const t=Math.min(1,Math.max(0,(d-(RC-9))/8)); rimW[k]=t*t*(3-2*t); rimSum+=rimW[k]; });
+})();
+// dye grid (absorbance per channel: paint-like mixing)
+const Ar=new Float32Array(MM), Ag=new Float32Array(MM), Ab=new Float32Array(MM), A0=new Float32Array(MM), A1=new Float32Array(MM);
+const dMask=new Uint8Array(MM), shade=new Float32Array(MM);
+let dFluid, dI, dJ, dVel, dW, rimFrom, rimTo;
+const SC=N/M;   // dye cell -> velocity cell scale
+(function(){
+  const C=(M-1)/2, RD=RC/SC, list=[], rf=[], rt=[];
+  for(let j=0;j<M;j++) for(let i=0;i<M;i++){
+    const d=Math.hypot(i-C,j-C), k=j*M+i;
+    if(d<RD){ dMask[k]=1; list.push(k); }
+    const e=Math.max(0,Math.min(1,(RD-d)/5)); shade[k]=0.9+0.1*Math.sqrt(e);
+  }
+  for(let j=0;j<M;j++) for(let i=0;i<M;i++){
+    const k=j*M+i; if(dMask[k]) continue;
+    const dx=i-C, dy=j-C, d=Math.hypot(dx,dy); if(d>RD+3||d<1) continue;
+    for(let r=d;r>0;r-=0.5){ const ii=Math.round(C+dx/d*r), jj=Math.round(C+dy/d*r), kk=jj*M+ii; if(dMask[kk]){ rf.push(kk); rt.push(k); break; } }
+  }
+  rimFrom=Int32Array.from(rf); rimTo=Int32Array.from(rt);
+  dFluid=Int32Array.from(list); dI=new Float32Array(list.length); dJ=new Float32Array(list.length);
+  dVel=new Int32Array(list.length); dW=new Float32Array(list.length*2);
+  list.forEach((k,n)=>{ const i=k%M, j=(k-i)/M; dI[n]=i; dJ[n]=j;
+    let x=(i+0.5)*SC-0.5, y=(j+0.5)*SC-0.5; x=Math.max(0,Math.min(N-1.001,x)); y=Math.max(0,Math.min(N-1.001,y));
+    const i0=x|0, j0=y|0; dVel[n]=j0*N+i0; dW[n*2]=x-i0; dW[n*2+1]=y-j0; });
+})();
+
+function advectVel(d,s,dt){
+  const L=fluid.length;
+  for(let n=0;n<L;n++){
+    const k=fluid[n];
+    let x=fI[n]-dt*u0[k], y=fJ[n]-dt*v0[k];
+    if(x<0.5)x=0.5; else if(x>N-1.5)x=N-1.5;
+    if(y<0.5)y=0.5; else if(y>N-1.5)y=N-1.5;
+    const i0=x|0, j0=y|0, sx=x-i0, sy=y-j0, a=j0*N+i0;
+    d[k]=(1-sy)*((1-sx)*s[a]+sx*s[a+1])+sy*((1-sx)*s[a+N]+sx*s[a+N+1]);
+  }
+}
+function advectDye(dt){
+  for(let r=0;r<rimTo.length;r++){ const a=rimFrom[r], b=rimTo[r]; Ar[b]=Ar[a]; Ag[b]=Ag[a]; Ab[b]=Ab[a]; }
+  const L=dFluid.length, k2=dt/SC;
+  // backtrace (and forward trace, for MacCormack error correction) shared by all three channels
+  if(!advectDye.bx){ advectDye.bx=new Int32Array(L); advectDye.fx=new Float32Array(L); advectDye.fy=new Float32Array(L);
+    advectDye.cx=new Int32Array(L); advectDye.gx=new Float32Array(L); advectDye.gy=new Float32Array(L); }
+  const BX=advectDye.bx, FX=advectDye.fx, FY=advectDye.fy, CX=advectDye.cx, GX=advectDye.gx, GY=advectDye.gy;
+  for(let n=0;n<L;n++){
+    const a=dVel[n], sx=dW[n*2], sy=dW[n*2+1];
+    const uu=(1-sy)*((1-sx)*u[a]+sx*u[a+1])+sy*((1-sx)*u[a+N]+sx*u[a+N+1]);
+    const vv=(1-sy)*((1-sx)*v[a]+sx*v[a+1])+sy*((1-sx)*v[a+N]+sx*v[a+N+1]);
+    let x=dI[n]-k2*uu, y=dJ[n]-k2*vv;
+    if(x<0.5)x=0.5; else if(x>M-1.5)x=M-1.5;
+    if(y<0.5)y=0.5; else if(y>M-1.5)y=M-1.5;
+    let i0=x|0, j0=y|0; BX[n]=j0*M+i0; FX[n]=x-i0; FY[n]=y-j0;
+    x=dI[n]+k2*uu; y=dJ[n]+k2*vv;
+    if(x<0.5)x=0.5; else if(x>M-1.5)x=M-1.5;
+    if(y<0.5)y=0.5; else if(y>M-1.5)y=M-1.5;
+    i0=x|0; j0=y|0; CX[n]=j0*M+i0; GX[n]=x-i0; GY[n]=y-j0;
+  }
+  for(const F of [Ar,Ag,Ab]){
+    A0.set(F);
+    for(let n=0;n<L;n++){ const a=BX[n], sx=FX[n], sy=FY[n];
+      A1[dFluid[n]]=(1-sy)*((1-sx)*A0[a]+sx*A0[a+1])+sy*((1-sx)*A0[a+M]+sx*A0[a+M+1]); }
+    for(let r=0;r<rimTo.length;r++) A1[rimTo[r]]=A1[rimFrom[r]];
+    for(let n=0;n<L;n++){
+      const c=CX[n], sx=GX[n], sy=GY[n];
+      const back=(1-sy)*((1-sx)*A1[c]+sx*A1[c+1])+sy*((1-sx)*A1[c+M]+sx*A1[c+M+1]);
+      const k=dFluid[n], a=BX[n], q0=A0[a], q1=A0[a+1], q2=A0[a+M], q3=A0[a+M+1];
+      let val=A1[k]+0.5*(A0[k]-back);
+      const lo=Math.min(q0,q1,q2,q3), hi=Math.max(q0,q1,q2,q3);
+      if(val<lo)val=lo; else if(val>hi)val=hi;
+      A1[k]=val;
+    }
+    // a touch of diffusion (colors slowly blur into the milk) also hides grid noise
+    for(let r=0;r<rimTo.length;r++) A1[rimTo[r]]=A1[rimFrom[r]];
+    for(let n=0;n<L;n++){ const k=dFluid[n]; F[k]=A1[k]*0.96+0.01*(A1[k+1]+A1[k-1]+A1[k+M]+A1[k-M]); }
+  }
+}
+function vorticity(dt,eps){
+  const L=fluid.length;
+  for(let n=0;n<L;n++){ const k=fluid[n]; const c=0.5*((v[k+1]-v[k-1])-(u[k+N]-u[k-N])); w[k]=c; aw[k]=c<0?-c:c; }
+  for(let n=0;n<L;n++){ const k=fluid[n]; if(nb[k]<4) continue;
+    const gx=0.5*(aw[k+1]-aw[k-1]), gy=0.5*(aw[k+N]-aw[k-N]), l=Math.sqrt(gx*gx+gy*gy)+1e-5;
+    u[k]+=dt*eps*(gy/l)*w[k]; v[k]-=dt*eps*(gx/l)*w[k]; }
+}
+const ITER=12, OMEGA=1.7;
+function project(){
+  const L=fluid.length;
+  for(let n=0;n<L;n++){ const k=fluid[n];
+    dv[k]=0.5*((mask[k+1]?u[k+1]:0)-(mask[k-1]?u[k-1]:0)+(mask[k+N]?v[k+N]:0)-(mask[k-N]?v[k-N]:0))-S[k]; }
+  for(let it=0;it<ITER;it++){
+    for(let n=0;n<L;n++){ const k=fluid[n];
+      const s=(mask[k+1]?p[k+1]:0)+(mask[k-1]?p[k-1]:0)+(mask[k+N]?p[k+N]:0)+(mask[k-N]?p[k-N]:0);
+      p[k]+=OMEGA*((s-dv[k])/nb[k]-p[k]); }
+  }
+  for(let n=0;n<L;n++){ const k=fluid[n], pc=p[k];
+    const pr=mask[k+1]?p[k+1]:pc, pl=mask[k-1]?p[k-1]:pc, pd=mask[k+N]?p[k+N]:pc, pu=mask[k-N]?p[k-N]:pc;
+    u[k]-=0.5*(pr-pl); v[k]-=0.5*(pd-pu); }
+}
+function addGauss(F,gx,gy,sig,amp){
+  const r=Math.ceil(sig*2.6), s2=1/(sig*sig);
+  for(let j=Math.max(1,Math.floor(gy-r));j<=Math.min(N-2,Math.ceil(gy+r));j++)
+    for(let i=Math.max(1,Math.floor(gx-r));i<=Math.min(N-2,Math.ceil(gx+r));i++){
+      const k=j*N+i; if(!mask[k]) continue; const dx=i-gx, dy=j-gy; F[k]+=amp*Math.exp(-(dx*dx+dy*dy)*s2); }
+}
+function kick(gx,gy,sig,mag){ // a little whirl (divergence free)
+  const r=Math.ceil(sig*2.6), s2=1/(sig*sig);
+  for(let j=Math.max(1,Math.floor(gy-r));j<=Math.min(N-2,Math.ceil(gy+r));j++)
+    for(let i=Math.max(1,Math.floor(gx-r));i<=Math.min(N-2,Math.ceil(gx+r));i++){
+      const k=j*N+i; if(!mask[k]) continue; const dx=i-gx, dy=j-gy, e=Math.exp(-(dx*dx+dy*dy)*s2)*mag/sig;
+      u[k]+=-dy*e; v[k]+=dx*e; }
+}
+function push(gx,gy,sig,tu,tv,k0){ // drag the surface toward a velocity (stirring stick)
+  const r=Math.ceil(sig*2.6), s2=1/(sig*sig);
+  for(let j=Math.max(1,Math.floor(gy-r));j<=Math.min(N-2,Math.ceil(gy+r));j++)
+    for(let i=Math.max(1,Math.floor(gx-r));i<=Math.min(N-2,Math.ceil(gx+r));i++){
+      const k=j*N+i; if(!mask[k]) continue; const dx=i-gx, dy=j-gy, e=Math.min(1,k0*Math.exp(-(dx*dx+dy*dy)*s2));
+      u[k]+=(tu-u[k])*e; v[k]+=(tv-v[k])*e; }
+}
+
+/* surface events */
+const sources=[];   // {gx,gy,t,burst,last,tauB,tauL,sig,subs,dx,dy,clr}
+let lively=0, livelyT=0, stirF=null, fadeT=0, dyeDirty=true, velActive=false;
+function stepFluid(dt){
+  S.fill(0);
+  let anySrc=false;
+  for(let e=sources.length-1;e>=0;e--){
+    const s=sources[e]; s.t+=dt;
+    const a=s.burst*Math.exp(-s.t/s.tauB)+s.last*Math.exp(-s.t/s.tauL);
+    if(s.t>s.life){ sources.splice(e,1); continue; }
+    if(a>0.05){ anySrc=true;
+      if(s.subs&&s.t<1.2){ const bw=s.burst*Math.exp(-s.t/s.tauB);
+        s.subs.forEach(q=>addGauss(S,s.gx+q[0],s.gy+q[1],s.sig*0.8,bw*q[2]));
+        addGauss(S,s.gx,s.gy,s.sig,a-bw);
+      } else addGauss(S,s.gx,s.gy,s.sig,a);
+    }
+    if(s.clr){ // fresh soapy milk surface: the colors are pushed out of this spot
+      const sg=(2+7*(1-Math.exp(-s.t/1.6)))/SC, cx=(s.gx+0.5)/SC-0.5, cy=(s.gy+0.5)/SC-0.5, amt=Math.min(0.6,dt*s.clr*(2.6*Math.exp(-s.t/2.2)+0.25));
+      const r=Math.ceil(sg*2.2), s2=1/(sg*sg);
+      for(let j=Math.max(1,Math.floor(cy-r));j<=Math.min(M-2,Math.ceil(cy+r));j++)
+        for(let i=Math.max(1,Math.floor(cx-r));i<=Math.min(M-2,Math.ceil(cx+r));i++){
+          const k=j*M+i, dx=i-cx, dy=j-cy, f=1-amt*Math.exp(-(dx*dx+dy*dy)*s2); Ar[k]*=f; Ag[k]*=f; Ab[k]*=f; }
+    }
+  }
+  if(anySrc){ let sum=0; for(let n=0;n<fluid.length;n++) sum+=S[fluid[n]]; const c=sum/rimSum; for(let n=0;n<fluid.length;n++){ const k=fluid[n]; S[k]-=rimW[k]*c; } }
+  // slow wandering eddies after soap: fat and soap keep moving
+  if(lively>0){ lively-=dt; livelyT-=dt;
+    if(livelyT<=0){ livelyT=0.45+Math.random()*0.5; const a=Math.random()*6.283, r=Math.sqrt(Math.random())*RC*0.85, C=(N-1)/2;
+      kick(C+Math.cos(a)*r,C+Math.sin(a)*r,3.5+Math.random()*3,(Math.random()<0.5?-1:1)*(4+9*Math.min(1,lively/18))); } }
+  if(stirF) stirF(dt);
+  u0.set(u); v0.set(v); advectVel(u,u0,dt); advectVel(v,v0,dt);
+  vorticity(dt,3.2);
+  const damp=Math.exp(-dt*0.3); let mx=0;
+  for(let n=0;n<fluid.length;n++){ const k=fluid[n]; u[k]*=damp; v[k]*=damp; const m=Math.abs(u[k])+Math.abs(v[k]); if(m>mx) mx=m; }
+  project();
+  velActive=mx>0.03||anySrc;
+  advectDye(dt);
+  dyeDirty=true;
+}
+function fluidBusy(){ return velActive||sources.length>0||lively>0||!!stirF; }
+
+/* ---------- dye texture ---------- */
+const texData=new Uint8Array(MM*4);
+const MILK=[250,247,238];
+function renderDye(){
+  for(let k=0;k<MM;k++){
+    let ar=Ar[k], ag=Ag[k], ab=Ab[k];
+    const tot=ar+ag+ab; if(tot>0.002){ const g=1.9/(1+0.55*tot); ar*=g; ag*=g; ab*=g; }
+    const s=shade[k], o=k*4;
+    texData[o]=MILK[0]*s*Math.exp(-ar); texData[o+1]=MILK[1]*s*Math.exp(-ag); texData[o+2]=MILK[2]*s*Math.exp(-ab); texData[o+3]=255;
+  }
+}
+
+/* ============================================================
+   3D SCENE
+   ============================================================ */
+const canvas=$('#c');
+const renderer=new THREE.WebGLRenderer({canvas,antialias:true});
+renderer.setPixelRatio(Math.min(2,window.devicePixelRatio||1));
+renderer.shadowMap.enabled=true; renderer.shadowMap.type=THREE.PCFSoftShadowMap;
+renderer.setClearColor(0xc9a57a,1);
+const scene=new THREE.Scene();
+const camera=new THREE.PerspectiveCamera(40,1,0.1,100);
+scene.add(new THREE.HemisphereLight(0xffffff,0xd9ccb6,0.62));
+const sun=new THREE.DirectionalLight(0xffffff,0.5);
+sun.position.set(2.2,9,3.2); sun.castShadow=true; sun.shadow.mapSize.set(1024,1024);
+Object.assign(sun.shadow.camera,{left:-5,right:5,top:5,bottom:-5,near:1,far:20});
+sun.shadow.bias=-0.0015; sun.shadow.radius=4;
+scene.add(sun);
+
+function canvasTex(w,h,draw){ const c=document.createElement('canvas'); c.width=w; c.height=h; draw(c.getContext('2d'),w,h); const t=new THREE.CanvasTexture(c); t.anisotropy=4; return t; }
+const phong=o=>new THREE.MeshPhongMaterial(o), lambert=o=>new THREE.MeshLambertMaterial(o);
+const hitMat=new THREE.MeshBasicMaterial({transparent:true,opacity:0,depthWrite:false,colorWrite:false});
+function hitVol(r,h,y){ const m=new THREE.Mesh(new THREE.CylinderGeometry(r,r,h,12),hitMat); m.position.y=y; return m; }
+const V=(x,y,z)=>new THREE.Vector3(x,y,z);
+
+const R=2.3, MILK_Y=0.17, RG=R*(N/2)/RC;
+const toGrid=(x,z)=>[((x/RG+1)/2)*N-0.5,((1-z/RG)/2)*N-0.5];
+const toDye=(x,z)=>[((x/RG+1)/2)*M-0.5,((1-z/RG)/2)*M-0.5];
+
+let milk, dyeTex, milkHit;
+function buildTable(){
+  const wood=canvasTex(256,256,(x,w,h)=>{ x.fillStyle='#c9a57a'; x.fillRect(0,0,w,h);
+    for(let i=0;i<8;i++){ x.fillStyle=i%2?'#c19d70':'#cfae84'; x.fillRect(0,i*32,w,31); x.fillStyle='rgba(90,60,30,.22)'; x.fillRect(0,i*32+31,w,1);
+      x.strokeStyle='rgba(120,80,40,.12)'; x.lineWidth=2; x.beginPath(); x.moveTo(0,i*32+10+Math.random()*10); x.bezierCurveTo(80,i*32+Math.random()*30,170,i*32+Math.random()*30,256,i*32+14); x.stroke(); } });
+  wood.wrapS=wood.wrapT=THREE.RepeatWrapping; wood.repeat.set(5,5);
+  const top=new THREE.Mesh(new THREE.PlaneGeometry(30,30),lambert({map:wood})); top.rotation.x=-Math.PI/2; top.receiveShadow=true; scene.add(top);
+  // gingham cloth under the plate
+  const ging=canvasTex(256,256,(x,w,h)=>{ x.fillStyle='#fdf9ef'; x.fillRect(0,0,w,h); const n=8,s=w/n; x.fillStyle='rgba(255,170,190,0.45)';
+    for(let i=0;i<n;i+=2){ x.fillRect(i*s,0,s,h); x.fillRect(0,i*s,w,s); } });
+  ging.wrapS=ging.wrapT=THREE.RepeatWrapping; ging.repeat.set(4,4);
+  const cloth=new THREE.Mesh(new THREE.PlaneGeometry(7.4,7.4),lambert({map:ging})); cloth.rotation.x=-Math.PI/2; cloth.rotation.z=0.12; cloth.position.y=0.005; cloth.receiveShadow=true; scene.add(cloth);
+}
+function buildPlate(){
+  const pts=[[0.001,0.012],[1.75,0.012],[1.82,0.05],[2.25,0.11],[2.66,0.28],[2.7,0.315],[2.64,0.33],[2.54,0.3],[2.3,0.15],[2.0,0.07],[0.001,0.07]].map(a=>new THREE.Vector2(a[0],a[1]));
+  const plate=new THREE.Mesh(new THREE.LatheGeometry(pts,72),phong({color:0xffffff,shininess:70,specular:0x444444,side:THREE.DoubleSide}));
+  plate.castShadow=true; plate.receiveShadow=true; scene.add(plate);
+  const band=new THREE.Mesh(new THREE.TorusGeometry(2.62,0.022,6,90),phong({color:0x7fb0e6,shininess:60})); band.rotation.x=Math.PI/2; band.position.y=0.312; scene.add(band);
+  renderDye();
+  dyeTex=new THREE.DataTexture(texData,M,M,THREE.RGBAFormat);
+  dyeTex.magFilter=THREE.LinearFilter; dyeTex.minFilter=THREE.LinearFilter; dyeTex.generateMipmaps=false; dyeTex.needsUpdate=true;
+  const g=new THREE.CircleGeometry(R+0.05,120), uv=g.attributes.uv, k=(R+0.05)/RG;
+  for(let i=0;i<uv.count;i++) uv.setXY(i,0.5+(uv.getX(i)-0.5)*k,0.5+(uv.getY(i)-0.5)*k);
+  milk=new THREE.Mesh(g,phong({map:dyeTex,shininess:55,specular:0x2a2a2a}));
+  milk.rotation.x=-Math.PI/2; milk.position.y=MILK_Y; milk.receiveShadow=true; scene.add(milk);
+  milkHit=new THREE.Mesh(new THREE.CircleGeometry(2.75,32),hitMat); milkHit.rotation.x=-Math.PI/2; milkHit.position.y=MILK_Y+0.2; milkHit.userData.action='milk'; scene.add(milkHit);
+}
+
+/* droppers (food coloring bottles) */
+function makeDropper(ci){
+  const g=new THREE.Group();
+  const bodyM=phong({color:0x777777,shininess:110,specular:0x999999}), capM=phong({color:0xffffff,shininess:70});
+  const b=new THREE.Mesh(new THREE.CylinderGeometry(0.13,0.13,0.36,22),bodyM); b.position.y=0.18;
+  const sh=new THREE.Mesh(new THREE.SphereGeometry(0.13,22,10,0,Math.PI*2,0,Math.PI/2),bodyM); sh.position.y=0.36;
+  const ring=new THREE.Mesh(new THREE.CylinderGeometry(0.095,0.095,0.07,20),capM); ring.position.y=0.47;
+  const tipM=new THREE.Mesh(new THREE.ConeGeometry(0.085,0.28,20),capM); tipM.position.y=0.6;
+  const lab=new THREE.Mesh(new THREE.CylinderGeometry(0.133,0.133,0.12,22,1,true),lambert({color:0xffffff})); lab.position.y=0.17;
+  g.add(b,sh,ring,tipM,lab); g.traverse(m=>{ if(m.isMesh) m.castShadow=true; });
+  g.userData={bodyM,capM};
+  if(ci!=null) colorDropper(g,ci);
+  return g;
+}
+function colorDropper(g,ci){ const c=new THREE.Color(COLORS[ci].hex); g.userData.bodyM.color.copy(c).multiplyScalar(0.62); g.userData.capM.color.copy(c); }
+const DSCALE=1.45, DROP_TIP=V(0,0.74*DSCALE,0), DROP_ROT=new THREE.Euler(Math.PI-0.55,0,0.18);
+let dropper, shelfBottles=[], soapBottle, carton;
+function buildProps(){
+  dropper=makeDropper(0); dropper.scale.setScalar(DSCALE); dropper.visible=false; scene.add(dropper);
+  COLORS.forEach((c,i)=>{ const g=makeDropper(i); g.scale.setScalar(1.2); g.position.set(-1.75+i*0.7,0,-3.35); g.add(hitVol(0.28,1.0,0.45)); g.userData.action='color:'+i; shelfBottles.push(g); scene.add(g); });
+  // dish soap bottle
+  soapBottle=new THREE.Group(); soapBottle.userData.action='soap';
+  const sb=new THREE.Mesh(new THREE.CylinderGeometry(0.42,0.44,1.1,28),phong({color:0xf5d020,shininess:90})); sb.scale.z=0.62; sb.position.y=0.55;
+  const ss=new THREE.Mesh(new THREE.CylinderGeometry(0.16,0.42,0.14,28),phong({color:0xf5d020,shininess:90})); ss.scale.z=0.62; ss.position.y=1.17;
+  const cap=new THREE.Mesh(new THREE.CylinderGeometry(0.17,0.17,0.22,24),phong({color:0x4aa3e0,shininess:120})); cap.position.y=1.35;
+  const lbl=canvasTex(256,128,(x,w,h)=>{ x.fillStyle='#ffffff'; x.fillRect(0,0,w,h); x.fillStyle='#2c68b2'; x.textAlign='center'; x.textBaseline='middle';
+    x.font='46px "Patrick Hand", cursive'; x.fillText('Xà phòng',w/2,h*0.36); x.font='36px "Patrick Hand", cursive'; x.fillStyle='#6b7a93'; x.fillText('Soap',w/2,h*0.76); });
+  const band=new THREE.Mesh(new THREE.CylinderGeometry(0.435,0.435,0.46,28,1,true,-1.0,2.0),lambert({map:lbl})); band.scale.z=0.62; band.position.y=0.55;
+  soapBottle.add(sb,ss,cap,band,hitVol(0.6,1.5,0.7)); soapBottle.traverse(m=>{ if(m.isMesh&&m.material!==hitMat) m.castShadow=true; });
+  soapBottle.position.set(3.55,0,0.9); soapBottle.rotation.y=-0.4; scene.add(soapBottle);
+  // milk carton (plain, no brand)
+  carton=new THREE.Group(); carton.userData.action='carton';
+  const ct=canvasTex(256,256,(x,w,h)=>{ x.fillStyle='#ffffff'; x.fillRect(0,0,w,h); x.fillStyle='#4f8fd6'; x.fillRect(0,h*0.62,w,h*0.38);
+    x.fillStyle='#2c68b2'; x.textAlign='center'; x.textBaseline='middle'; x.font='bold 70px "Baloo 2", sans-serif'; x.fillText('SỮA',w/2,h*0.3);
+    x.fillStyle='#ffffff'; x.font='bold 44px "Baloo 2", sans-serif'; x.fillText('MILK',w/2,h*0.8); });
+  const cb=new THREE.Mesh(new THREE.BoxGeometry(0.9,1.5,0.9),lambert({map:ct})); cb.position.y=0.75;
+  const roof=new THREE.Mesh(new THREE.CylinderGeometry(0.52,0.52,0.9,3,1),lambert({color:0xf4f7fb})); roof.rotation.set(0,0,Math.PI/2); roof.rotation.order='ZYX'; roof.position.y=1.66; roof.scale.set(1,1,0.87);
+  const ridge=new THREE.Mesh(new THREE.BoxGeometry(0.9,0.14,0.05),lambert({color:0xe8edf3})); ridge.position.y=2.12;
+  carton.add(cb,roof,ridge,hitVol(0.65,2.1,1.05)); carton.traverse(m=>{ if(m.isMesh&&m.material!==hitMat) m.castShadow=true; });
+  carton.position.set(-3.6,0,-1.0); carton.rotation.y=0.35; scene.add(carton);
+}
+
+/* cotton swab + stirring stick */
+const SWAB_TIP=V(0,-0.93,0), SWAB_ROT=new THREE.Euler(0.8,0,-0.35);
+const STIR_TIP=V(0,-0.95,0), STIR_ROT=new THREE.Euler(0.55,0,0.3);
+let swab, stirStick;
+function buildTools(){
+  swab=new THREE.Group();
+  const stick=new THREE.Mesh(new THREE.CylinderGeometry(0.028,0.028,1.7,10),phong({color:0xdfeaf7,shininess:40}));
+  const cotM=lambert({color:0xffffff}), wetM=phong({color:0xfff6c2,shininess:90,specular:0x888888});
+  const c1=new THREE.Mesh(new THREE.SphereGeometry(0.075,14,10),cotM); c1.scale.y=1.7; c1.position.y=0.86;
+  const c2=new THREE.Mesh(new THREE.SphereGeometry(0.08,14,10),wetM); c2.scale.y=1.7; c2.position.y=-0.86;
+  swab.add(stick,c1,c2); swab.traverse(m=>{ if(m.isMesh) m.castShadow=true; });
+  swab.rotation.copy(SWAB_ROT); swab.position.copy(swabPose(V(1.6,1.6,5.2))); scene.add(swab);
+  stirStick=new THREE.Group();
+  const s=new THREE.Mesh(new THREE.BoxGeometry(0.17,1.9,0.04),phong({color:0xd9b27c,shininess:20}));
+  const e1=new THREE.Mesh(new THREE.CylinderGeometry(0.085,0.085,0.04,16),phong({color:0xd9b27c,shininess:20})); e1.rotation.x=Math.PI/2; e1.position.y=-0.95;
+  const e2=e1.clone(); e2.position.y=0.95;
+  stirStick.add(s,e1,e2); stirStick.traverse(m=>{ if(m.isMesh) m.castShadow=true; });
+  stirStick.rotation.copy(STIR_ROT); stirStick.visible=false; scene.add(stirStick);
+}
+function poseFor(localTip,rot,desired){ return desired.clone().sub(localTip.clone().applyEuler(rot)); }
+const swabPose=t=>poseFor(SWAB_TIP,SWAB_ROT,t);
+const SWAB_AWAY=V(1.6,1.6,5.2), SWAB_READY=V(1.05,MILK_Y+0.75,1.55);
+
+/* ---------- camera ---------- */
+let portrait=false, fitR=9, offX=0, offY=0, yaw=0, pitch=0;
+const target=new THREE.Vector3();
+function keyPoints(){ const a=[]; for(let i=0;i<20;i++){ const t=i/20*Math.PI*2; a.push(V(Math.cos(t)*2.72,0.3,Math.sin(t)*2.72)); } return a; }
+function aimCamera(R){
+  const pp=1.13+pitch;
+  camera.position.set(target.x+R*Math.sin(yaw)*Math.cos(pp),target.y+R*Math.sin(pp),target.z+R*Math.cos(yaw)*Math.cos(pp));
+  camera.lookAt(target);
+}
+function freeBand(){
+  const w=innerWidth,h=innerHeight; let r={top:h*0.2,bot:h*0.75,left:12,right:w-12};
+  try{ const b=$('.bubble').getBoundingClientRect(), t=$('.top').getBoundingClientRect(), tr=$('.tray').getBoundingClientRect();
+    const below={top:Math.max(t.bottom,b.bottom)+4,bot:tr.top-4,left:12,right:w-12};
+    const beside={top:t.bottom+4,bot:tr.top-4,left:b.right+8,right:w-12};
+    const score=q=>Math.min(q.right-q.left,(q.bot-q.top)*1.5);
+    r=score(beside)>score(below)*1.15?beside:below;
+    if(r.bot-r.top<h*0.25){ r={top:h*0.2,bot:h*0.75,left:12,right:w-12}; }
+  }catch(e){}
+  return r;
+}
+function fitCamera(){
+  const w=innerWidth,h=innerHeight;
+  portrait=w/h<0.9;
+  camera.aspect=w/h; camera.fov=portrait?44:38;
+  target.set(0,0.15,0);
+  const sy=yaw, sp=pitch; yaw=0; pitch=0;
+  const band=freeBand(), allowX=(band.right-band.left)/w*0.98, allowY=(band.bot-band.top)/h*0.96, pts=keyPoints(), vv=new THREE.Vector3();
+  let Rr=9, box=null; camera.clearViewOffset();
+  for(let it=0;it<6;it++){
+    aimCamera(Rr); camera.updateProjectionMatrix(); camera.updateMatrixWorld();
+    box={x0:1e9,x1:-1e9,y0:1e9,y1:-1e9};
+    pts.forEach(q=>{ vv.copy(q).project(camera); box.x0=Math.min(box.x0,vv.x); box.x1=Math.max(box.x1,vv.x); box.y0=Math.min(box.y0,vv.y); box.y1=Math.max(box.y1,vv.y); });
+    const k=Math.max((box.x1-box.x0)/2/allowX,(box.y1-box.y0)/2/allowY);
+    Rr=Math.max(3,Math.min(30,Rr*Math.min(2,Math.max(0.5,k))));
+  }
+  fitR=Rr; offX=((box.x0+box.x1)/2+1)/2*w-(band.left+band.right)/2; offY=(1-(box.y0+box.y1)/2)/2*h-(band.top+band.bot)/2;
+  yaw=sy; pitch=sp;
+}
+function placeCamera(){
+  const w=innerWidth,h=innerHeight;
+  renderer.setSize(w,h,false);
+  aimCamera(fitR); camera.setViewOffset(w,h,offX,offY,w,h); camera.updateProjectionMatrix();
+}
+let resizeT=0, refitT=0, lastBubbleH=0;
+function onResize(){ fitCamera(); placeCamera(); lastBubbleH=$('.bubble').offsetHeight; }
+function onResizeSoon(){ clearTimeout(resizeT); resizeT=setTimeout(onResize,120); }
+function refitSoon(){ clearTimeout(refitT); refitT=setTimeout(()=>{ const hb=$('.bubble').offsetHeight; if(Math.abs(hb-lastBubbleH)>20){ lastBubbleH=hb; fitCamera(); placeCamera(); } },60); }
+
+/* ---------- tweens ---------- */
+const tweens=[];
+function tween(dur,fn,done){ const t={t:0,dur,fn,done}; tweens.push(t); return t; }
+const ease=t=>t<0.5?4*t*t*t:1-Math.pow(-2*t+2,3)/2;
+function poseTween(obj,toPos,dur,lift,done){
+  const fp=obj.position.clone();
+  return tween(dur,q=>{ const e=ease(q); obj.position.lerpVectors(fp,toPos,e); obj.position.y+=Math.sin(Math.PI*e)*(lift||0); },done);
+}
+
+/* ---------- ripples, markers, falling drops ---------- */
+const ripples=[], markers=[], falling=[];
+function ripple(x,z,hex,size,dur){
+  const m=new THREE.Mesh(new THREE.RingGeometry(0.86,1,48),new THREE.MeshBasicMaterial({color:hex,transparent:true,opacity:0.55,depthWrite:false}));
+  m.rotation.x=-Math.PI/2; m.position.set(x,MILK_Y+0.006,z); m.renderOrder=3; scene.add(m); ripples.push({m,t:0,size:size||0.6,dur:dur||0.9});
+}
+function soapMarker(x,z){
+  const g=new THREE.Group();
+  const ring=new THREE.Mesh(new THREE.RingGeometry(0.075,0.11,32),new THREE.MeshBasicMaterial({color:0x8fcaf5,transparent:true,opacity:0.9,depthWrite:false}));
+  const dot=new THREE.Mesh(new THREE.CircleGeometry(0.075,24),new THREE.MeshBasicMaterial({color:0xe6f5ff,transparent:true,opacity:0.5,depthWrite:false}));
+  ring.rotation.x=dot.rotation.x=-Math.PI/2; g.add(dot,ring); g.position.set(x,MILK_Y+0.008,z); g.renderOrder=4; scene.add(g);
+  markers.push({g,t:0});
+  if(markers.length>6){ const o=markers.shift(); scene.remove(o.g); }
+}
+function clearMarkers(){ markers.forEach(o=>scene.remove(o.g)); markers.length=0; }
+
+/* ============================================================
+   ACTIONS
+   ============================================================ */
+let tool='color', colorIdx=0, drops=0, soaps=0, stirring=false, fresh=true;
+function syncTray(){
+  [...colorsEl.children].forEach((b,k)=>b.setAttribute('aria-pressed',String(tool==='color'&&k===colorIdx)));
+  $('#btnSoap').setAttribute('aria-pressed',String(tool==='soap'));
+  $('#btnSoap').classList.toggle('next',tool!=='soap'&&drops>=3&&soaps===0);
+  $('#btnNew').classList.toggle('next',soaps>=5);
+}
+function randomSpot(r){ const a=Math.random()*Math.PI*2, d=Math.sqrt(Math.random())*R*(r||0.55); return V(Math.cos(a)*d,MILK_Y,Math.sin(a)*d); }
+
+/* --- dye drops --- */
+function addDropDye(ci,x,z,rad,amt){
+  const c=COLORS[ci], [cx,cy]=toDye(x,z), r0=rad/(2*RG)*M, rr=Math.ceil(r0+2);
+  for(let j=Math.max(1,Math.floor(cy-rr));j<=Math.min(M-2,Math.ceil(cy+rr));j++)
+    for(let i=Math.max(1,Math.floor(cx-rr));i<=Math.min(M-2,Math.ceil(cx+rr));i++){
+      const k=j*M+i; if(!dMask[k]) continue;
+      const d=Math.hypot(i-cx,j-cy)/r0; if(d>=1) continue;
+      const t=Math.min(1,Math.max(0,(d-0.45)/0.55)), wgt=amt*(1-t*t*(3-2*t))*(0.85+0.15*(1-d));
+      Ar[k]+=c.k[0]*wgt; Ag[k]+=c.k[1]*wgt; Ab[k]+=c.k[2]*wgt;
+    }
+  dyeDirty=true;
+}
+const dropQ=[]; let dropperBusy=false, dropperOut=false, dropperIdle=0;
+function requestDrop(ci,pt){ if(dropQ.length<4) dropQ.push({ci,pt}); pumpDrops(); }
+function pumpDrops(){
+  if(dropperBusy||!dropQ.length) return;
+  const d=dropQ.shift(); dropperBusy=true; dropperIdle=0;
+  colorDropper(dropper,d.ci); dropper.rotation.copy(DROP_ROT);
+  const to=poseFor(DROP_TIP,DROP_ROT,V(d.pt.x,MILK_Y+0.62,d.pt.z));
+  if(!dropperOut){ dropper.position.copy(poseFor(DROP_TIP,DROP_ROT,V(d.pt.x*0.6,MILK_Y+2.6,-4.8))); dropper.visible=true; }
+  poseTween(dropper,to,dropperOut?0.3:0.5,dropperOut?0.2:0,()=>{
+    dropperOut=true;
+    tween(0.16,q=>{ const s=DSCALE*(1-0.16*Math.sin(Math.PI*q)); dropper.scale.set(s,DSCALE,s); },()=>{
+      dropper.scale.setScalar(DSCALE);
+      const m=new THREE.Mesh(new THREE.SphereGeometry(0.065,14,10),phong({color:COLORS[d.ci].hex,shininess:120}));
+      m.scale.y=1.3; m.position.set(d.pt.x,MILK_Y+0.6,d.pt.z); m.castShadow=true; scene.add(m); falling.push({m,v:0,ci:d.ci});
+      dropperBusy=false; dropperIdle=0; pumpDrops();
+    });
+  });
+}
+function landDrop(ci,x,z){
+  plop();
+  addDropDye(ci,x,z,0.17,1.25);
+  const [gx,gy]=toGrid(x,z);
+  sources.push({gx,gy,t:0,burst:0,last:5.5,tauB:1,tauL:0.55,sig:1.8,life:2.5});
+  ripple(x,z,COLORS[ci].hex,0.45,0.7);
+  drops++; syncTray();
+  if(drops===3&&soaps===0) setTimeout(()=>{ if(tool!=='soap'&&soaps===0) setTip('Now try the soap swab! Tap it, then touch the milk.','Giờ thử tăm bông xà phòng nhé! Chạm vào nó, rồi chạm vào sữa.'); },1600);
+}
+function pickColor(i,fromButton){
+  click();
+  const was=tool==='color'&&colorIdx===i;
+  tool='color'; colorIdx=i; syncTray(); swabTo('away');
+  const c=COLORS[i];
+  if(fromButton){ requestDrop(i,randomSpot(0.6)); }
+  if(!was) setTip(c.en+'! Tap the milk to drop more.','Màu '+c.vil+'! Chạm vào sữa để nhỏ thêm nhé.');
+  else setTip(c.en+' drop!','Giọt màu '+c.vil+'!');
+}
+
+/* --- soap swab --- */
+let swabState='away', swabBob=0, pendingDip=null, swabTw=null;
+function swabMove(to,dur,lift,done){ if(swabTw){ const i=tweens.indexOf(swabTw); if(i>=0) tweens.splice(i,1); } swabTw=poseTween(swab,to,dur,lift,()=>{ swabTw=null; if(done) done(); }); }
+function swabTo(where){
+  if(where==='away'){ if(swabState==='away'||swabState==='leaving') return; pendingDip=null; swabState='leaving'; swabMove(swabPose(SWAB_AWAY),0.6,0.2,()=>{ swabState='away'; }); return; }
+  swabState='moving';
+  swabMove(swabPose(SWAB_READY),0.55,0.25,()=>{ swabState='ready'; swabBob=0; if(pendingDip){ const q=pendingDip; pendingDip=null; dip(q); } });
+}
+function selectSoap(){
+  click();
+  if(tool==='soap'){ tapMilk(randomSpot(0.25)); return; }
+  tool='soap'; syncTray();
+  swabTo('ready');
+  setTip('Touch the milk with the soap swab!','Chạm tăm bông xà phòng vào sữa nào!');
+}
+function dip(pt){
+  if(swabState!=='ready'){ pendingDip=pt; if(swabState==='away'||swabState==='leaving') swabTo('ready'); return; }
+  swabState='dipping';
+  const touch=V(pt.x,MILK_Y+0.005,pt.z);
+  swabMove(swabPose(V(pt.x,MILK_Y+0.4,pt.z)),0.3,0.1,()=>{
+    swabMove(swabPose(touch),0.15,0,()=>{
+      soapTouch(pt.x,pt.z);
+      swabMove(swabPose(touch),0.25,0,()=>{
+        swabMove(swabPose(V(pt.x,MILK_Y+0.55,pt.z)),0.28,0,()=>{
+          swabState='ready';
+          if(tool!=='soap'){ swabTo('away'); return; }
+          if(pendingDip){ const q=pendingDip; pendingDip=null; dip(q); return; }
+          swabTo('ready');
+        });
+      });
+    });
+  });
+}
+function soapTouch(x,z){
+  const n=soaps, str=Math.max(0.28,1/(1+0.6*n));
+  soaps++;
+  const [gx,gy]=toGrid(x,z);
+  const subs=[]; for(let k=0;k<5;k++){ const a=Math.random()*6.283, r=1+Math.random()*2.5; subs.push([Math.cos(a)*r,Math.sin(a)*r,0.35+Math.random()*0.5]); }
+  const sw=subs.reduce((s,q)=>s+q[2],0); subs.forEach(q=>q[2]/=sw);
+  sources.push({gx,gy,t:0,burst:210*str,last:22*str,tauB:0.42,tauL:4.5,sig:2.6,life:14,subs,clr:1.3*str+0.3});
+  // swirly whirls around the touch point: streaks and curls
+  const nv=5+((Math.random()*3)|0), a0=Math.random()*6.283;
+  for(let k=0;k<nv;k++){ const a=a0+k/nv*6.283+(Math.random()-0.5)*0.6, r=4+Math.random()*8;
+    kick(gx+Math.cos(a)*r,gy+Math.sin(a)*r,2.6+Math.random()*2,(k%2?1:-1)*(28+Math.random()*26)*str); }
+  lively=Math.max(lively,22);
+  soapMarker(x,z); ripple(x,z,0xbfe6ff,1.4*str+0.5,1.3);
+  whoosh(str);
+  if(drops===0) setTip('Whoosh! Add some colors to see them run!','Vút! Thêm vài màu để xem màu chạy nhé!');
+  else if(n===0) setTip('Whoosh! The soap pushes the colors away!','Vút! Xà phòng đẩy các màu chạy ra!');
+  else if(n<4) setTip('Whoosh again! A smaller push this time.','Vút nữa! Lần này đẩy nhẹ hơn.');
+  else setTip('The soap is everywhere now. Try a new plate!','Xà phòng lan khắp đĩa rồi. Thử đĩa mới nhé!');
+  syncTray();
+}
+function tapMilk(pt){
+  const d=Math.hypot(pt.x,pt.z), lim=R*0.9; if(d>lim){ pt.x*=lim/d; pt.z*=lim/d; }
+  if(tool==='soap'){ dip(pt); return; }
+  const c=COLORS[colorIdx];
+  requestDrop(colorIdx,pt);
+  setTip(c.en+' drop!','Giọt màu '+c.vil+'!');
+}
+
+/* --- stir --- */
+function stir(){
+  if(stirring) return;
+  stirring=true; click(); swish();
+  setTip(drops?'Stir, stir! The colors swirl around.':'Stir, stir! Add colors to see them swirl.',drops?'Khuấy, khuấy! Các màu xoay tròn.':'Khuấy, khuấy! Thêm màu để thấy chúng xoay nhé.');
+  if(tool==='soap'){ tool='color'; syncTray(); } swabTo('away');
+  const rr=R*0.52, C=(N-1)/2;
+  const tipAt=a=>V(Math.cos(a)*rr,MILK_Y-0.02,Math.sin(a)*rr);
+  stirStick.visible=true; stirStick.position.copy(poseFor(STIR_TIP,STIR_ROT,V(1.5,1.8,5)));
+  let ang=0.4;
+  poseTween(stirStick,poseFor(STIR_TIP,STIR_ROT,tipAt(ang)),0.5,0.2,()=>{
+    let prev=null;
+    stirF=dt=>{
+      const t=tipAt(ang), [gx,gy]=toGrid(t.x,t.z);
+      if(prev){ const tu=(gx-prev[0])/Math.max(dt,1e-3), tv=(gy-prev[1])/Math.max(dt,1e-3); push(gx,gy,2.6,tu,tv,0.5); }
+      prev=[gx,gy];
+      // gentle whole-plate turning
+      for(let n=0;n<fluid.length;n++){ const k=fluid[n], dx=fI[n]-C, dy=fJ[n]-C; u[k]+=(-dy*0.5-u[k])*dt*0.25; v[k]+=(dx*0.5-v[k])*dt*0.25; }
+    };
+    tween(3.0,q=>{ const sp=Math.sin(Math.PI*Math.min(1,q*1.1)); ang+=0.075*sp+0.01; stirStick.position.copy(poseFor(STIR_TIP,STIR_ROT,tipAt(ang))); },()=>{
+      stirF=null; lively=Math.max(lively,8);
+      poseTween(stirStick,poseFor(STIR_TIP,STIR_ROT,V(1.5,1.8,5)),0.5,0.2,()=>{ stirStick.visible=false; stirring=false;
+        setTip('Spirals! Try the soap swab or add more colors.','Hình xoắn ốc! Thử tăm bông xà phòng hoặc thêm màu nhé.'); });
+    });
+  });
+}
+
+/* --- new plate --- */
+function newPlate(){
+  click(); chime();
+  fadeT=0.8; sources.length=0; lively=0; clearMarkers();
+  drops=0; soaps=0; fresh=false; if(tool==='soap'){ tool='color'; } swabTo('away'); syncTray();
+  setTip('A new plate of milk! Tap a color, then tap the milk.','Đĩa sữa mới! Chọn một màu, rồi chạm vào sữa nhé.');
+}
+function resetFluid(){ u.fill(0); v.fill(0); p.fill(0); Ar.fill(0); Ag.fill(0); Ab.fill(0); velActive=false; dyeDirty=true; }
+
+function doAction(a,pt){
+  unlock(); if(!a) return;
+  if(a==='milk'&&pt) tapMilk(pt);
+  else if(a.startsWith('color:')) pickColor(+a.split(':')[1],true);
+  else if(a==='soap') selectSoap();
+  else if(a==='carton'){ click(); setTip('Whole milk has tiny bits of fat inside.','Sữa tươi nguyên kem có những hạt chất béo nhỏ.'); }
+}
+$('#btnSoap').onclick=()=>{unlock();selectSoap();};
+$('#btnStir').onclick=()=>{unlock();stir();};
+$('#btnNew').onclick=()=>{unlock();newPlate();};
+
+/* ---------- pointer: drag to turn, tap to use ---------- */
+const ray=new THREE.Raycaster(), ndc=new THREE.Vector2(), milkPlane=new THREE.Plane(V(0,1,0),-MILK_Y), hitP=new THREE.Vector3();
+let down=null;
+function hitAction(e){
+  const r=canvas.getBoundingClientRect();
+  ndc.set(((e.clientX-r.left)/r.width)*2-1,-((e.clientY-r.top)/r.height)*2+1);
+  ray.setFromCamera(ndc,camera);
+  const hits=ray.intersectObjects([...shelfBottles,soapBottle,carton,milkHit],true);
+  for(const h of hits){ let o=h.object; while(o){ if(o.userData&&o.userData.action){
+    if(o.userData.action==='milk'){ if(!ray.ray.intersectPlane(milkPlane,hitP)) return null; return {a:'milk',pt:V(hitP.x,MILK_Y,hitP.z)}; }
+    return {a:o.userData.action}; } o=o.parent; } }
+  return null;
+}
+canvas.addEventListener('pointerdown',e=>{ down={x:e.clientX,y:e.clientY,yaw,pitch,drag:false}; try{canvas.setPointerCapture(e.pointerId);}catch(err){} });
+canvas.addEventListener('pointermove',e=>{
+  if(down){ const dx=e.clientX-down.x, dy=e.clientY-down.y;
+    if(!down.drag&&Math.hypot(dx,dy)>10) down.drag=true;
+    if(down.drag){ yaw=Math.max(-0.9,Math.min(0.9,down.yaw-dx*0.006)); pitch=Math.max(-0.35,Math.min(0.3,down.pitch+dy*0.004)); placeCamera(); } }
+  else if(e.pointerType==='mouse'){ canvas.style.cursor=hitAction(e)?'pointer':'grab'; }
+});
+canvas.addEventListener('pointerup',e=>{ if(down&&!down.drag){ const h=hitAction(e); if(h) doAction(h.a,h.pt); } down=null; });
+canvas.addEventListener('pointercancel',()=>{ down=null; });
+
+/* ---------- main loop ---------- */
+let simT=0; const clock=new THREE.Clock();
+function frame(){
+  const dt=Math.min(0.1,clock.getDelta()); simT+=dt;
+  for(let i=tweens.length-1;i>=0;i--){ const tw=tweens[i]; tw.t+=dt; const q=Math.min(1,tw.t/tw.dur); tw.fn(q); if(q>=1){ tweens.splice(i,1); tw.done&&tw.done(); } }
+  for(let i=falling.length-1;i>=0;i--){ const f=falling[i]; f.v+=9*dt; f.m.position.y-=f.v*dt;
+    if(f.m.position.y<=MILK_Y+0.02){ scene.remove(f.m); f.m.geometry.dispose(); falling.splice(i,1); landDrop(f.ci,f.m.position.x,f.m.position.z); } }
+  for(let i=ripples.length-1;i>=0;i--){ const r=ripples[i]; r.t+=dt; const q=r.t/r.dur, s=0.04+q*r.size; r.m.scale.set(s,s,1); r.m.material.opacity=0.55*(1-q);
+    if(q>=1){ scene.remove(r.m); r.m.geometry.dispose(); r.m.material.dispose(); ripples.splice(i,1); } }
+  for(let i=markers.length-1;i>=0;i--){ const m=markers[i]; m.t+=dt; const o=m.t<10?1:Math.max(0,1-(m.t-10)/3);
+    m.g.children[0].material.opacity=0.5*o; m.g.children[1].material.opacity=0.9*o; const s=1+0.08*Math.sin(simT*3+i); m.g.scale.set(s,1,s);
+    if(o<=0){ scene.remove(m.g); markers.splice(i,1); } }
+  if(swabState==='ready'){ swabBob+=dt; swab.position.copy(swabPose(V(SWAB_READY.x,SWAB_READY.y+0.06*Math.sin(swabBob*2.4),SWAB_READY.z))); }
+  if(dropperOut&&!dropperBusy&&!dropQ.length){ dropperIdle+=dt; if(dropperIdle>1.3){ dropperBusy=true; dropperOut=false;
+    poseTween(dropper,poseFor(DROP_TIP,DROP_ROT,V(dropper.position.x*0.5,MILK_Y+2.6,-4.8)),0.5,0,()=>{ dropper.visible=false; dropperBusy=false; pumpDrops(); }); } }
+  if(fadeT>0){ fadeT-=dt; const f=Math.exp(-dt*7); for(let k=0;k<MM;k++){ Ar[k]*=f; Ag[k]*=f; Ab[k]*=f; } for(let k=0;k<NN;k++){ u[k]*=f; v[k]*=f; } dyeDirty=true; if(fadeT<=0) resetFluid(); }
+  else if(fluidBusy()) stepFluid(Math.min(dt,1/30));
+  if(dyeDirty){ renderDye(); dyeTex.needsUpdate=true; dyeDirty=false; }
+  renderer.render(scene,camera);
+  requestAnimationFrame(frame);
+}
+
+/* ---------- boot ---------- */
+async function keepAwake(){ try{ if(navigator.wakeLock) await navigator.wakeLock.request('screen'); }catch(e){} }
+async function boot(){
+  try{ await Promise.race([Promise.all([document.fonts.load('40px "Patrick Hand"','Xà phòng'),document.fonts.load('800 40px "Baloo 2"','SỮA')]),new Promise(r=>setTimeout(r,2500))]); }catch(e){}
+  buildTable(); buildPlate(); buildProps(); buildTools();
+  // a plate ready to go: six drops near the middle
+  COLORS.forEach((c,i)=>{ const a=i/6*Math.PI*2+0.3, d=R*0.3; addDropDye(i,Math.cos(a)*d,Math.sin(a)*d,0.21,1.3); });
+  drops=6; syncTray();
+  onResize();
+  addEventListener('resize',onResizeSoon); addEventListener('orientationchange',onResizeSoon);
+  try{ if(window.visualViewport) visualViewport.addEventListener('resize',onResizeSoon); }catch(e){}
+  requestAnimationFrame(frame);
+  $('#loadNote').textContent='A plate of milk with drops of food coloring. Touch it with a soapy swab and watch the colors run!';
+  $('#goBtn').disabled=false;
+}
+$('#goBtn').onclick=()=>{
+  unlock(); $('#startScreen').hidden=true; keepAwake();
+  document.addEventListener('visibilitychange',()=>{ if(document.visibilityState==='visible') keepAwake(); });
+  onResize();
+  setTip('Colors are on the milk. Tap the soap swab, then touch the milk!','Có màu trên sữa rồi. Chọn tăm bông xà phòng, rồi chạm vào sữa nhé!');
+};
+boot();
+})();
+</script>
+</body>
+</html>

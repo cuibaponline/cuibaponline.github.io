@@ -1,0 +1,885 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#f5f8ef">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<style>
+*,*::before,*::after{box-sizing:border-box}
+body{margin:0;font-size:14px}
+img{max-width:100%}
+</style>
+<title>Color Hunt</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;800&family=Nunito:wght@600;800&family=Patrick+Hand&display=swap">
+<style>
+/* Layout: full-bleed 3D playroom corner; brand + tools on top, bilingual hunt bubble with a color swatch, a toy tray with stars, color buttons and the light switch at the bottom. Deliberately single warm light theme. */
+:root{
+  --paper:#f4efe4;      /* playroom wall */
+  --ink:#1e2b44;
+  --marker:#2c68b2;     /* blue marker for Vietnamese lines */
+  --sun:#ffcd34;
+  --star:#ffc21a;
+  --card:#ffffff;
+  --line:#e2d9c6;
+  --soft:#f3eee3;
+  --shadow:rgba(40,32,20,.2);
+  --f-display:'Baloo 2','Nunito',system-ui,sans-serif;
+  --f-body:'Nunito',system-ui,-apple-system,'Segoe UI',sans-serif;
+  --f-hand:'Patrick Hand','Comic Sans MS','Chalkboard SE',cursive;
+  color-scheme:light;
+}
+[hidden]{display:none!important}
+html,body{height:100%;overflow:hidden}
+body{background:var(--paper);color:var(--ink);font-family:var(--f-body);-webkit-tap-highlight-color:transparent;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;touch-action:manipulation}
+#c{position:fixed;inset:0;width:100%;height:100%;display:block;touch-action:none;outline:none}
+button{font:inherit;color:inherit;cursor:pointer;border:0;background:none}
+button:focus-visible{outline:3px solid var(--marker);outline-offset:3px}
+
+.hud{position:fixed;inset:0;pointer-events:none;display:flex;flex-direction:column;justify-content:space-between;
+  padding:calc(env(safe-area-inset-top,0px) + 12px) 16px calc(env(safe-area-inset-bottom,0px) + 12px);gap:10px}
+.hud > *{pointer-events:auto}
+.top{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;pointer-events:none}
+.top > *{pointer-events:auto}
+.brand{background:var(--card);border-radius:18px;padding:6px 16px 8px;box-shadow:0 4px 0 var(--line),0 8px 20px var(--shadow)}
+.brand h1{margin:0;font-family:var(--f-display);font-weight:800;font-size:1.45rem;line-height:1.05;letter-spacing:-.01em}
+.brand h1 span{color:#e02a2a}.brand h1 span+span{color:#1f63d8}
+.brand p{margin:0;font-family:var(--f-hand);font-size:1.2rem;color:var(--marker);line-height:1.1}
+.tools{display:flex;gap:8px;flex:none}
+.tool{min-width:48px;height:48px;border-radius:14px;background:var(--card);display:grid;place-items:center;padding:0 12px;
+  box-shadow:0 4px 0 var(--line),0 8px 18px var(--shadow);font-family:var(--f-display);font-weight:800;font-size:.95rem;white-space:nowrap}
+.tool svg{width:24px;height:24px}
+.tool[aria-pressed="false"] .on{display:none}.tool[aria-pressed="true"] .off{display:none}
+
+.col{flex:1;display:flex;flex-direction:column;gap:10px;align-items:center;pointer-events:none}
+.bubble{pointer-events:auto;max-width:min(560px,100%);background:var(--card);border-radius:22px;padding:10px 12px 10px 12px;
+  display:flex;align-items:center;gap:12px;box-shadow:0 5px 0 var(--line),0 10px 24px var(--shadow)}
+.bubble .sw{flex:none;width:46px;height:46px;border-radius:50% 50% 50% 50%/56% 56% 44% 44%;background:var(--c,#e02a2a);
+  box-shadow:inset 0 -6px 0 rgba(0,0,0,.16),inset 0 5px 0 rgba(255,255,255,.35),0 0 0 3px #fff,0 0 0 5px var(--line);transition:background .3s}
+.bubble .sw.pop{animation:pop .5s cubic-bezier(.3,1.6,.5,1)}
+.bubble .txt{min-width:0;flex:1}
+.bubble .en{margin:0;font-family:var(--f-display);font-weight:800;font-size:1.25rem;line-height:1.15;text-wrap:balance}
+.bubble .vi{margin:2px 0 0;font-family:var(--f-hand);font-size:1.3rem;line-height:1.1;color:var(--marker);text-wrap:balance}
+.say{flex:none;width:46px;height:46px;border-radius:50%;background:var(--marker);color:#fff;display:grid;place-items:center}
+.say svg{width:24px;height:24px}
+@keyframes pop{from{transform:scale(.5)}to{transform:scale(1)}}
+
+.tray{align-self:center;max-width:100%;background:var(--card);border-radius:26px;padding:10px 12px;display:flex;
+  align-items:center;gap:10px 14px;box-shadow:0 6px 0 var(--line),0 12px 30px var(--shadow)}
+.stars{display:flex;gap:4px;align-items:center;padding:0 4px;order:0}
+.stars svg{width:38px;height:38px;transition:transform .2s}
+.stars svg path{fill:#ece6d8;stroke:#d6ccb6;stroke-width:1.4;stroke-linejoin:round;transition:fill .25s}
+.stars svg.on path{fill:var(--star);stroke:#e0a100}
+.stars svg.on{animation:pop .5s cubic-bezier(.3,1.6,.5,1)}
+.stars.party svg{animation:bob .8s ease-in-out 3}
+.colors{display:flex;gap:4px;order:1}
+.cbtn{width:52px;display:flex;flex-direction:column;align-items:center;gap:2px;padding:4px 0 3px;border-radius:14px;transition:background .2s}
+.cbtn .blob{width:38px;height:38px;border-radius:50% 50% 50% 50%/56% 56% 44% 44%;background:var(--c);
+  box-shadow:inset 0 -5px 0 rgba(0,0,0,.16),inset 0 4px 0 rgba(255,255,255,.35);transition:transform .15s}
+.cbtn b{font-family:var(--f-display);font-weight:800;font-size:.7rem;line-height:1}
+.cbtn i{font-style:normal;font-family:var(--f-hand);font-size:.82rem;line-height:.95;color:var(--marker);text-align:center}
+.cbtn[aria-pressed="true"]{background:#fff2c2;box-shadow:inset 0 0 0 3px var(--sun)}
+.cbtn:active .blob{transform:scale(.88)}
+.act{order:2;min-width:74px;min-height:62px;border-radius:18px;background:var(--soft);display:flex;flex-direction:column;align-items:center;justify-content:center;
+  padding:4px 8px;box-shadow:inset 0 -4px 0 var(--line);transition:transform .15s,background .2s}
+.act svg{width:28px;height:28px}
+.act span{display:flex;flex-direction:column;align-items:center}
+.act b{font-family:var(--f-display);font-weight:800;font-size:.88rem;line-height:1.05;white-space:nowrap}
+.act i{font-style:normal;font-family:var(--f-hand);font-size:.95rem;line-height:1;color:var(--marker);white-space:nowrap}
+.act[aria-pressed="true"]{background:#ffd9d4;box-shadow:inset 0 -4px 0 #f2a79c}
+.act:active{transform:scale(.94)}
+.bulb{fill:#fff1a8;transition:fill .3s}
+.act[aria-pressed="true"] .bulb{fill:#ff3b30}
+@keyframes bob{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}
+@media (prefers-reduced-motion:reduce){.stars svg,.bubble .sw{animation:none!important}}
+
+.overlay{position:fixed;inset:0;display:grid;place-items:center;padding:16px;background:rgba(244,239,228,.8);backdrop-filter:blur(4px);z-index:5}
+.start{background:var(--card);border-radius:28px;padding:22px 26px 26px;text-align:center;max-width:420px;box-shadow:0 6px 0 var(--line),0 16px 40px var(--shadow)}
+.start h2{margin:0;font-family:var(--f-display);font-weight:800;font-size:2rem;line-height:1.05}
+.start .vi{margin:2px 0 12px;font-family:var(--f-hand);font-size:1.6rem;color:var(--marker)}
+.start p.note{margin:0 0 16px;font-size:.95rem;line-height:1.45;color:#4a5670}
+.go{background:var(--sun);border-radius:20px;padding:12px 26px;font-family:var(--f-display);font-weight:800;font-size:1.4rem;
+  box-shadow:inset 0 -5px 0 rgba(0,0,0,.12);display:inline-flex;flex-direction:column;align-items:center;line-height:1.05}
+.go i{font-style:normal;font-family:var(--f-hand);font-size:1.2rem;font-weight:400}
+.dots{display:flex;justify-content:center;gap:8px;margin-bottom:12px}
+.dots span{width:20px;height:20px;border-radius:50%;background:var(--c)}
+
+.sheet{position:fixed;inset:0;z-index:6;display:grid;place-items:center;padding:16px;background:rgba(30,43,68,.35)}
+.sheet .box{background:var(--card);border-radius:24px;max-width:620px;width:100%;max-height:100%;overflow:auto;padding:20px 22px 22px;box-shadow:0 16px 40px var(--shadow)}
+.sheet h2{margin:0 0 4px;font-family:var(--f-display);font-weight:800;font-size:1.5rem}
+.sheet h3{margin:16px 0 4px;font-family:var(--f-display);font-weight:800;font-size:1.1rem}
+.sheet p,.sheet li{font-size:.98rem;line-height:1.5;max-width:65ch}
+.sheet p{margin:4px 0}
+.sheet .vi{color:var(--marker)}
+.sheet ul{margin:4px 0;padding-left:20px}
+.sheet .x{float:right;width:44px;height:44px;border-radius:50%;background:var(--soft);display:grid;place-items:center;font-weight:800;font-size:1.2rem}
+.err{max-width:420px;text-align:center;font-size:1rem;line-height:1.5}
+
+@media (max-width:620px){
+  .hud{gap:8px}
+  .brand{padding:4px 12px 6px;border-radius:14px;min-width:0;flex:0 1 auto;overflow:hidden}
+  .brand p,.brand h1{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .brand h1{font-size:1.15rem}.brand p{font-size:1rem}
+  .tools{gap:6px}
+  .tool{min-width:42px;height:42px;padding:0 9px;font-size:.82rem;border-radius:12px}
+  .tool svg{width:22px;height:22px}
+  .bubble{align-self:stretch;padding:8px 8px 8px 10px;border-radius:18px;gap:10px}
+  .bubble .sw{width:40px;height:40px}
+  .bubble .en{font-size:1.05rem}.bubble .vi{font-size:1.15rem}
+  .say{width:42px;height:42px}
+  .tray{display:grid;grid-template-columns:1fr auto;align-self:stretch;padding:8px;gap:6px 8px;border-radius:22px}
+  .stars{justify-content:center}
+  .act{min-height:52px;min-width:92px;flex-direction:row;gap:6px}
+  .act span{align-items:flex-start}
+  .colors{grid-column:1/-1;justify-content:space-between;gap:2px}
+  .cbtn{width:auto;flex:1 1 0;min-width:0}
+  .cbtn b{font-size:.64rem}.cbtn i{font-size:.78rem}
+}
+@media (max-width:360px){ .cbtn .blob{width:34px;height:34px} .cbtn b{display:none} .brand p{display:none} }
+@media (max-height:520px){
+  .brand{display:none}
+  .top{position:absolute;top:calc(env(safe-area-inset-top,0px) + 10px);right:16px}
+  .col{align-items:flex-start}
+  .bubble{max-width:min(520px,calc(100% - 230px));padding:6px 8px 6px 8px;gap:8px}
+  .bubble .sw{width:36px;height:36px}
+  .bubble .en{font-size:.98rem}.bubble .vi{font-size:1.05rem}
+  .say{width:38px;height:38px}
+  .tray{padding:5px 10px;gap:8px}
+  .stars svg{width:32px;height:32px}
+  .cbtn{width:48px;padding:3px 0 2px}.cbtn .blob{width:32px;height:32px}
+  .act{min-height:50px;min-width:66px}
+}
+</style>
+</head>
+<body>
+<canvas id="c" tabindex="-1" aria-label="3D playroom corner with a shelf, a small table, a rug and a window, full of colorful toys and fruit"></canvas>
+
+<div class="hud">
+  <div class="top">
+    <div class="brand">
+      <h1><span>Color</span> <span>Hunt</span></h1>
+      <p lang="vi">Đi tìm màu</p>
+    </div>
+    <div class="tools">
+      <a class="tool" href="../" aria-label="Back to Little Color Lab" title="Back" style="text-decoration:none;color:inherit">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg>
+      </a>
+      <button class="tool" id="langBtn" aria-label="Voice language">EN + VI</button>
+      <button class="tool" id="muteBtn" aria-pressed="true" aria-label="Sound">
+        <svg class="on" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9h4l5-4v14l-5-4H4z" fill="currentColor"/><path d="M16.5 8.5a5 5 0 0 1 0 7M19 6a8.5 8.5 0 0 1 0 12"/></svg>
+        <svg class="off" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9h4l5-4v14l-5-4H4z" fill="currentColor"/><path d="M17 9l5 6M22 9l-5 6"/></svg>
+      </button>
+      <button class="tool" id="infoBtn" aria-label="For grown-ups">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><circle cx="12" cy="12" r="9.5"/><path d="M9.3 9.3a2.8 2.8 0 1 1 3.9 2.6c-.8.4-1.2 1-1.2 1.8v.5"/><circle cx="12" cy="17.3" r=".6" fill="currentColor"/></svg>
+      </button>
+    </div>
+  </div>
+
+  <div class="col">
+    <div class="bubble" role="status" aria-live="polite">
+      <span class="sw" id="swatch" aria-hidden="true"></span>
+      <div class="txt">
+        <p class="en" id="tipEn">Find 3 red things!</p>
+        <p class="vi" id="tipVi" lang="vi">Tìm 3 đồ vật màu đỏ!</p>
+      </div>
+      <button class="say" id="sayBtn" aria-label="Say it again">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9h4l5-4v14l-5-4H4z" fill="currentColor"/><path d="M16.5 8.5a5 5 0 0 1 0 7"/></svg>
+      </button>
+    </div>
+  </div>
+
+  <nav class="tray" aria-label="Controls">
+    <div class="stars" id="stars" role="img" aria-label="Stars found"></div>
+    <div class="colors" id="colors" role="group" aria-label="Pick a color to hunt"></div>
+    <button class="act" id="lightBtn" aria-pressed="false" aria-label="Room light: white or red / Đèn phòng">
+      <svg viewBox="0 0 24 24"><path class="bulb" d="M12 2a6.5 6.5 0 0 0-3.8 11.8c.6.5.8 1.1.8 1.7V17h6v-1.5c0-.6.3-1.2.8-1.7A6.5 6.5 0 0 0 12 2z" stroke="#1e2b44" stroke-width="1.6"/><path d="M9.5 20h5M10.5 22.5h3" stroke="#1e2b44" stroke-width="1.8" stroke-linecap="round"/></svg>
+      <span><b>Lights</b><i lang="vi">Đèn</i></span>
+    </button>
+  </nav>
+</div>
+
+<div class="overlay" id="startScreen">
+  <div class="start">
+    <div class="dots" aria-hidden="true"><span style="--c:#e02a2a"></span><span style="--c:#ffcf1f"></span><span style="--c:#1f63d8"></span><span style="--c:#2fa33a"></span><span style="--c:#ff7a1a"></span><span style="--c:#8040c8"></span><span style="--c:#ff69ad"></span></div>
+    <h2>Color Hunt</h2>
+    <p class="vi" lang="vi">Đi tìm màu</p>
+    <p class="note" id="loadNote">Tidying up the playroom…</p>
+    <button class="go" id="goBtn" disabled>Let's play! <i lang="vi">Chơi thôi!</i></button>
+  </div>
+</div>
+
+<div class="sheet" id="info" hidden>
+  <div class="box" role="dialog" aria-labelledby="infoTitle">
+    <button class="x" id="infoClose" aria-label="Close">✕</button>
+    <h2 id="infoTitle">For grown-ups</h2>
+    <p class="vi" lang="vi">Dành cho ba mẹ</p>
+
+    <h3>How to play</h3>
+    <ul>
+      <li>The bubble asks for a color: "Find 3 red things!" Tap things in the room. Each right one hops, sparkles and fills a star.</li>
+      <li>A wrong tap is fine: the toy wiggles and the voice says its color. Tap the color buttons to hunt any color you like.</li>
+      <li>Drag to look around the room. After four rounds the room light turns red. Press <b>Lights</b> any time to switch between white and red light.</li>
+    </ul>
+    <p class="vi" lang="vi">Bong bóng hỏi một màu: "Tìm 3 đồ vật màu đỏ!" Bé chạm vào đồ vật trong phòng. Chọn đúng thì đồ vật nhảy lên và sáng một ngôi sao. Chọn sai cũng không sao, giọng nói sẽ nói tên màu. Kéo để nhìn quanh phòng. Nút <b>Đèn</b> đổi đèn trắng và đèn đỏ.</p>
+
+    <h3>Why do things have colors?</h3>
+    <p>White light is a mix of all the rainbow colors. An apple looks red because it bounces red light back to our eyes and soaks up the other colors. A blue cup bounces blue light. Under a red lamp there is only red light: red, yellow, orange, pink and white things bounce it and all look red, while blue, green and purple things have almost nothing to bounce and look dark.</p>
+    <p class="vi" lang="vi">Ánh sáng trắng gồm đủ các màu cầu vồng. Quả táo trông màu đỏ vì nó phản chiếu ánh sáng đỏ vào mắt mình và giữ lại các màu khác. Dưới đèn đỏ chỉ có ánh sáng đỏ: đồ màu đỏ, vàng, cam, hồng và trắng đều trông đỏ, còn đồ màu xanh dương, xanh lá và tím trông tối đen.</p>
+
+    <h3>What your child practices</h3>
+    <p>Color words in two languages, sorting things by color (not by shape: there is a red ball and a blue ball, a red block and a blue block), and counting to three.</p>
+    <p class="vi" lang="vi">Tên các màu bằng hai thứ tiếng, phân loại đồ vật theo màu (không theo hình dạng), và đếm đến ba.</p>
+
+    <h3>Questions to ask</h3>
+    <ul>
+      <li>What else in our house is red? <span class="vi" lang="vi">Trong nhà mình còn gì màu đỏ nữa?</span></li>
+      <li>Is the ball red or blue? Are they the same? <span class="vi" lang="vi">Quả bóng màu đỏ hay xanh dương? Chúng có giống nhau không?</span></li>
+      <li>Why does the white egg look red under the red light? <span class="vi" lang="vi">Vì sao quả trứng trắng trông đỏ dưới đèn đỏ?</span></li>
+    </ul>
+
+    <h3>Try it at home</h3>
+    <p>Play a color scavenger hunt: give your child a basket and say "Find 3 yellow things!" Then sort everything by color on the floor and count each pile together. For the light trick, cover a flashlight with red cellophane in a dark room and look at toys (a grown-up holds the flashlight).</p>
+    <p class="vi" lang="vi">Chơi trò đi tìm màu: đưa bé một cái giỏ và nói "Tìm 3 đồ vật màu vàng nhé!" Sau đó xếp đồ theo màu trên sàn và cùng đếm. Thử thêm: trong phòng tối, bọc đèn pin bằng giấy bóng kính đỏ rồi chiếu lên đồ chơi (ba mẹ cầm đèn pin).</p>
+    <p style="font-size:.85rem;color:#5b6780">The spoken Vietnamese uses your device's Vietnamese voice. If you hear no Vietnamese, the device may not have one installed; the words are always on screen.</p>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+(function(){
+'use strict';
+const $=s=>document.querySelector(s);
+
+/* ---------- content ---------- */
+const COLORS={
+  red:   {en:'red',    vi:'đỏ',         En:'Red',    Vi:'Đỏ',         hex:'#e02a2a'},
+  yellow:{en:'yellow', vi:'vàng',       En:'Yellow', Vi:'Vàng',       hex:'#ffcf1f'},
+  blue:  {en:'blue',   vi:'xanh dương', En:'Blue',   Vi:'Xanh dương', hex:'#1f63d8'},
+  green: {en:'green',  vi:'xanh lá',    En:'Green',  Vi:'Xanh lá',    hex:'#2fa33a'},
+  orange:{en:'orange', vi:'cam',        En:'Orange', Vi:'Cam',        hex:'#ff7a1a'},
+  purple:{en:'purple', vi:'tím',        En:'Purple', Vi:'Tím',        hex:'#8040c8'},
+  pink:  {en:'pink',   vi:'hồng',       En:'Pink',   Vi:'Hồng',       hex:'#ff69ad'},
+  white: {en:'white',  vi:'trắng',      En:'White',  Vi:'Trắng',      hex:'#f7f4ec'},
+};
+const HUNT=['red','yellow','blue','green','orange','purple','pink'];
+// objects: color, English noun, Vietnamese noun (with classifier), builder, where it sits in each layout
+const OBJ=[
+  {id:'book',   c:'blue',   en:'book',        vi:'quyển sách'},
+  {id:'duck',   c:'yellow', en:'duck',        vi:'con vịt'},
+  {id:'grapes', c:'purple', en:'grapes',      vi:'chùm nho', plural:true},
+  {id:'apple',  c:'red',    en:'apple',       vi:'quả táo'},
+  {id:'plant',  c:'green',  en:'plant',       vi:'chậu cây'},
+  {id:'piggy',  c:'pink',   en:'piggy bank',  vi:'con heo đất'},
+  {id:'cup',    c:'blue',   en:'cup',         vi:'cái cốc'},
+  {id:'egg',    c:'white',  en:'egg',         vi:'quả trứng'},
+  {id:'rblock', c:'red',    en:'block',       vi:'khối gỗ'},
+  {id:'pear',   c:'green',  en:'pear',        vi:'quả lê'},
+  {id:'banana', c:'yellow', en:'banana',      vi:'quả chuối'},
+  {id:'crayon', c:'purple', en:'crayon',      vi:'cây bút sáp'},
+  {id:'flower', c:'pink',   en:'flower',      vi:'bông hoa'},
+  {id:'carrot', c:'orange', en:'carrot',      vi:'củ cà rốt'},
+  {id:'bblock', c:'blue',   en:'block',       vi:'khối gỗ'},
+  {id:'frog',   c:'green',  en:'frog pillow', vi:'cái gối con ếch'},
+  {id:'car',    c:'red',    en:'toy car',     vi:'chiếc xe đồ chơi'},
+  {id:'bball',  c:'blue',   en:'ball',        vi:'quả bóng'},
+  {id:'sun',    c:'yellow', en:'sun pillow',  vi:'cái gối mặt trời'},
+  {id:'rball',  c:'red',    en:'ball',        vi:'quả bóng'},
+  {id:'hoop',   c:'orange', en:'basketball',  vi:'quả bóng rổ'},
+];
+const NUM_EN=['One','Two','Three'], NUM_VI=['Một','Hai','Ba'];
+const cap=s=>s.charAt(0).toUpperCase()+s.slice(1);
+const nameEn=o=>(o.plural?'':(/^[aeiou]/.test(COLORS[o.c].en)?'an ':'a '))+COLORS[o.c].en+' '+o.en;
+const nameVi=o=>o.vi+' màu '+COLORS[o.c].vi;
+const needFor=c=>Math.min(3,OBJ.filter(o=>o.c===c).length);
+
+/* ---------- UI build ---------- */
+const colorsEl=$('#colors'), starsEl=$('#stars');
+HUNT.forEach(id=>{
+  const c=COLORS[id], b=document.createElement('button');
+  b.className='cbtn'; b.style.setProperty('--c',c.hex); b.dataset.c=id; b.setAttribute('aria-pressed','false');
+  b.setAttribute('aria-label','Hunt '+c.en+' / Tìm màu '+c.vi);
+  b.innerHTML='<span class="blob"></span><b>'+c.En+'</b><i lang="vi">'+c.Vi+'</i>';
+  b.onclick=()=>{ unlock(); pickColor(id); };
+  colorsEl.appendChild(b);
+});
+const STAR='<svg viewBox="0 0 24 24"><path d="M12 2.2l2.9 6 6.6.8-4.9 4.5 1.3 6.5L12 16.8 6.1 20l1.3-6.5L2.5 9l6.6-.8z"/></svg>';
+starsEl.innerHTML=STAR+STAR+STAR;
+
+/* ---------- speech + sound ---------- */
+let soundOn=true, voiceMode='both';
+try{ const v=localStorage.getItem('chunt-voice'); if(v) voiceMode=v; if(localStorage.getItem('chunt-mute')==='1') soundOn=false; }catch(e){}
+const langBtn=$('#langBtn'), muteBtn=$('#muteBtn');
+const LANG_LABEL={both:'EN + VI',en:'EN',vi:'VI'};
+function syncTools(){ langBtn.textContent=LANG_LABEL[voiceMode]; muteBtn.setAttribute('aria-pressed',String(soundOn)); }
+syncTools();
+langBtn.onclick=()=>{ voiceMode=voiceMode==='both'?'en':voiceMode==='en'?'vi':'both'; try{localStorage.setItem('chunt-voice',voiceMode)}catch(e){} syncTools(); sayTip(); };
+muteBtn.onclick=()=>{ soundOn=!soundOn; try{localStorage.setItem('chunt-mute',soundOn?'0':'1')}catch(e){} syncTools(); if(!soundOn){try{speechSynthesis.cancel()}catch(e){}} };
+let voices=[];
+function loadVoices(){ try{ voices=window.speechSynthesis?speechSynthesis.getVoices():[]; }catch(e){} }
+try{ if(window.speechSynthesis){ loadVoices(); speechSynthesis.onvoiceschanged=loadVoices; } }catch(e){}
+const pickVoice=l=>voices.find(v=>v.lang&&v.lang.toLowerCase().replace('_','-').startsWith(l));
+function say(en,vi){
+  if(!soundOn) return;
+  try{
+    const ss=window.speechSynthesis; if(!ss) return;
+    const busyNow=ss.speaking||ss.pending; ss.cancel();
+    const q=[];
+    if(voiceMode!=='vi') q.push({t:en,l:'en-US',v:pickVoice('en-us')||pickVoice('en')});
+    if(voiceMode!=='en') q.push({t:vi,l:'vi-VN',v:pickVoice('vi')});
+    const go=()=>q.forEach(o=>{ const u=new SpeechSynthesisUtterance(o.t); u.lang=o.l; if(o.v) u.voice=o.v; u.rate=o.l==='vi-VN'?0.95:0.92; u.pitch=1.15; ss.speak(u); });
+    if(busyNow) setTimeout(go,80); else go();
+  }catch(e){}
+}
+let ac=null;
+function unlock(){ if(!ac){ try{ ac=new (window.AudioContext||window.webkitAudioContext)(); }catch(e){} } if(ac&&ac.state==='suspended') ac.resume(); }
+function tone(f0,f1,dur,vol,type){
+  if(!soundOn||!ac) return;
+  const t=ac.currentTime,o=ac.createOscillator(),g=ac.createGain();
+  o.type=type||'sine'; o.frequency.setValueAtTime(f0,t); o.frequency.exponentialRampToValueAtTime(f1,t+dur);
+  g.gain.setValueAtTime(vol,t); g.gain.exponentialRampToValueAtTime(0.0001,t+dur);
+  o.connect(g).connect(ac.destination); o.start(t); o.stop(t+dur+0.02);
+}
+const buzz=ms=>{ try{ if(soundOn&&navigator.vibrate) navigator.vibrate(ms); }catch(e){} };
+const click=()=>{ tone(1200,700,0.05,0.12,'square'); buzz(12); };
+const boing=()=>{ tone(320,760,0.18,0.18,'triangle'); buzz(20); };
+const sparkle=()=>{ [880,1175,1568].forEach((f,i)=>setTimeout(()=>tone(f,f,0.22,0.1,'triangle'),i*90)); };
+const wobble=()=>{ tone(300,220,0.12,0.12,'sine'); setTimeout(()=>tone(260,200,0.14,0.1,'sine'),120); };
+const fanfare=()=>{ [523,659,784,1047].forEach((f,i)=>setTimeout(()=>tone(f,f,i===3?0.5:0.2,0.15,'triangle'),i*140)); };
+const switchSnd=()=>{ tone(900,500,0.06,0.14,'square'); setTimeout(()=>tone(200,140,0.25,0.08,'sine'),60); };
+
+let tip={en:'',vi:''};
+function setTip(en,vi,speak){ tip={en,vi}; $('#tipEn').textContent=en; $('#tipVi').textContent=vi; if(typeof refitSoon==='function') refitSoon(); if(speak!==false) say(en,vi); }
+function sayTip(){ say(tip.en,tip.vi); }
+$('#sayBtn').onclick=()=>{unlock();sayTip();};
+$('#infoBtn').onclick=()=>{ $('#info').hidden=false; };
+$('#infoClose').onclick=()=>{ $('#info').hidden=true; };
+$('#info').addEventListener('click',e=>{ if(e.target.id==='info') $('#info').hidden=true; });
+
+if(typeof THREE==='undefined'){
+  $('#loadNote').className='err';
+  $('#loadNote').textContent='The 3D engine could not load. Check the internet connection and open the page again.';
+  return;
+}
+
+/* ============================================================
+   SCENE
+   ============================================================ */
+const canvas=$('#c');
+const renderer=new THREE.WebGLRenderer({canvas,antialias:true});
+renderer.setPixelRatio(Math.min(2,window.devicePixelRatio||1));
+renderer.shadowMap.enabled=true; renderer.shadowMap.type=THREE.PCFSoftShadowMap;
+const scene=new THREE.Scene();
+const BG_W=new THREE.Color(0xf4efe4), BG_R=new THREE.Color(0x3a0a06);
+scene.background=BG_W.clone();
+const camera=new THREE.PerspectiveCamera(40,1,0.1,100);
+
+// Room lights: all of them turn red in the twist, so objects can only bounce red light.
+const HEMI_I=0.58, SUN_I=0.62, FILL_I=0.22;
+const hemi=new THREE.HemisphereLight(0xffffff,0xd8cbb2,HEMI_I); scene.add(hemi);
+const sunL=new THREE.DirectionalLight(0xffffff,SUN_I);
+sunL.position.set(3,9,7); sunL.castShadow=true; sunL.shadow.mapSize.set(1024,1024);
+Object.assign(sunL.shadow.camera,{left:-7,right:7,top:6,bottom:-4,near:1,far:30});
+sunL.shadow.bias=-0.0015; sunL.shadow.radius=3; scene.add(sunL);
+const fillL=new THREE.DirectionalLight(0xffffff,FILL_I); fillL.position.set(-5,4,6); scene.add(fillL);
+// a white "peek" light that shows an object's true color while the room is red
+const peek=new THREE.PointLight(0xffffff,0,1.8,2); scene.add(peek);
+
+function canvasTex(w,h,draw){ const c=document.createElement('canvas'); c.width=w; c.height=h; draw(c.getContext('2d'),w,h); const t=new THREE.CanvasTexture(c); t.anisotropy=4; return t; }
+const phong=o=>new THREE.MeshPhongMaterial(o), lambert=o=>new THREE.MeshLambertMaterial(o);
+const hitMat=new THREE.MeshBasicMaterial({transparent:true,opacity:0,depthWrite:false,colorWrite:false});
+function hitVol(r,h,y){ const m=new THREE.Mesh(new THREE.CylinderGeometry(r,r,h,12),hitMat); m.position.y=y; return m; }
+const glowTex=canvasTex(128,128,(x,w,h)=>{ const g=x.createRadialGradient(64,64,0,64,64,64); g.addColorStop(0,'rgba(255,255,255,1)'); g.addColorStop(0.35,'rgba(255,255,255,.7)'); g.addColorStop(1,'rgba(255,255,255,0)'); x.fillStyle=g; x.fillRect(0,0,w,h); });
+const V=(x,y,z)=>new THREE.Vector3(x,y,z);
+
+/* ---------- room ---------- */
+const WALL_Z=-2.2;
+const layoutP=new THREE.Group(), layoutL=new THREE.Group(); scene.add(layoutP,layoutL);
+let curtains=[], lampShade, lampGlow, lampBulb;
+const LAYOUT={
+  P:{shelfX:0,    table:[1.0,0.8],    rug:[0.15,1.05,2.6,1.35],  win:[0,4.05,2.3,1.25]},
+  L:{shelfX:-2.5, table:[2.35,-1.3],  rug:[1.9,0.05,2.7,1.25],  win:[2.35,2.55,2.4,1.35]},
+};
+const TH=0.46, SH_W=4.2, SH_D=0.72, SH_Z=-1.82, SH_LEVELS=[0.12,1.12,2.12], SH_H=3.1;
+function buildRoom(){
+  const wood=canvasTex(256,256,(x,w,h)=>{ x.fillStyle='#c9a77a'; x.fillRect(0,0,w,h);
+    for(let i=0;i<8;i++){ x.fillStyle=i%2?'#c29f71':'#cfae82'; x.fillRect(0,i*32,w,31); x.fillStyle='rgba(90,60,30,.25)'; x.fillRect(0,i*32+31,w,1); } });
+  wood.wrapS=wood.wrapT=THREE.RepeatWrapping; wood.repeat.set(9,9);
+  const floor=new THREE.Mesh(new THREE.PlaneGeometry(44,44),lambert({map:wood}));
+  floor.rotation.x=-Math.PI/2; floor.position.z=10; floor.receiveShadow=true; scene.add(floor);
+  const wallTex=canvasTex(256,256,(x,w,h)=>{ x.fillStyle='#f4efe4'; x.fillRect(0,0,w,h); x.fillStyle='rgba(200,185,155,.18)';
+    for(let i=0;i<w;i+=32) x.fillRect(i,0,12,h); });
+  wallTex.wrapS=wallTex.wrapT=THREE.RepeatWrapping; wallTex.repeat.set(16,5);
+  const wall=new THREE.Mesh(new THREE.PlaneGeometry(44,14),lambert({map:wallTex})); wall.position.set(0,7,WALL_Z); wall.receiveShadow=true; scene.add(wall);
+  const base=new THREE.Mesh(new THREE.BoxGeometry(44,0.22,0.06),lambert({color:0xffffff})); base.position.set(0,0.11,WALL_Z+0.03); scene.add(base);
+  const rugTex=canvasTex(256,256,(x,w,h)=>{ const c=128; const rings=['#e7d6b3','#f6ecd6','#d9e3e0','#f6ecd6','#efe2c4','#f9f2e2'];
+    rings.forEach((col,i)=>{ x.fillStyle=col; x.beginPath(); x.arc(c,c,126-i*20,0,7); x.fill(); });
+    x.fillStyle='rgba(190,170,130,.35)'; for(let a=0;a<48;a++){ const t=a/48*Math.PI*2; x.beginPath(); x.arc(c+Math.cos(t)*112,c+Math.sin(t)*112,3,0,7); x.fill(); } });
+  const skyTex=canvasTex(256,160,(x,w,h)=>{ const g=x.createLinearGradient(0,0,0,h); g.addColorStop(0,'#8cc7f2'); g.addColorStop(1,'#d9efff'); x.fillStyle=g; x.fillRect(0,0,w,h);
+    x.fillStyle='rgba(255,255,255,.95)'; [[60,50,22],[82,44,26],[104,52,20],[190,80,18],[208,74,22]].forEach(([a,b,r])=>{ x.beginPath(); x.arc(a,b,r,0,7); x.fill(); });
+    x.fillStyle='#a9d08a'; x.beginPath(); x.ellipse(70,h+30,150,70,0,0,7); x.fill(); x.fillStyle='#bcd99e'; x.beginPath(); x.ellipse(230,h+40,120,70,0,0,7); x.fill(); });
+  const curtainTex=canvasTex(64,128,(x,w,h)=>{ x.fillStyle='#f7f1e3'; x.fillRect(0,0,w,h); x.fillStyle='rgba(180,160,120,.22)'; for(let i=0;i<w;i+=16) x.fillRect(i,0,6,h); });
+  const white=phong({color:0xfbf8f1,shininess:25}), woodM=lambert({color:0xc08a58});
+
+  [['P',layoutP],['L',layoutL]].forEach(([k,G])=>{
+    const L=LAYOUT[k];
+    // shelf (white painted, so the colors pop)
+    const sx=L.shelfX;
+    // side wall makes it a cozy corner
+    const sw=new THREE.Mesh(new THREE.PlaneGeometry(14,14),lambert({map:wallTex})); sw.rotation.y=Math.PI/2; sw.position.set(sx-SH_W/2-0.9,7,WALL_Z+7); sw.receiveShadow=true; G.add(sw);
+    const sb=new THREE.Mesh(new THREE.BoxGeometry(0.06,0.22,14),lambert({color:0xffffff})); sb.position.set(sx-SH_W/2-0.87,0.11,WALL_Z+7); G.add(sb);
+    const sh=new THREE.Group(); sh.position.set(sx,0,SH_Z); G.add(sh);
+    const back=new THREE.Mesh(new THREE.BoxGeometry(SH_W,SH_H,0.04),lambert({color:0xe9e3d6})); back.position.set(0,SH_H/2,-SH_D/2+0.02); back.receiveShadow=true; sh.add(back);
+    [-1,1].forEach(s=>{ const side=new THREE.Mesh(new THREE.BoxGeometry(0.08,SH_H,SH_D),white); side.position.set(s*(SH_W/2-0.04),SH_H/2,0); side.castShadow=true; side.receiveShadow=true; sh.add(side); });
+    [0.06,1.06,2.06,SH_H-0.04].forEach(y=>{ const b=new THREE.Mesh(new THREE.BoxGeometry(SH_W,0.08,SH_D),white); b.position.set(0,y+0.02,0); b.receiveShadow=true; b.castShadow=true; sh.add(b); });
+    // table lamp standing on the shelf: this is the room light
+    const lamp=new THREE.Group(); lamp.position.set(sx-SH_W/2+0.45,SH_H,SH_Z-0.05); G.add(lamp);
+    const lb=new THREE.Mesh(new THREE.CylinderGeometry(0.16,0.2,0.08,20),phong({color:0x9aa3b2})); lb.position.y=0.04;
+    const lp=new THREE.Mesh(new THREE.CylinderGeometry(0.025,0.025,0.42,8),phong({color:0x9aa3b2})); lp.position.y=0.25;
+    const shadeM=lambert({color:0xfff6dc,emissive:0xfff0c0,emissiveIntensity:0.55,side:THREE.DoubleSide});
+    const shade=new THREE.Mesh(new THREE.CylinderGeometry(0.18,0.32,0.34,24,1,true),shadeM); shade.position.y=0.56;
+    const glow=new THREE.Sprite(new THREE.SpriteMaterial({map:glowTex,color:0xfff2c8,transparent:true,opacity:0.8,depthWrite:false,blending:THREE.AdditiveBlending}));
+    glow.scale.set(1.3,1.3,1); glow.position.y=0.5;
+    lamp.add(lb,lp,shade,glow);
+    if(k==='P'){ lampShade=[shadeM]; lampGlow=[glow.material]; } else { lampShade.push(shadeM); lampGlow.push(glow.material); }
+    // table
+    const [tx,tz]=L.table;
+    const top=new THREE.Mesh(new THREE.BoxGeometry(1.9,0.08,0.95),white); top.position.set(tx,TH-0.04,tz); top.castShadow=true; top.receiveShadow=true; G.add(top);
+    [[-0.85,-0.38],[0.85,-0.38],[-0.85,0.38],[0.85,0.38]].forEach(([a,b])=>{ const l=new THREE.Mesh(new THREE.CylinderGeometry(0.04,0.035,TH-0.08,8),woodM); l.position.set(tx+a,(TH-0.08)/2,tz+b); l.castShadow=true; G.add(l); });
+    // rug
+    const rug=new THREE.Mesh(new THREE.CircleGeometry(1,48),lambert({map:rugTex})); rug.rotation.x=-Math.PI/2;
+    rug.scale.set(L.rug[2],L.rug[3],1); rug.position.set(L.rug[0],0.01,L.rug[1]); rug.receiveShadow=true; G.add(rug);
+    // window with curtains (they close when the red lamp is the only light)
+    const [wx,wy,ww,wh]=L.win;
+    const pane=new THREE.Mesh(new THREE.PlaneGeometry(ww,wh),lambert({map:skyTex,emissive:0xffffff,emissiveMap:skyTex,emissiveIntensity:0.35})); pane.position.set(wx,wy,WALL_Z+0.01); G.add(pane);
+    const fr=(w,h,x,y)=>{ const m=new THREE.Mesh(new THREE.BoxGeometry(w,h,0.08),white); m.position.set(x,y,WALL_Z+0.04); G.add(m); };
+    fr(ww+0.16,0.08,wx,wy+wh/2); fr(ww+0.16,0.08,wx,wy-wh/2); fr(0.08,wh,wx-ww/2,wy); fr(0.08,wh,wx+ww/2,wy); fr(0.05,wh,wx,wy); fr(ww,0.05,wx,wy);
+    const sill=new THREE.Mesh(new THREE.BoxGeometry(ww+0.4,0.06,0.22),white); sill.position.set(wx,wy-wh/2-0.05,WALL_Z+0.11); G.add(sill);
+    const rod=new THREE.Mesh(new THREE.CylinderGeometry(0.02,0.02,ww+0.7,8),phong({color:0xb58c58})); rod.rotation.z=Math.PI/2; rod.position.set(wx,wy+wh/2+0.14,WALL_Z+0.14); G.add(rod);
+    [-1,1].forEach(s=>{ const c=new THREE.Mesh(new THREE.PlaneGeometry(1,wh+0.3),lambert({map:curtainTex,side:THREE.DoubleSide}));
+      c.position.set(0,wy-0.01,WALL_Z+0.12); c.userData={s,wx,ww,open:0.28,closed:ww/2+0.1}; curtains.push(c); G.add(c); });
+  });
+  setCurtains(0);
+}
+let curtainK=0;
+function setCurtains(k){ curtainK=k; curtains.forEach(c=>{ const u=c.userData, w=u.open+(u.closed-u.open)*k; c.scale.x=w; const edge=u.wx+u.s*(u.ww/2+0.24); c.position.x=edge-u.s*w/2; }); }
+
+/* ---------- toys ---------- */
+const COL=id=>new THREE.Color(COLORS[id].hex);
+const pm=(hex,sh)=>phong({color:hex,shininess:sh==null?40:sh,specular:0x333333});
+function mesh(geo,mat,x,y,z){ const m=new THREE.Mesh(geo,mat); m.position.set(x||0,y||0,z||0); return m; }
+const BLACK=pm(0x1b1d24,60), BROWN=pm(0x6b4424,10), LEAF=pm(0x2f9e35,30);
+const B={
+  apple(){ const g=new THREE.Group(), m=pm(COLORS.red.hex,70);
+    const b=mesh(new THREE.SphereGeometry(0.24,24,18),m,0,0.22); b.scale.set(1,0.9,1);
+    const st=mesh(new THREE.CylinderGeometry(0.018,0.024,0.13,6),BROWN,0.01,0.46); st.rotation.z=0.2;
+    const lf=mesh(new THREE.SphereGeometry(0.075,10,8),LEAF,0.08,0.47); lf.scale.set(1,0.3,0.55); lf.rotation.z=-0.5;
+    g.add(b,st,lf); return [g,0.52,0.36]; },
+  ball(c){ const g=new THREE.Group(), col=COL(c);
+    g.add(mesh(new THREE.SphereGeometry(0.27,28,20),pm(col,80),0,0.27));
+    const t=mesh(new THREE.TorusGeometry(0.272,0.022,8,40),pm(col.clone().multiplyScalar(0.72),60),0,0.27); t.rotation.set(1.1,0.3,0); g.add(t);
+    const t2=mesh(new THREE.TorusGeometry(0.272,0.022,8,40),pm(col.clone().multiplyScalar(0.72),60),0,0.27); t2.rotation.set(-0.5,1.3,0);
+    g.add(t2); return [g,0.55,0.4]; },
+  car(){ const g=new THREE.Group(), m=pm(COLORS.red.hex,80);
+    g.add(mesh(new THREE.BoxGeometry(0.74,0.2,0.4),m,0,0.19), mesh(new THREE.BoxGeometry(0.38,0.19,0.36),m,-0.05,0.38));
+    const glass=pm(0x3a4556,90); g.add(mesh(new THREE.BoxGeometry(0.3,0.11,0.372),glass,-0.05,0.4), mesh(new THREE.BoxGeometry(0.392,0.11,0.26),glass,-0.05,0.4));
+    const wg=new THREE.CylinderGeometry(0.1,0.1,0.07,16), hub=pm(0xd0d4da,40);
+    [[-0.23,0.2],[0.23,0.2],[-0.23,-0.2],[0.23,-0.2]].forEach(([x,z])=>{ const w=mesh(wg,BLACK,x,0.1,z); w.rotation.x=Math.PI/2; g.add(w); const h=mesh(new THREE.CylinderGeometry(0.045,0.045,0.075,10),hub,x,0.1,z); h.rotation.x=Math.PI/2; g.add(h); });
+    g.add(mesh(new THREE.SphereGeometry(0.035,8,6),pm(0xfff6c8,80),0.37,0.22,0.12), mesh(new THREE.SphereGeometry(0.035,8,6),pm(0xfff6c8,80),0.37,0.22,-0.12));
+    g.rotation.y=0.5; return [g,0.5,0.45]; },
+  block(c){ const g=new THREE.Group(); const b=mesh(new THREE.BoxGeometry(0.42,0.42,0.42),pm(COL(c),30),0,0.21); b.castShadow=true;
+    const d=mesh(new THREE.CylinderGeometry(0.12,0.12,0.02,20),pm(COL(c).multiplyScalar(0.8),30),0,0.21,0.21); d.rotation.x=Math.PI/2;
+    g.add(b,d); g.rotation.y=0.35; return [g,0.44,0.36]; },
+  banana(){ const g=new THREE.Group();
+    const curve=new THREE.CatmullRomCurve3([V(-0.42,0.26,0),V(-0.2,0.12,0.05),V(0.08,0.1,0.06),V(0.34,0.17,0.02),V(0.46,0.29,-0.03)]);
+    g.add(new THREE.Mesh(new THREE.TubeGeometry(curve,40,0.1,10),pm(COLORS.yellow.hex,50)));
+    g.add(mesh(new THREE.SphereGeometry(0.05,8,6),pm(0x4a3a1c,10),0.46,0.29,-0.03));
+    const st=mesh(new THREE.CylinderGeometry(0.035,0.05,0.14,8),pm(0x9a9a2c,10),-0.47,0.31,0); st.rotation.z=0.8; g.add(st);
+    g.rotation.y=-0.2; return [g,0.4,0.48]; },
+  duck(){ const g=new THREE.Group(), m=pm(COLORS.yellow.hex,70);
+    const body=mesh(new THREE.SphereGeometry(0.2,24,16),m,0,0.19); body.scale.set(1.4,0.95,1.1);
+    const head=mesh(new THREE.SphereGeometry(0.14,20,14),m,0.15,0.43);
+    const beak=mesh(new THREE.SphereGeometry(0.07,12,8),pm(0xff8a1a,40),0.3,0.41); beak.scale.set(1.3,0.45,1);
+    const eyes=[1,-1].map(s=>mesh(new THREE.SphereGeometry(0.026,8,6),BLACK,0.23,0.48,s*0.085));
+    const tail=mesh(new THREE.ConeGeometry(0.08,0.16,10),m,-0.3,0.31); tail.rotation.z=0.9;
+    const wing=mesh(new THREE.SphereGeometry(0.12,14,10),m,-0.03,0.24,0.19); wing.scale.set(1.2,0.6,0.35);
+    const wing2=wing.clone(); wing2.position.z=-0.19;
+    g.add(body,head,beak,tail,wing,wing2,...eyes); g.rotation.y=-0.75; return [g,0.58,0.42]; },
+  sun(){ const g=new THREE.Group(), m=pm(COLORS.yellow.hex,15), face=new THREE.Group();
+    const disc=mesh(new THREE.CylinderGeometry(0.25,0.25,0.13,32),m); disc.rotation.x=Math.PI/2; face.add(disc);
+    for(let i=0;i<8;i++){ const a=i/8*Math.PI*2+Math.PI/8, r=mesh(new THREE.ConeGeometry(0.07,0.14,8),m,Math.cos(a)*0.31,Math.sin(a)*0.31); r.rotation.z=a-Math.PI/2; r.scale.z=0.6; face.add(r); }
+    [-1,1].forEach(s=>face.add(mesh(new THREE.SphereGeometry(0.028,8,6),BLACK,s*0.08,0.05,0.066)));
+    const smile=mesh(new THREE.TorusGeometry(0.09,0.014,6,16,Math.PI),pm(0x7a4a1a,10),0,-0.02,0.066); smile.rotation.z=Math.PI; face.add(smile);
+    face.position.y=0.4; face.rotation.x=-0.15; g.add(face); return [g,0.82,0.45]; },
+  cup(){ const g=new THREE.Group(), col=COL('blue');
+    g.add(mesh(new THREE.CylinderGeometry(0.17,0.13,0.34,24),pm(col,70),0,0.17));
+    const inside=mesh(new THREE.CircleGeometry(0.15,24),pm(col.clone().multiplyScalar(0.55),20),0,0.342); inside.rotation.x=-Math.PI/2; g.add(inside);
+    const h=mesh(new THREE.TorusGeometry(0.08,0.026,8,16,Math.PI),pm(col,70),0.17,0.18); h.rotation.z=-Math.PI/2; g.add(h);
+    g.rotation.y=-0.5; return [g,0.36,0.34]; },
+  book(){ const g=new THREE.Group(), col=COL('blue'), inner=new THREE.Group();
+    inner.add(mesh(new THREE.BoxGeometry(0.42,0.54,0.1),pm(col,20),0,0.27));
+    inner.add(mesh(new THREE.BoxGeometry(0.02,0.5,0.082),pm(0xfaf6ea,10),0.206,0.27));
+    inner.add(mesh(new THREE.BoxGeometry(0.4,0.02,0.082),pm(0xfaf6ea,10),0.005,0.535));
+    const label=mesh(new THREE.PlaneGeometry(0.24,0.12),pm(col.clone().lerp(new THREE.Color(1,1,1),0.45),10),0,0.36,0.051); inner.add(label);
+    const star=mesh(new THREE.CircleGeometry(0.05,5),pm(col.clone().lerp(new THREE.Color(1,1,1),0.45),10),0,0.18,0.051); inner.add(star);
+    inner.rotation.x=-0.1; g.add(inner); return [g,0.56,0.34]; },
+  plant(){ const g=new THREE.Group(), pot=pm(0x23873a,30), lf=pm(COLORS.green.hex,40);
+    g.add(mesh(new THREE.CylinderGeometry(0.17,0.13,0.26,20),pot,0,0.13));
+    const soil=mesh(new THREE.CircleGeometry(0.15,16),pm(0x4a3220,5),0,0.26); soil.rotation.x=-Math.PI/2; g.add(soil);
+    for(let i=0;i<7;i++){ const a=i/7*Math.PI*2, l=new THREE.Group(); const m=mesh(new THREE.SphereGeometry(0.1,12,8),lf,0,0.16); m.scale.set(0.55,1.6,0.28); l.add(m);
+      l.position.y=0.26; l.rotation.y=a; l.rotation.z=0.35+(i%2)*0.2; g.add(l); }
+    const mid=mesh(new THREE.SphereGeometry(0.09,12,8),lf,0,0.5); mid.scale.set(0.5,1.7,0.3); g.add(mid);
+    return [g,0.7,0.36]; },
+  frog(){ const g=new THREE.Group(), m=pm(COLORS.green.hex,20);
+    const body=mesh(new THREE.SphereGeometry(0.3,26,18),m,0,0.17); body.scale.set(1.2,0.58,1);
+    g.add(body);
+    [-1,1].forEach(s=>{ g.add(mesh(new THREE.SphereGeometry(0.095,14,10),m,s*0.14,0.32,0.08));
+      g.add(mesh(new THREE.SphereGeometry(0.058,12,8),pm(0xffffff,40),s*0.14,0.34,0.15));
+      g.add(mesh(new THREE.SphereGeometry(0.03,8,6),BLACK,s*0.14,0.345,0.2));
+      const f=mesh(new THREE.SphereGeometry(0.08,10,8),m,s*0.24,0.04,0.24); f.scale.set(1.2,0.4,1); g.add(f); });
+    const mouth=mesh(new THREE.TorusGeometry(0.12,0.012,6,20,Math.PI),pm(0x16561f,10),0,0.2,0.28); mouth.rotation.set(0.3,0,Math.PI); g.add(mouth);
+    const ch=[1,-1].map(s=>{ const c=mesh(new THREE.SphereGeometry(0.035,8,6),pm(0xff9aa8,10),s*0.22,0.2,0.24); c.scale.z=0.4; return c; }); g.add(...ch);
+    g.rotation.y=-0.2; return [g,0.44,0.46]; },
+  pear(){ const g=new THREE.Group();
+    const pts=[[0.001,0],[0.12,0.015],[0.19,0.08],[0.2,0.18],[0.16,0.28],[0.11,0.36],[0.09,0.43],[0.05,0.49],[0.001,0.51]].map(p=>new THREE.Vector2(p[0],p[1]));
+    g.add(new THREE.Mesh(new THREE.LatheGeometry(pts,24),pm(0x55b82c,50)));
+    const st=mesh(new THREE.CylinderGeometry(0.014,0.02,0.12,6),BROWN,0.02,0.55); st.rotation.z=-0.3; g.add(st);
+    const lf=mesh(new THREE.SphereGeometry(0.06,10,8),LEAF,-0.05,0.54); lf.scale.set(1,0.3,0.55); lf.rotation.z=0.5; g.add(lf);
+    return [g,0.6,0.32]; },
+  carrot(){ const g=new THREE.Group(), inner=new THREE.Group();
+    const body=mesh(new THREE.ConeGeometry(0.11,0.56,16),pm(COLORS.orange.hex,30)); body.rotation.z=-Math.PI/2; inner.add(body);
+    for(let i=0;i<3;i++){ const l=mesh(new THREE.ConeGeometry(0.035,0.24,6),LEAF,-0.36,0.02+(i-1)*0.04,(i-1)*0.04); l.rotation.z=Math.PI/2+(i-1)*0.4; inner.add(l); }
+    inner.position.y=0.11; g.add(inner); g.rotation.y=0.4; return [g,0.26,0.4]; },
+  hoop(){ const g=new THREE.Group(), line=pm(0x3a2410,10);
+    g.add(mesh(new THREE.SphereGeometry(0.28,28,20),pm(0xf2781c,12),0,0.28));
+    const t1=mesh(new THREE.TorusGeometry(0.281,0.011,6,40),line,0,0.28); t1.rotation.x=Math.PI/2+0.25;
+    const t2=mesh(new THREE.TorusGeometry(0.281,0.011,6,40),line,0,0.28); t2.rotation.y=0.5;
+    const t3=mesh(new THREE.TorusGeometry(0.281,0.011,6,40),line,0,0.28); t3.rotation.y=-0.9;
+    g.add(t1,t2,t3); return [g,0.57,0.4]; },
+  grapes(){ const g=new THREE.Group(), m=pm(COLORS.purple.hex,90), sg=new THREE.SphereGeometry(0.075,14,10);
+    [[4,0.38],[3,0.27],[3,0.17],[2,0.08]].forEach(([n,y],r)=>{ for(let i=0;i<n;i++){ const x=(i-(n-1)/2)*0.13; g.add(mesh(sg,m,x,y,(r+i)%2?0.05:-0.02)); } });
+    const st=mesh(new THREE.CylinderGeometry(0.015,0.02,0.12,6),BROWN,0,0.48); g.add(st);
+    const lf=mesh(new THREE.SphereGeometry(0.07,10,8),LEAF,0.08,0.49); lf.scale.set(1,0.3,0.6); g.add(lf);
+    return [g,0.52,0.36]; },
+  crayon(){ const g=new THREE.Group(), inner=new THREE.Group(), col=COL('purple');
+    const b=mesh(new THREE.CylinderGeometry(0.075,0.075,0.5,16),pm(col,30)); inner.add(b);
+    inner.add(mesh(new THREE.CylinderGeometry(0.078,0.078,0.3,16),pm(col.clone().lerp(new THREE.Color(1,1,1),0.3),10)));
+    inner.add(mesh(new THREE.ConeGeometry(0.075,0.16,16),pm(col,30),0,0.33));
+    inner.rotation.z=-Math.PI/2; inner.position.y=0.075; g.add(inner); g.scale.setScalar(1.15); g.rotation.y=0.3; return [g,0.2,0.42]; },
+  flower(){ const g=new THREE.Group(), pk=pm(COLORS.pink.hex,40);
+    g.add(mesh(new THREE.CylinderGeometry(0.12,0.09,0.2,18),pm(0xf4f1ea,30),0,0.1));
+    g.add(mesh(new THREE.CylinderGeometry(0.014,0.014,0.4,6),LEAF,0,0.4));
+    const lf=mesh(new THREE.SphereGeometry(0.06,10,8),LEAF,0.06,0.34); lf.scale.set(1.3,0.35,0.6); lf.rotation.z=0.5; g.add(lf);
+    const head=new THREE.Group(); head.position.y=0.62; head.rotation.x=-0.2;
+    for(let i=0;i<6;i++){ const a=i/6*Math.PI*2, p=mesh(new THREE.SphereGeometry(0.095,12,8),pk,Math.cos(a)*0.11,Math.sin(a)*0.11); p.scale.set(1,1,0.4); head.add(p); }
+    head.add(mesh(new THREE.SphereGeometry(0.06,12,8),pm(0xffd21f,30),0,0,0.03));
+    g.add(head); return [g,0.74,0.34]; },
+  piggy(){ const g=new THREE.Group(), m=pm(COLORS.pink.hex,60);
+    const body=mesh(new THREE.SphereGeometry(0.24,24,18),m,0,0.27); body.scale.set(1.3,1,1);
+    const sn=mesh(new THREE.CylinderGeometry(0.085,0.085,0.07,16),pm(0xff8fc0,40),0.32,0.27); sn.rotation.z=Math.PI/2;
+    [-1,1].forEach(s=>{ g.add(mesh(new THREE.SphereGeometry(0.018,6,4),pm(0xb03a70,10),0.36,0.28,s*0.03));
+      const ear=mesh(new THREE.ConeGeometry(0.06,0.11,8),m,0.15,0.47,s*0.1); ear.rotation.x=s*0.3; g.add(ear);
+      g.add(mesh(new THREE.SphereGeometry(0.026,8,6),BLACK,0.27,0.36,s*0.1)); });
+    [[-0.17,0.12],[0.17,0.12],[-0.17,-0.12],[0.17,-0.12]].forEach(([x,z])=>g.add(mesh(new THREE.CylinderGeometry(0.05,0.05,0.1,10),m,x,0.05,z)));
+    g.add(mesh(new THREE.BoxGeometry(0.12,0.015,0.025),BLACK,-0.02,0.51));
+    g.add(body,sn); g.rotation.y=-0.65; return [g,0.54,0.42]; },
+  egg(){ const g=new THREE.Group();
+    g.add(mesh(new THREE.CylinderGeometry(0.1,0.07,0.13,18),pm(0xbfc5cf,40),0,0.065));
+    const e=mesh(new THREE.SphereGeometry(0.15,22,16),pm(COLORS.white.hex,40),0,0.27); e.scale.set(1,1.3,1); g.add(e);
+    return [g,0.47,0.32]; },
+};
+const BUILD={book:()=>B.book(),duck:()=>B.duck(),grapes:()=>B.grapes(),apple:()=>B.apple(),plant:()=>B.plant(),piggy:()=>B.piggy(),cup:()=>B.cup(),egg:()=>B.egg(),
+  rblock:()=>B.block('red'),pear:()=>B.pear(),banana:()=>B.banana(),crayon:()=>B.crayon(),flower:()=>B.flower(),carrot:()=>B.carrot(),bblock:()=>B.block('blue'),
+  frog:()=>B.frog(),car:()=>B.car(),bball:()=>B.ball('blue'),sun:()=>B.sun(),rball:()=>B.ball('red'),hoop:()=>B.hoop()};
+
+// positions: 12 on the shelf (3 levels x 4), 3 on the table, 6 on the rug/floor
+function slots(k){
+  const L=LAYOUT[k], out=[];
+  for(let r=2;r>=0;r--) for(let c=0;c<4;c++) out.push(V(L.shelfX-1.56+c*1.04,SH_LEVELS[r],SH_Z+0.02));
+  for(let c=0;c<3;c++) out.push(V(L.table[0]-0.56+c*0.56,TH,L.table[1]));
+  const F=k==='P'
+    ? [[-1.4,0.1],[-0.4,0.3],[-1.5,1.3],[-0.45,1.5],[0.65,1.95],[1.75,1.8]]
+    : [[0.2,-0.55],[1.25,0.15],[0.25,0.75],[2.3,0.6],[3.35,0.25],[4.1,-0.55]];
+  F.forEach(([x,z])=>out.push(V(x,0.02,z)));
+  return out;
+}
+const SLOTS={P:slots('P'),L:slots('L')};
+const toys=[], hits=[];
+function buildToys(){
+  OBJ.forEach((o,i)=>{
+    const [inner,h,r]=BUILD[o.id]();
+    const g=new THREE.Group(); g.add(inner);
+    inner.traverse(m=>{ if(m.isMesh){ m.castShadow=true; m.receiveShadow=true; } });
+    const hv=hitVol(Math.max(0.42,r+0.08),h+0.3,h/2+0.05); hv.userData.idx=i; g.add(hv); hits.push(hv);
+    const glow=new THREE.Sprite(new THREE.SpriteMaterial({map:glowTex,color:0xffd84a,transparent:true,opacity:0,depthWrite:false,blending:THREE.AdditiveBlending}));
+    glow.position.y=h*0.5; glow.scale.set(h*1.6+0.4,h*1.6+0.4,1); g.add(glow);
+    g.userData={i,h,inner,glow,busy:false};
+    toys.push(g); scene.add(g);
+  });
+}
+
+/* ---------- sparkles ---------- */
+const SN=90;
+const pPos=new Float32Array(SN*3), pCol=new Float32Array(SN*3), pAlp=new Float32Array(SN), pSiz=new Float32Array(SN), pVel=new Float32Array(SN*3), pLife=new Float32Array(SN);
+let sparks, sparkNext=0;
+function buildSparks(){
+  const g=new THREE.BufferGeometry();
+  g.setAttribute('position',new THREE.BufferAttribute(pPos,3));
+  g.setAttribute('aColor',new THREE.BufferAttribute(pCol,3));
+  g.setAttribute('aAlpha',new THREE.BufferAttribute(pAlp,1));
+  g.setAttribute('aSize',new THREE.BufferAttribute(pSiz,1));
+  const m=new THREE.ShaderMaterial({uniforms:{uScale:{value:500}},
+    vertexShader:'attribute vec3 aColor;attribute float aAlpha;attribute float aSize;uniform float uScale;varying vec3 vC;varying float vA;void main(){vC=aColor;vA=aAlpha;vec4 mv=modelViewMatrix*vec4(position,1.0);gl_PointSize=aSize*uScale/-mv.z;gl_Position=projectionMatrix*mv;}',
+    fragmentShader:'varying vec3 vC;varying float vA;void main(){vec2 p=gl_PointCoord-0.5;float d=length(p);float a=smoothstep(0.5,0.0,d)*vA;if(a<0.01)discard;gl_FragColor=vec4(vC*a,a);}',
+    transparent:true,depthWrite:false,depthTest:false,blending:THREE.AdditiveBlending});
+  sparks=new THREE.Points(g,m); sparks.frustumCulled=false; sparks.renderOrder=9; scene.add(sparks);
+}
+function burst(p,hex,n){
+  const c=new THREE.Color(hex), gold=new THREE.Color(0xffe066);
+  for(let k=0;k<n;k++){ const i=sparkNext; sparkNext=(sparkNext+1)%SN;
+    pPos[i*3]=p.x; pPos[i*3+1]=p.y; pPos[i*3+2]=p.z;
+    const a=Math.random()*Math.PI*2, s=0.8+Math.random()*1.4;
+    pVel[i*3]=Math.cos(a)*s; pVel[i*3+1]=1.2+Math.random()*1.8; pVel[i*3+2]=Math.sin(a)*s*0.6+0.3;
+    const cc=k%2?gold:c; pCol[i*3]=cc.r; pCol[i*3+1]=cc.g; pCol[i*3+2]=cc.b;
+    pLife[i]=0.9+Math.random()*0.5; pSiz[i]=0.12+Math.random()*0.1; }
+}
+function updateSparks(dt){
+  for(let i=0;i<SN;i++){
+    if(pLife[i]>0){ pLife[i]-=dt; pVel[i*3+1]-=4.2*dt;
+      pPos[i*3]+=pVel[i*3]*dt; pPos[i*3+1]+=pVel[i*3+1]*dt; pPos[i*3+2]+=pVel[i*3+2]*dt;
+      pAlp[i]=Math.max(0,Math.min(1,pLife[i]*1.6)); }
+    else pAlp[i]=0;
+  }
+  const g=sparks.geometry; g.attributes.position.needsUpdate=true; g.attributes.aAlpha.needsUpdate=true; g.attributes.aSize.needsUpdate=true; g.attributes.aColor.needsUpdate=true;
+}
+
+/* ---------- tweens ---------- */
+const tweens=[];
+function tween(dur,fn,done){ tweens.push({t:0,dur,fn,done}); }
+const ease=t=>t<0.5?4*t*t*t:1-Math.pow(-2*t+2,3)/2;
+function hop(g){
+  const u=g.userData; if(u.busy) return; u.busy=true;
+  const inner=u.inner, y0=inner.position.y, r0=inner.rotation.y;
+  tween(0.65,p=>{ inner.position.y=y0+Math.sin(Math.PI*p)*0.45; inner.rotation.y=r0+Math.PI*2*ease(p); const s=1+Math.sin(Math.PI*p)*0.12; inner.scale.set(s,s,s); },
+    ()=>{ inner.position.y=y0; inner.rotation.y=r0; inner.scale.set(1,1,1); u.busy=false; });
+}
+function wiggle(g){
+  const u=g.userData; if(u.busy) return; u.busy=true;
+  const inner=u.inner, z0=inner.rotation.z;
+  tween(0.7,p=>{ inner.rotation.z=z0+Math.sin(p*Math.PI*6)*0.22*(1-p); },()=>{ inner.rotation.z=z0; u.busy=false; });
+}
+
+/* ---------- layout + camera ---------- */
+let portrait=false;
+function layout(){
+  portrait=innerWidth/innerHeight<0.9;
+  const k=portrait?'P':'L';
+  layoutP.visible=portrait; layoutL.visible=!portrait;
+  toys.forEach((g,i)=>g.position.copy(SLOTS[k][i]));
+}
+let fitR=9, offX=0, offY=0;
+const target=new THREE.Vector3();
+let yaw=0, pitch=0;
+function keyPoints(){
+  const pts=[];
+  toys.forEach(g=>{ const p=g.position, h=g.userData.h; pts.push(V(p.x-0.3,p.y,p.z+0.2),V(p.x+0.3,p.y,p.z+0.2),V(p.x,p.y+h+0.12,p.z)); });
+  return pts;
+}
+function aimCamera(R){
+  const p=(portrait?0.36:0.3)+pitch;
+  camera.position.set(target.x+R*Math.sin(yaw)*Math.cos(p),target.y+R*Math.sin(p),target.z+R*Math.cos(yaw)*Math.cos(p));
+  camera.lookAt(target);
+}
+function freeBand(){
+  const w=innerWidth,h=innerHeight; let r={top:h*0.2,bot:h*0.75,left:12,right:w-12};
+  try{ const b=$('.bubble').getBoundingClientRect(), t=$('.top').getBoundingClientRect(), tr=$('.tray').getBoundingClientRect();
+    const below={top:Math.max(t.bottom,b.bottom)+4,bot:tr.top-4,left:12,right:w-12};
+    const beside={top:t.bottom+4,bot:tr.top-4,left:b.right+8,right:w-12};
+    const score=q=>Math.min(q.right-q.left,(q.bot-q.top)*1.5);
+    r=score(beside)>score(below)*1.15?beside:below;
+    if(r.bot-r.top<h*0.25){ r={top:h*0.2,bot:h*0.75,left:12,right:w-12}; }
+  }catch(e){}
+  return r;
+}
+function fitCamera(){
+  const w=innerWidth,h=innerHeight;
+  camera.aspect=w/h; camera.fov=portrait?44:38;
+  const pts=keyPoints(), bb=new THREE.Box3().setFromPoints(pts); bb.getCenter(target);
+  const sy=yaw, sp=pitch; yaw=0; pitch=0;
+  const band=freeBand(), allowX=(band.right-band.left)/w*0.96, allowY=(band.bot-band.top)/h*0.94, v=new THREE.Vector3();
+  let R=9, box=null; camera.clearViewOffset();
+  for(let it=0;it<7;it++){
+    aimCamera(R); camera.updateProjectionMatrix(); camera.updateMatrixWorld();
+    box={x0:1e9,x1:-1e9,y0:1e9,y1:-1e9};
+    pts.forEach(p=>{ v.copy(p).project(camera); box.x0=Math.min(box.x0,v.x); box.x1=Math.max(box.x1,v.x); box.y0=Math.min(box.y0,v.y); box.y1=Math.max(box.y1,v.y); });
+    const k=Math.max((box.x1-box.x0)/2/allowX,(box.y1-box.y0)/2/allowY);
+    R=Math.max(4.5,Math.min(30,R*Math.min(2,Math.max(0.5,k))));
+  }
+  fitR=R; offX=((box.x0+box.x1)/2+1)/2*w-(band.left+band.right)/2; offY=(1-(box.y0+box.y1)/2)/2*h-(band.top+band.bot)/2;
+  yaw=sy; pitch=sp;
+}
+function placeCamera(){
+  const w=innerWidth,h=innerHeight;
+  renderer.setSize(w,h,false);
+  aimCamera(fitR); camera.setViewOffset(w,h,offX,offY,w,h); camera.updateProjectionMatrix();
+  if(sparks) sparks.material.uniforms.uScale.value=h*renderer.getPixelRatio()/(2*Math.tan(camera.fov*Math.PI/360));
+}
+let resizeT=0;
+function onResize(){ layout(); fitCamera(); placeCamera(); }
+let refitT=0, lastBubbleH=0;
+function refitSoon(){ clearTimeout(refitT); refitT=setTimeout(()=>{ const hb=$('.bubble').offsetHeight; if(Math.abs(hb-lastBubbleH)>20){ lastBubbleH=hb; fitCamera(); placeCamera(); } },60); }
+function onResizeSoon(){ clearTimeout(resizeT); resizeT=setTimeout(onResize,120); }
+
+/* ============================================================
+   GAME
+   ============================================================ */
+let cur='red', need=3, found=[], roundsDone=0, twistDone=false, twistRound=false, celebrating=false, red=false, huntIdx=0;
+let timers=[];
+const later=(fn,ms)=>{ timers.push(setTimeout(fn,ms)); };
+const clearLater=()=>{ timers.forEach(clearTimeout); timers=[]; };
+
+function promptText(){ const c=COLORS[cur]; return ['Find '+need+' '+c.en+' things!','Tìm '+need+' đồ vật màu '+c.vi+'!']; }
+function syncStars(){
+  [...starsEl.children].forEach((s,k)=>{ s.style.display=k<need?'':'none'; s.classList.toggle('on',k<found.length); });
+  starsEl.setAttribute('aria-label',found.length+' of '+need+' found');
+}
+function syncColorBtns(){ [...colorsEl.children].forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.c===cur))); }
+function startRound(c,speak){
+  cur=c; need=needFor(c); found=[]; celebrating=false; huntIdx=HUNT.indexOf(c);
+  toys.forEach(g=>{ g.userData.glow.material.opacity=0; });
+  const sw=$('#swatch'); sw.style.setProperty('--c',COLORS[c].hex); sw.classList.remove('pop'); void sw.offsetWidth; sw.classList.add('pop');
+  syncStars(); syncColorBtns(); starsEl.classList.remove('party');
+  const [en,vi]=promptText(); setTip(en,vi,speak);
+}
+function pickColor(c){ clearLater(); click(); twistRound=false; startRound(c,true); }
+
+// what a color looks like when only red light shines on it
+const UNDER_RED={red:['red','đỏ'],yellow:['red','đỏ'],orange:['red','đỏ'],pink:['red','đỏ'],white:['red','đỏ'],blue:['dark','tối đen'],green:['dark','tối đen'],purple:['dark red','đỏ sẫm']};
+function looksEn(o){ const L=UNDER_RED[o.c], pr=o.plural?'They':'It'; if(o.c==='red') return pr+' still '+(o.plural?'look':'looks')+' red.'; return 'Red light makes '+(o.plural?'them':'it')+' look '+L[0]+'.'; }
+function looksVi(o){ const L=UNDER_RED[o.c]; if(o.c==='red') return 'Vẫn trông màu đỏ.'; return 'Đèn đỏ làm nó trông '+(L[0]==='dark'?'':'màu ')+L[1]+'.'; }
+function looksEnWrong(o){ if(o.c==='red') return ''; const L=UNDER_RED[o.c]; return ' In red light '+(o.plural?'they look ':'it looks ')+L[0]+'.'; }
+function looksViWrong(o){ if(o.c==='red') return ''; const L=UNDER_RED[o.c]; return ' Dưới đèn đỏ nó trông '+(L[0]==='dark'?'':'màu ')+L[1]+'.'; }
+
+function peekAt(g){
+  if(!red) return;
+  peek.position.set(g.position.x,g.position.y+g.userData.h*0.6+0.35,g.position.z+0.55);
+  tween(2.8,p=>{ peek.intensity=p<0.15?p/0.15*1.6:1.6*(1-(p-0.15)/0.85); },()=>{ peek.intensity=0; });
+}
+function tapToy(i){
+  const g=toys[i], o=OBJ[i];
+  const top=g.position.clone(); top.y+=g.userData.h*0.6;
+  if(celebrating){ boing(); hop(g); setTip(cap(nameEn(o))+'!',cap(nameVi(o))+'!'); return; }
+  if(o.c===cur){
+    if(found.includes(i)){ boing(); hop(g);
+      setTip('You found the '+COLORS[o.c].en+' '+o.en+' already! Find another '+COLORS[cur].en+' thing.','Bé tìm thấy '+nameVi(o)+' rồi! Tìm đồ vật màu '+COLORS[cur].vi+' khác nhé.'); return; }
+    found.push(i); const n=found.length;
+    boing(); sparkle(); hop(g); burst(top,COLORS[o.c].hex,18); peekAt(g);
+    g.userData.glow.material.opacity=0.55; syncStars();
+    if(red) setTip(cap(nameEn(o))+'! '+looksEn(o),cap(nameVi(o))+'! '+looksVi(o));
+    else setTip(cap(nameEn(o))+'! '+NUM_EN[n-1]+'!',cap(nameVi(o))+'! '+NUM_VI[n-1]+'!');
+    if(n>=need){ celebrating=true; later(celebrate,red?3200:2300); }
+  } else {
+    wobble(); wiggle(g); peekAt(g);
+    const c=COLORS[cur], lead=o.plural?'Those are ':"That's ";
+    if(red) setTip(lead+nameEn(o)+'.'+looksEnWrong(o)+' Let\'s find '+c.en+'!','Đó là '+nameVi(o)+'.'+looksViWrong(o)+' Mình tìm màu '+c.vi+' nhé!');
+    else setTip(lead+nameEn(o)+". Let's find "+c.en+'!','Đó là '+nameVi(o)+'. Mình tìm màu '+c.vi+' nhé!');
+  }
+}
+function celebrate(){
+  fanfare(); starsEl.classList.add('party');
+  found.forEach((i,k)=>later(()=>{ const g=toys[i]; hop(g); const p=g.position.clone(); p.y+=g.userData.h*0.6; burst(p,COLORS[cur].hex,14); },k*260));
+  const c=COLORS[cur], nums=NUM_EN.slice(0,need).join(', '), numsV=NUM_VI.slice(0,need).join(', ');
+  setTip('Hooray! '+nums+'! You found '+need+' '+c.en+' things!','Giỏi quá! '+numsV+'! Bé tìm được '+need+' đồ vật màu '+c.vi+' rồi!');
+  roundsDone++;
+  const next=HUNT[(huntIdx+1)%HUNT.length];
+  if(twistRound){ twistRound=false;
+    later(()=>{ setLight(false,false); setTip('White light again! All the colors are back.','Đèn trắng lại rồi! Các màu đã trở lại.'); },4200);
+    later(()=>startRound(next,true),8200);
+  } else if(roundsDone>=4&&!twistDone&&!red){ twistDone=true; twistRound=true;
+    later(()=>setLight(true,true),4200);
+    later(()=>startRound(next,true),9800);
+  } else later(()=>startRound(next,true),4200);
+}
+
+/* ---------- light switch ---------- */
+const RED_RGB=[1,0.06,0.04];
+let lightK=0, lightTo=0;
+function setLight(on,speak){
+  red=on; lightTo=on?1:0; switchSnd();
+  $('#lightBtn').setAttribute('aria-pressed',String(on));
+  if(speak){
+    if(on) setTip('The light is red now! Things look different.','Đèn màu đỏ rồi! Đồ vật trông khác quá.');
+    else setTip('White light again! All the colors are back.','Đèn trắng lại rồi! Các màu đã trở lại.');
+  }
+}
+function applyLight(k){
+  const r=1+(RED_RGB[0]-1)*k, gg=1+(RED_RGB[1]-1)*k, b=1+(RED_RGB[2]-1)*k, boost=1+0.15*k;
+  hemi.color.setRGB(r,gg,b); hemi.groundColor.setRGB(0.85*r,0.8*gg,0.7*b);
+  hemi.intensity=HEMI_I*boost; sunL.color.setRGB(r,gg,b); sunL.intensity=SUN_I*boost; fillL.color.setRGB(r,gg,b); fillL.intensity=FILL_I*boost;
+  scene.background.copy(BG_W).lerp(BG_R,k);
+  lampShade.forEach(m=>m.emissive.setRGB(r,0.94*gg,0.75*b)); lampGlow.forEach(m=>m.color.setRGB(r,0.95*gg,0.78*b));
+  setCurtains(k);
+}
+$('#lightBtn').onclick=()=>{ unlock(); clearLater(); twistRound=false; celebrating=false;
+  setLight(!red,true);
+  if(found.length>=need) later(()=>startRound(HUNT[(huntIdx+1)%HUNT.length],true),3800);
+  else later(()=>{ const [en,vi]=promptText(); setTip(en,vi,true); },3800);
+};
+
+/* ---------- pointer ---------- */
+const ray=new THREE.Raycaster(), ndc=new THREE.Vector2();
+let down=null;
+function hitIdx(e){
+  const r=canvas.getBoundingClientRect();
+  ndc.set(((e.clientX-r.left)/r.width)*2-1,-((e.clientY-r.top)/r.height)*2+1);
+  ray.setFromCamera(ndc,camera);
+  const h=ray.intersectObjects(hits,false);
+  return h.length?h[0].object.userData.idx:-1;
+}
+canvas.addEventListener('pointerdown',e=>{ down={x:e.clientX,y:e.clientY,yaw,pitch,drag:false}; try{canvas.setPointerCapture(e.pointerId);}catch(err){} });
+canvas.addEventListener('pointermove',e=>{
+  if(down){ const dx=e.clientX-down.x, dy=e.clientY-down.y;
+    if(!down.drag&&Math.hypot(dx,dy)>9) down.drag=true;
+    if(down.drag){ yaw=Math.max(-0.55,Math.min(0.55,down.yaw-dx*0.005)); pitch=Math.max(-0.18,Math.min(0.28,down.pitch+dy*0.004)); placeCamera(); } }
+  else if(e.pointerType==='mouse'){ canvas.style.cursor=hitIdx(e)>=0?'pointer':'grab'; }
+});
+canvas.addEventListener('pointerup',e=>{ if(down&&!down.drag){ unlock(); const i=hitIdx(e); if(i>=0) tapToy(i); } down=null; });
+canvas.addEventListener('pointercancel',()=>{ down=null; });
+
+/* ---------- loop ---------- */
+let simT=0; const clock=new THREE.Clock();
+function frame(){
+  const dt=Math.min(0.1,clock.getDelta()); simT+=dt;
+  for(let i=tweens.length-1;i>=0;i--){ const tw=tweens[i]; tw.t+=dt; const p=Math.min(1,tw.t/tw.dur); tw.fn(p); if(p>=1){ tweens.splice(i,1); tw.done&&tw.done(); } }
+  if(Math.abs(lightK-lightTo)>0.001){ lightK+=Math.sign(lightTo-lightK)*Math.min(Math.abs(lightTo-lightK),dt*1.6); applyLight(lightK); }
+  found.forEach(i=>{ const m=toys[i].userData.glow.material; m.opacity=0.45+0.15*Math.sin(simT*3+i); });
+  updateSparks(dt);
+  renderer.render(scene,camera);
+  requestAnimationFrame(frame);
+}
+async function keepAwake(){ try{ if(navigator.wakeLock) await navigator.wakeLock.request('screen'); }catch(e){} }
+async function boot(){
+  try{ await Promise.race([document.fonts.load('800 20px "Baloo 2"'),new Promise(r=>setTimeout(r,2000))]); }catch(e){}
+  buildRoom(); buildToys(); buildSparks(); applyLight(0);
+  startRound('red',false);
+  onResize();
+  addEventListener('resize',onResizeSoon); addEventListener('orientationchange',onResizeSoon);
+  try{ if(window.visualViewport) visualViewport.addEventListener('resize',onResizeSoon); }catch(e){}
+  requestAnimationFrame(frame);
+  $('#loadNote').textContent='Toys, fruit and books are hiding all over the playroom. Can you find the colors?';
+  $('#goBtn').disabled=false;
+}
+$('#goBtn').onclick=()=>{
+  unlock(); $('#startScreen').hidden=true; keepAwake();
+  document.addEventListener('visibilitychange',()=>{ if(document.visibilityState==='visible') keepAwake(); });
+  onResize();
+  startRound('red',true);
+};
+boot();
+})();
+</script>
+</body>
+</html>

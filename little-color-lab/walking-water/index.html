@@ -1,0 +1,981 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#f5f8ef">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<style>
+*,*::before,*::after{box-sizing:border-box}
+body{margin:0;font-size:14px}
+img{max-width:100%}
+</style>
+<title>Walking Water</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;800&family=Nunito:wght@600;800&family=Patrick+Hand&display=swap">
+<style>
+/* Layout: full-bleed 3D classroom table with five clear cups; tools on top, bilingual bubble, toy tray at the bottom. Deliberately single light theme (a bright classroom). */
+:root{
+  --paper:#eef5f8;      /* classroom wall */
+  --ink:#1e2b44;        /* navy text */
+  --marker:#2c68b2;     /* blue marker */
+  --sun:#ffcd34;        /* highlight for "do this next" */
+  --card:#ffffff;
+  --line:#d3dde4;
+  --soft:#edf2f6;
+  --shadow:rgba(30,43,68,.18);
+  --f-display:'Baloo 2','Nunito',system-ui,sans-serif;
+  --f-body:'Nunito',system-ui,-apple-system,'Segoe UI',sans-serif;
+  --f-hand:'Patrick Hand','Comic Sans MS','Chalkboard SE',cursive;
+  color-scheme:light;
+}
+[hidden]{display:none!important}
+html,body{height:100%;overflow:hidden}
+body{background:var(--paper);color:var(--ink);font-family:var(--f-body);-webkit-tap-highlight-color:transparent;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;touch-action:manipulation}
+#c{position:fixed;inset:0;width:100%;height:100%;display:block;touch-action:none;outline:none}
+button{font:inherit;color:inherit;cursor:pointer;border:0;background:none}
+button:focus-visible{outline:3px solid var(--marker);outline-offset:3px}
+
+.hud{position:fixed;inset:0;pointer-events:none;display:flex;flex-direction:column;justify-content:space-between;
+  padding:calc(env(safe-area-inset-top,0px) + 12px) 16px calc(env(safe-area-inset-bottom,0px) + 12px);gap:10px}
+.hud > *{pointer-events:auto}
+.top{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;pointer-events:none}
+.top > *{pointer-events:auto}
+.brand{background:var(--card);border-radius:18px;padding:6px 16px 8px;box-shadow:0 4px 0 var(--line),0 8px 20px var(--shadow);min-width:0}
+.brand h1{margin:0;font-family:var(--f-display);font-weight:800;font-size:1.45rem;line-height:1.05;letter-spacing:-.01em;white-space:nowrap}
+.brand h1 span{color:#e5322d}.brand h1 span+span{color:#1f6fe0}
+.brand p{margin:0;font-family:var(--f-hand);font-size:1.2rem;color:var(--marker);line-height:1.1;white-space:nowrap}
+.tools{display:flex;gap:8px;flex:none}
+.tool{min-width:48px;height:48px;border-radius:14px;background:var(--card);display:grid;place-items:center;padding:0 12px;
+  box-shadow:0 4px 0 var(--line),0 8px 18px var(--shadow);font-family:var(--f-display);font-weight:800;font-size:.95rem;white-space:nowrap}
+.tool svg{width:24px;height:24px}
+.tool[aria-pressed="false"] .on{display:none}.tool[aria-pressed="true"] .off{display:none}
+
+.col{flex:1;display:flex;flex-direction:column;gap:10px;align-items:center;pointer-events:none}
+.bubble{pointer-events:auto;max-width:min(560px,100%);background:var(--card);border-radius:22px;padding:10px 12px 10px 18px;
+  display:flex;align-items:center;gap:12px;box-shadow:0 5px 0 var(--line),0 10px 24px var(--shadow)}
+.bubble .txt{min-width:0}
+.bubble .en{margin:0;font-family:var(--f-display);font-weight:800;font-size:1.25rem;line-height:1.15;text-wrap:balance}
+.bubble .vi{margin:2px 0 0;font-family:var(--f-hand);font-size:1.3rem;line-height:1.1;color:var(--marker);text-wrap:balance}
+.say{flex:none;width:46px;height:46px;border-radius:50%;background:var(--marker);color:#fff;display:grid;place-items:center}
+.say svg{width:24px;height:24px}
+
+.mix{flex:none;display:flex;flex-direction:column;align-items:center;gap:0;font-family:var(--f-display);font-weight:800;font-size:.9rem;line-height:1;animation:pop .5s cubic-bezier(.3,1.6,.5,1)}
+.mix .row{display:flex;align-items:center;gap:3px}
+.mix .dot{width:24px;height:24px;border-radius:50%;box-shadow:inset 0 -3px 0 rgba(0,0,0,.15)}
+.mix .big{width:36px;height:36px;margin-top:2px}
+@keyframes pop{from{transform:scale(.6);opacity:0}to{transform:scale(1);opacity:1}}
+
+.tray{align-self:center;max-width:100%;background:var(--card);border-radius:26px;padding:10px 12px;display:flex;flex-wrap:wrap;
+  justify-content:center;align-items:center;gap:10px 14px;box-shadow:0 6px 0 var(--line),0 12px 30px var(--shadow)}
+.group{display:flex;gap:6px;align-items:stretch}
+.pick{min-width:56px;padding:4px 6px!important;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;gap:2px;padding:4px 0;border-radius:14px;transition:transform .15s,opacity .2s}
+.pick b{font-family:var(--f-display);font-weight:800;font-size:.72rem;line-height:1;white-space:nowrap}
+.pick i{font-style:normal;font-family:var(--f-hand);font-size:.85rem;line-height:1;color:var(--marker);white-space:nowrap}
+.pick .lb{display:flex;flex-direction:column;align-items:center;gap:2px}
+.mcup{width:30px;height:36px;border:3px solid #aebfd0;border-top-width:0;border-radius:2px 2px 9px 9px;margin-bottom:2px;
+  background:linear-gradient(to top,var(--c) 72%,rgba(255,255,255,0) 72%);box-shadow:inset 4px 0 0 rgba(255,255,255,.35)}
+.act{min-width:78px;min-height:62px;border-radius:18px;background:var(--soft);display:flex;flex-direction:column;align-items:center;justify-content:center;
+  padding:4px 8px;box-shadow:inset 0 -4px 0 var(--line);transition:transform .15s,background .2s;position:relative}
+.act svg{width:28px;height:28px}
+.act b{font-family:var(--f-display);font-weight:800;font-size:.86rem;line-height:1.05;white-space:nowrap}
+.act i{font-style:normal;font-family:var(--f-hand);font-size:.92rem;line-height:1;color:var(--marker);white-space:nowrap}
+.act.wait{min-width:96px}
+.act.wait svg{width:34px;height:34px}
+.hrs{position:absolute;top:-8px;right:-6px;background:var(--marker);color:#fff;border-radius:10px;padding:1px 7px;font-family:var(--f-display);font-weight:800;font-size:.78rem;line-height:1.3;box-shadow:0 2px 0 rgba(0,0,0,.15)}
+.act:active,.pick:active{transform:scale(.94)}
+.next{background:var(--sun)!important;animation:nudge 1.4s ease-in-out infinite}
+.dim{opacity:.45}
+@keyframes nudge{0%,100%{transform:scale(1)}50%{transform:scale(1.07)}}
+@media (prefers-reduced-motion:reduce){.next,.mix{animation:none!important}}
+
+.overlay{position:fixed;inset:0;display:grid;place-items:center;padding:16px;background:rgba(238,245,248,.8);backdrop-filter:blur(4px);z-index:5}
+.start{background:var(--card);border-radius:28px;padding:22px 26px 26px;text-align:center;max-width:420px;box-shadow:0 6px 0 var(--line),0 16px 40px var(--shadow)}
+.start h2{margin:0;font-family:var(--f-display);font-weight:800;font-size:2rem;line-height:1.05}
+.start .vi{margin:2px 0 12px;font-family:var(--f-hand);font-size:1.6rem;color:var(--marker)}
+.start p.note{margin:0 0 16px;font-size:.95rem;line-height:1.45;color:#4a5670}
+.go{background:var(--sun);border-radius:20px;padding:12px 26px;font-family:var(--f-display);font-weight:800;font-size:1.4rem;
+  box-shadow:inset 0 -5px 0 rgba(0,0,0,.12);display:inline-flex;flex-direction:column;align-items:center;line-height:1.05}
+.go i{font-style:normal;font-family:var(--f-hand);font-size:1.2rem;font-weight:400}
+.cupsrow{display:flex;justify-content:center;gap:7px;margin-bottom:12px;align-items:flex-end}
+.cupsrow span{width:22px;height:28px;border:2px solid #aebfd0;border-top:0;border-radius:2px 2px 7px 7px;background:linear-gradient(to top,var(--c) 70%,transparent 70%)}
+.cupsrow span.e{background:none}
+
+.sheet{position:fixed;inset:0;z-index:6;display:grid;place-items:center;padding:16px;background:rgba(30,43,68,.35)}
+.sheet .box{background:var(--card);border-radius:24px;max-width:620px;width:100%;max-height:100%;overflow:auto;padding:20px 22px 22px;box-shadow:0 16px 40px var(--shadow)}
+.sheet h2{margin:0 0 4px;font-family:var(--f-display);font-weight:800;font-size:1.5rem}
+.sheet h3{margin:16px 0 4px;font-family:var(--f-display);font-weight:800;font-size:1.1rem}
+.sheet p,.sheet li{font-size:.98rem;line-height:1.5;max-width:65ch}
+.sheet p{margin:4px 0}
+.sheet .vi{color:var(--marker)}
+.sheet ul{margin:4px 0;padding-left:20px}
+.sheet .x{float:right;width:44px;height:44px;border-radius:50%;background:var(--soft);display:grid;place-items:center;font-weight:800;font-size:1.2rem}
+.err{max-width:420px;text-align:center;font-size:1rem;line-height:1.5}
+
+@media (max-width:620px){
+  .hud{gap:8px}
+  .brand{padding:4px 12px 6px;border-radius:14px;flex:0 1 auto;overflow:hidden}
+  .brand h1{font-size:1.08rem}.brand p{font-size:.95rem}
+  .brand h1,.brand p{overflow:hidden;text-overflow:ellipsis}
+  .tools{gap:6px}
+  .tool{min-width:42px;height:42px;padding:0 8px;font-size:.8rem;border-radius:12px}
+  .tool svg{width:22px;height:22px}
+  .bubble{align-self:stretch;padding:8px 8px 8px 14px;border-radius:18px;gap:8px;justify-content:space-between}
+  .bubble .en{font-size:1.02rem}.bubble .vi{font-size:1.12rem}
+  .say{width:42px;height:42px}
+  .tray{align-self:stretch;flex-direction:column;padding:8px;gap:8px;border-radius:22px}
+  .group{width:100%;justify-content:space-between;gap:6px}
+  .group > *{flex:1 1 0;min-width:0}
+  .pick{width:auto;flex-direction:row;gap:8px;justify-content:center;min-height:48px;background:var(--soft);box-shadow:inset 0 -3px 0 var(--line)}
+  .pick .lb{display:flex;flex-direction:column;align-items:flex-start;gap:2px}
+  .mcup{width:24px;height:30px;margin:0}
+  .act{min-width:0;min-height:58px;padding:4px 2px}
+  .act.wait{min-width:0;flex-grow:1.25}
+  .act b{font-size:.8rem;white-space:normal;text-align:center}.act i{font-size:.86rem}
+}
+@media (max-width:400px){ .tools #langBtn{display:none} }
+@media (max-height:520px){
+  .brand{display:none}
+  .top{position:absolute;top:calc(env(safe-area-inset-top,0px) + 10px);left:16px;right:16px;justify-content:flex-end}
+  .col{align-items:flex-start}
+  .bubble{max-width:min(520px,calc(100% - 200px));padding:6px 8px 6px 12px}
+  .bubble .en{font-size:.98rem}.bubble .vi{font-size:1.05rem}
+  .say{width:38px;height:38px}
+  .tray{padding:6px 10px;gap:8px}
+  .act{min-height:52px;min-width:70px}
+  .pick{padding:2px 0}
+}
+</style>
+</head>
+<body>
+<canvas id="c" tabindex="-1" aria-label="3D classroom table with five clear cups of colored water and paper towel bridges"></canvas>
+
+<div class="hud">
+  <div class="top">
+    <div class="brand">
+      <h1><span>Walking</span> <span>Water</span></h1>
+      <p lang="vi">Nước biết đi</p>
+    </div>
+    <div class="tools">
+      <a class="tool" href="../" aria-label="Back to Little Color Lab" title="Back" style="text-decoration:none;color:inherit">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg>
+      </a>
+      <button class="tool" id="langBtn" aria-label="Voice language">EN + VI</button>
+      <button class="tool" id="muteBtn" aria-pressed="true" aria-label="Sound">
+        <svg class="on" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9h4l5-4v14l-5-4H4z" fill="currentColor"/><path d="M16.5 8.5a5 5 0 0 1 0 7M19 6a8.5 8.5 0 0 1 0 12"/></svg>
+        <svg class="off" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9h4l5-4v14l-5-4H4z" fill="currentColor"/><path d="M17 9l5 6M22 9l-5 6"/></svg>
+      </button>
+      <button class="tool" id="infoBtn" aria-label="For grown-ups">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><circle cx="12" cy="12" r="9.5"/><path d="M9.3 9.3a2.8 2.8 0 1 1 3.9 2.6c-.8.4-1.2 1-1.2 1.8v.5"/><circle cx="12" cy="17.3" r=".6" fill="currentColor"/></svg>
+      </button>
+    </div>
+  </div>
+
+  <div class="col">
+    <div class="bubble" role="status" aria-live="polite">
+      <div class="mix" id="mix" hidden aria-hidden="true"></div>
+      <div class="txt">
+        <p class="en" id="tipEn">Tap between two cups to add a paper towel bridge!</p>
+        <p class="vi" id="tipVi" lang="vi">Chạm vào giữa hai cốc để đặt cầu giấy nhé!</p>
+      </div>
+      <button class="say" id="sayBtn" aria-label="Say it again">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9h4l5-4v14l-5-4H4z" fill="currentColor"/><path d="M16.5 8.5a5 5 0 0 1 0 7"/></svg>
+      </button>
+    </div>
+  </div>
+
+  <nav class="tray" aria-label="Experiment tools">
+    <div class="group" id="cupsUI" role="group" aria-label="Water colors"></div>
+    <div class="group">
+      <button class="act" id="btnTowel">
+        <svg viewBox="0 0 24 24"><path d="M3 20c0-9 4-15 9-15s9 6 9 15" fill="none" stroke="#1e2b44" stroke-width="5.2" stroke-linecap="round"/><path d="M3 20c0-9 4-15 9-15s9 6 9 15" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round"/><path d="M3 20c0-4 .6-7.5 1.8-10.2" fill="none" stroke="#e5322d" stroke-width="3" stroke-linecap="round"/><path d="M21 20c0-4-.6-7.5-1.8-10.2" fill="none" stroke="#ffc81a" stroke-width="3" stroke-linecap="round"/></svg>
+        <b>Add paper towel</b><i lang="vi">Thêm giấy</i>
+      </button>
+      <button class="act wait" id="btnWait">
+        <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10.5" fill="#fff" stroke="#1e2b44" stroke-width="2"/><g stroke="#1e2b44" stroke-width="1.4" stroke-linecap="round"><path d="M12 3v1.6M21 12h-1.6M12 21v-1.6M3 12h1.6"/></g><path id="hHand" d="M12 12V7.2" stroke="#1e2b44" stroke-width="2.4" stroke-linecap="round"/><path id="mHand" d="M12 12V4.6" stroke="#2c68b2" stroke-width="1.6" stroke-linecap="round"/><circle cx="12" cy="12" r="1.3" fill="#e5322d"/></svg>
+        <b>Wait</b><i lang="vi">Chờ nào</i>
+        <span class="hrs" id="hrs" hidden>0 h</span>
+      </button>
+      <button class="act" id="btnNew">
+        <svg viewBox="0 0 24 24" fill="none" stroke="#1e2b44" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 5h8l-1.2 15H6.2z" fill="#e8f4ff"/><path d="M5.6 11h6.8l-.6 9H6.2z" fill="#1f6fe0" stroke="none"/><path d="M5 5h8l-1.2 15H6.2z"/><path d="M21 9a6 6 0 0 0-3-3.6" stroke="#2c68b2"/><path d="M21.3 4.8V9H17" stroke="#2c68b2"/></svg>
+        <b>New cups</b><i lang="vi">Cốc mới</i>
+      </button>
+    </div>
+  </nav>
+</div>
+
+<div class="overlay" id="startScreen">
+  <div class="start">
+    <div class="cupsrow" aria-hidden="true"><span style="--c:#e5322d"></span><span class="e"></span><span style="--c:#ffc81a"></span><span class="e"></span><span style="--c:#1f6fe0"></span></div>
+    <h2>Walking Water</h2>
+    <p class="vi" lang="vi">Nước biết đi</p>
+    <p class="note" id="loadNote">Filling the cups…</p>
+    <button class="go" id="goBtn" disabled>Let's play! <i lang="vi">Chơi thôi!</i></button>
+  </div>
+</div>
+
+<div class="sheet" id="info" hidden>
+  <div class="box" role="dialog" aria-labelledby="infoTitle">
+    <button class="x" id="infoClose" aria-label="Close">✕</button>
+    <h2 id="infoTitle">For grown-ups</h2>
+    <p class="vi" lang="vi">Dành cho ba mẹ</p>
+
+    <h3>How to play</h3>
+    <ul>
+      <li>Tap the space <b>between two cups</b> (or press <b>Add paper towel</b>) to lay a folded paper towel bridge. There are 4 bridges.</li>
+      <li>Before you start, tap a <b>full cup</b> (or its color button) to change its color.</li>
+      <li>Press <b>Wait</b>. The clock speeds up time; every press makes it go faster. Watch the color climb the paper and drip into the empty cups.</li>
+      <li><b>New cups</b> starts again so you can try other color pairs.</li>
+    </ul>
+    <p class="vi" lang="vi">Chạm vào khoảng giữa hai cốc (hoặc nút Thêm giấy) để đặt cầu giấy. Trước khi bắt đầu, chạm vào cốc đầy để đổi màu. Bấm Chờ nào để thời gian trôi nhanh và xem nước leo lên giấy, nhỏ xuống cốc trống.</p>
+
+    <h3>Why does the water walk?</h3>
+    <p>This is <b>capillary action</b>. A paper towel is made of tiny fibers with tiny gaps between them. Water likes to stick to the fibers, so it creeps up into the gaps, even upward against gravity, the same way a plant drinks water up its stem. Once the towel is soaked, water keeps moving from the fuller cup to the emptier one until the water levels are about the same. The empty cups get water from both neighbors, so the colors mix: red and yellow make orange, yellow and blue make green.</p>
+    <p>In real life this is slow: the color reaches the top in roughly half an hour and the cups take many hours to even out. The game speeds up time.</p>
+    <p class="vi" lang="vi">Đây là hiện tượng mao dẫn. Giấy ăn gồm rất nhiều sợi nhỏ, giữa các sợi có khe hở li ti. Nước bám vào sợi giấy nên leo lên theo các khe đó, dù phải đi ngược lên cao, giống như cây hút nước lên thân. Khi giấy đã ướt đẫm, nước chảy từ cốc nhiều sang cốc ít cho đến khi mực nước gần bằng nhau. Cốc trống nhận nước từ hai bên nên màu hòa vào nhau: đỏ và vàng thành cam, vàng và xanh dương thành xanh lá. Ngoài đời, việc này mất vài giờ; trò chơi cho thời gian chạy nhanh hơn.</p>
+
+    <h3>Questions to ask</h3>
+    <ul>
+      <li>Which way does the water go: up or down? <span class="vi" lang="vi">Nước đi lên hay đi xuống?</span></li>
+      <li>What color will the empty cup become? <span class="vi" lang="vi">Cốc trống sẽ thành màu gì?</span></li>
+      <li>Why did the full cups get lower? <span class="vi" lang="vi">Vì sao nước trong cốc đầy lại thấp xuống?</span></li>
+      <li>How does a plant drink water? <span class="vi" lang="vi">Cây uống nước bằng cách nào?</span></li>
+    </ul>
+
+    <h3>Try it at home</h3>
+    <p>Line up 3 to 5 clear glasses. Fill every other glass with water and add a few drops of food coloring (red, yellow, blue). Fold paper towels lengthwise into strips and bend each strip so one end sits in a full glass and the other in the empty glass next to it. Check after 1 hour, then again the next day. Put the glasses on a tray and a grown-up helps pour; food coloring can stain.</p>
+    <p class="vi" lang="vi">Xếp 3 đến 5 cái ly trong thành hàng. Cứ cách một ly thì đổ đầy nước và nhỏ vài giọt màu thực phẩm (đỏ, vàng, xanh dương). Gấp giấy ăn theo chiều dọc thành dải, uốn cong sao cho một đầu nằm trong ly đầy, đầu kia trong ly trống bên cạnh. Xem lại sau 1 giờ và sau một ngày. Đặt ly trên khay, ba mẹ giúp đổ nước; màu thực phẩm có thể làm bẩn quần áo.</p>
+    <p style="font-size:.85rem;color:#5b6780">Drag the scene to look around. The spoken Vietnamese uses your device's Vietnamese voice; the words are always on screen.</p>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+(function(){
+'use strict';
+const $=s=>document.querySelector(s);
+
+/* ---------- content ---------- */
+const COLORS=[
+  {id:'red',    en:'Red',    vi:'Đỏ',         vil:'đỏ',         hex:'#e5322d'},
+  {id:'yellow', en:'Yellow', vi:'Vàng',       vil:'vàng',       hex:'#ffc81a'},
+  {id:'blue',   en:'Blue',   vi:'Xanh dương', vil:'xanh dương', hex:'#1f6fe0'},
+  {id:'pink',   en:'Pink',   vi:'Hồng',       vil:'hồng',       hex:'#ff4fa3'},
+  {id:'green',  en:'Green',  vi:'Xanh lá',    vil:'xanh lá',    hex:'#1fa347'},
+  {id:'purple', en:'Purple', vi:'Tím',        vil:'tím',        hex:'#7b3fc4'},
+];
+/* every pair has a named result (vi is used after "màu") */
+const COMBOS=[
+  {a:'red',    b:'yellow', en:'Orange',       vi:'cam',          hex:'#f7851e'},
+  {a:'red',    b:'blue',   en:'Purple',       vi:'tím',          hex:'#7b3fc4'},
+  {a:'red',    b:'green',  en:'Brown',        vi:'nâu',          hex:'#8a5a2b'},
+  {a:'red',    b:'pink',   en:'Dark pink',    vi:'hồng đậm',     hex:'#e0306e'},
+  {a:'red',    b:'purple', en:'Dark red',     vi:'đỏ sẫm',       hex:'#9e1f4a'},
+  {a:'yellow', b:'blue',   en:'Green',        vi:'xanh lá',      hex:'#2e9e3e'},
+  {a:'yellow', b:'green',  en:'Light green',  vi:'xanh lá nhạt', hex:'#8ccf2f'},
+  {a:'yellow', b:'pink',   en:'Peach',        vi:'hồng đào',     hex:'#ff9a76'},
+  {a:'yellow', b:'purple', en:'Brown',        vi:'nâu',          hex:'#8f6a3a'},
+  {a:'blue',   b:'green',  en:'Teal',         vi:'xanh ngọc',    hex:'#12948c'},
+  {a:'blue',   b:'pink',   en:'Purple',       vi:'tím',          hex:'#8a4fd0'},
+  {a:'blue',   b:'purple', en:'Indigo',       vi:'chàm',         hex:'#3b2f9e'},
+  {a:'green',  b:'pink',   en:'Brown',        vi:'nâu',          hex:'#8b6a4a'},
+  {a:'green',  b:'purple', en:'Gray',         vi:'xám',          hex:'#6b6f73'},
+  {a:'pink',   b:'purple', en:'Pinky purple', vi:'tím hồng',     hex:'#b54fc8'},
+];
+const findCombo=(x,y)=>COMBOS.find(k=>(k.a===x&&k.b===y)||(k.a===y&&k.b===x));
+const byId=id=>COLORS.find(c=>c.id===id);
+const SRC=[0,2,4];               // cups that start full
+let srcColor=[0,1,2];            // index into COLORS for each full cup
+try{ const s=JSON.parse(localStorage.getItem('ww-colors')||'null'); if(Array.isArray(s)&&s.length===3&&s.every(v=>v>=0&&v<COLORS.length)) srcColor=s; }catch(e){}
+
+/* ---------- UI build ---------- */
+const cupsUI=$('#cupsUI');
+SRC.forEach((ci,k)=>{
+  const el=document.createElement('button'); el.className='pick';
+  el.innerHTML='<span class="mcup"></span><span class="lb"><b></b><i lang="vi"></i></span>';
+  el.onclick=()=>{unlock();tapCup(ci);};
+  cupsUI.appendChild(el);
+});
+function syncCupsUI(){
+  [...cupsUI.children].forEach((el,k)=>{ const c=COLORS[srcColor[k]];
+    el.querySelector('.mcup').style.setProperty('--c',c.hex); el.querySelector('b').textContent=c.en; el.querySelector('i').textContent=c.vi;
+    el.setAttribute('aria-label','Cup '+(SRC[k]+1)+': '+c.en+' / Cốc '+(SRC[k]+1)+': '+c.vil+'. Tap to change color'); });
+}
+syncCupsUI();
+
+/* ---------- speech + sound ---------- */
+let soundOn=true, voiceMode='both';
+try{ const v=localStorage.getItem('ww-voice'); if(v) voiceMode=v; if(localStorage.getItem('ww-mute')==='1') soundOn=false; }catch(e){}
+const langBtn=$('#langBtn'), muteBtn=$('#muteBtn');
+const LANG_LABEL={both:'EN + VI',en:'EN',vi:'VI'};
+function syncTools(){ langBtn.textContent=LANG_LABEL[voiceMode]; muteBtn.setAttribute('aria-pressed',String(soundOn)); }
+syncTools();
+langBtn.onclick=()=>{ voiceMode=voiceMode==='both'?'en':voiceMode==='en'?'vi':'both'; try{localStorage.setItem('ww-voice',voiceMode)}catch(e){} syncTools(); sayTip(); };
+muteBtn.onclick=()=>{ soundOn=!soundOn; try{localStorage.setItem('ww-mute',soundOn?'0':'1')}catch(e){} syncTools(); if(!soundOn){try{speechSynthesis.cancel()}catch(e){}} };
+let voices=[];
+function loadVoices(){ try{ voices=window.speechSynthesis?speechSynthesis.getVoices():[]; }catch(e){} }
+try{ if(window.speechSynthesis){ loadVoices(); speechSynthesis.onvoiceschanged=loadVoices; } }catch(e){}
+const pickVoice=l=>voices.find(v=>v.lang&&v.lang.toLowerCase().replace('_','-').startsWith(l));
+function say(en,vi){
+  if(!soundOn) return;
+  try{
+    const ss=window.speechSynthesis; if(!ss) return;
+    const busyNow=ss.speaking||ss.pending; ss.cancel();
+    const q=[];
+    if(voiceMode!=='vi') q.push({t:en,l:'en-US',v:pickVoice('en-us')||pickVoice('en')});
+    if(voiceMode!=='en') q.push({t:vi,l:'vi-VN',v:pickVoice('vi')});
+    const go=()=>q.forEach(o=>{ const u=new SpeechSynthesisUtterance(o.t); u.lang=o.l; if(o.v) u.voice=o.v; u.rate=o.l==='vi-VN'?0.95:0.92; u.pitch=1.15; ss.speak(u); });
+    if(busyNow) setTimeout(go,80); else go();
+  }catch(e){}
+}
+let ac=null;
+function unlock(){ if(!ac){ try{ ac=new (window.AudioContext||window.webkitAudioContext)(); }catch(e){} } if(ac&&ac.state==='suspended') ac.resume(); }
+function tone(f0,f1,dur,vol,type){
+  if(!soundOn||!ac) return;
+  const t=ac.currentTime,o=ac.createOscillator(),g=ac.createGain();
+  o.type=type||'sine'; o.frequency.setValueAtTime(f0,t); o.frequency.exponentialRampToValueAtTime(f1,t+dur);
+  g.gain.setValueAtTime(vol,t); g.gain.exponentialRampToValueAtTime(0.0001,t+dur);
+  o.connect(g).connect(ac.destination); o.start(t); o.stop(t+dur+0.02);
+}
+function noise(dur,freq,vol){
+  if(!soundOn||!ac) return;
+  const len=Math.floor(ac.sampleRate*dur), buf=ac.createBuffer(1,len,ac.sampleRate), d=buf.getChannelData(0);
+  for(let i=0;i<len;i++) d[i]=(Math.random()*2-1)*(0.6+0.4*Math.random());
+  const s=ac.createBufferSource(); s.buffer=buf;
+  const f=ac.createBiquadFilter(); f.type='bandpass'; f.frequency.value=freq; f.Q.value=0.8;
+  const g=ac.createGain(), t=ac.currentTime;
+  g.gain.setValueAtTime(0.0001,t); g.gain.linearRampToValueAtTime(vol,t+0.05); g.gain.linearRampToValueAtTime(0.0001,t+dur);
+  s.connect(f).connect(g).connect(ac.destination); s.start(t);
+}
+const buzz=ms=>{ try{ if(soundOn&&navigator.vibrate) navigator.vibrate(ms); }catch(e){} };
+const click=()=>{ tone(1200,700,0.05,0.12,'square'); buzz(12); };
+const rustle=()=>{ noise(0.35,2600,0.18); setTimeout(()=>noise(0.2,3400,0.1),160); buzz(18); };
+const drip=()=>{ const f=900+Math.random()*500; tone(f,f*0.45,0.09,0.07); };
+const tick=()=>tone(1900,1700,0.03,0.035,'square');
+const chime=()=>{ tone(660,660,0.25,0.15,'triangle'); setTimeout(()=>tone(880,880,0.25,0.15,'triangle'),140); setTimeout(()=>tone(1175,1175,0.4,0.15,'triangle'),280); };
+const splash=()=>{ tone(500,1100,0.12,0.1,'triangle'); setTimeout(()=>tone(700,1500,0.1,0.08,'triangle'),90); };
+
+let tip={en:'',vi:''}, holdUntil=0;
+function setTip(en,vi,speak){ tip={en,vi}; $('#tipEn').textContent=en; $('#tipVi').textContent=vi; holdUntil=performance.now()+3200; if(typeof refitSoon==='function') refitSoon(); if(speak!==false) say(en,vi); }
+function sayTip(){ say(tip.en,tip.vi); }
+/* milestone narration waits its turn so lines do not cut each other off */
+const nq=[];
+function narrate(en,vi,fn){ nq.push({en,vi,fn}); }
+function pumpNarration(){ const now=performance.now(); if(nq.length&&now>holdUntil){ const n=nq.shift(); setTip(n.en,n.vi); holdUntil=now+4300; if(n.fn) n.fn(); } }
+$('#sayBtn').onclick=()=>{unlock();sayTip();};
+$('#infoBtn').onclick=()=>{ $('#info').hidden=false; };
+$('#infoClose').onclick=()=>{ $('#info').hidden=true; };
+$('#info').addEventListener('click',e=>{ if(e.target.id==='info') $('#info').hidden=true; });
+
+if(typeof THREE==='undefined'){
+  $('#loadNote').className='err';
+  $('#loadNote').textContent='The 3D engine could not load. Check the internet connection and open the page again.';
+  return;
+}
+
+/* ============================================================
+   SCENE
+   ============================================================ */
+const canvas=$('#c');
+const renderer=new THREE.WebGLRenderer({canvas,antialias:true});
+renderer.setPixelRatio(Math.min(2,window.devicePixelRatio||1));
+renderer.shadowMap.enabled=true; renderer.shadowMap.type=THREE.PCFSoftShadowMap;
+renderer.setClearColor(0xeef5f8,1);
+const scene=new THREE.Scene();
+const camera=new THREE.PerspectiveCamera(40,1,0.1,100);
+
+scene.add(new THREE.HemisphereLight(0xffffff,0xd8e2cf,0.8));
+const sun=new THREE.DirectionalLight(0xffffff,0.55);
+sun.position.set(3,9,6); sun.castShadow=true; sun.shadow.mapSize.set(1024,1024);
+Object.assign(sun.shadow.camera,{left:-5,right:5,top:5,bottom:-5,near:1,far:25});
+sun.shadow.bias=-0.0015; sun.shadow.radius=4; scene.add(sun);
+const fill=new THREE.DirectionalLight(0xfff4e0,0.25); fill.position.set(-5,4,3); scene.add(fill);
+
+function canvasTex(w,h,draw){ const c=document.createElement('canvas'); c.width=w; c.height=h; draw(c.getContext('2d'),w,h); const t=new THREE.CanvasTexture(c); t.anisotropy=4; return t; }
+const phong=o=>new THREE.MeshPhongMaterial(o), lambert=o=>new THREE.MeshLambertMaterial(o);
+const hitMat=new THREE.MeshBasicMaterial({transparent:true,opacity:0,depthWrite:false,colorWrite:false});
+function hitVol(r,h,y){ const m=new THREE.Mesh(new THREE.CylinderGeometry(r,r,h,12),hitMat); m.position.y=y; return m; }
+const V=(x,y,z)=>new THREE.Vector3(x,y,z);
+
+/* ---------- room ---------- */
+let windowSky, sunDisc;
+function buildRoom(){
+  const wood=canvasTex(256,256,(x,w,h)=>{ x.fillStyle='#d9b88a'; x.fillRect(0,0,w,h);
+    for(let i=0;i<8;i++){ x.fillStyle=i%2?'#d2b083':'#dfc093'; x.fillRect(0,i*32,w,31); x.fillStyle='rgba(110,70,30,.18)'; x.fillRect(0,i*32+31,w,1);
+      for(let k=0;k<6;k++){ x.fillStyle='rgba(120,80,40,.08)'; x.fillRect(Math.random()*w,i*32+4+Math.random()*24,40+Math.random()*80,1.5); } } });
+  wood.wrapS=wood.wrapT=THREE.RepeatWrapping; wood.repeat.set(3,3);
+  const top=new THREE.Mesh(new THREE.BoxGeometry(12,0.12,7),lambert({map:wood}));
+  top.position.set(0,-0.06,0); top.receiveShadow=true; scene.add(top);
+  const edge=new THREE.Mesh(new THREE.BoxGeometry(12.02,0.9,0.1),lambert({color:0xc9a472})); edge.position.set(0,-0.55,3.5); scene.add(edge);
+  const floor=new THREE.Mesh(new THREE.PlaneGeometry(40,30),lambert({color:0xbfd3c4})); floor.rotation.x=-Math.PI/2; floor.position.y=-1.6; scene.add(floor);
+  const tiles=canvasTex(256,256,(x,w,h)=>{ x.fillStyle='#f6f8f6'; x.fillRect(0,0,w,h); x.strokeStyle='#d7dfdc'; x.lineWidth=4;
+    for(let i=0;i<=4;i++){ x.beginPath(); x.moveTo(i*64,0); x.lineTo(i*64,h); x.stroke(); x.beginPath(); x.moveTo(0,i*64); x.lineTo(w,i*64); x.stroke(); } });
+  tiles.wrapS=tiles.wrapT=THREE.RepeatWrapping; tiles.repeat.set(10,1.25);
+  const tw=new THREE.Mesh(new THREE.PlaneGeometry(40,5),lambert({map:tiles})); tw.position.set(0,0.5,-3.5); scene.add(tw);
+  const paint=new THREE.Mesh(new THREE.PlaneGeometry(40,14),lambert({color:0xeaf3f7})); paint.position.set(0,10,-3.51); scene.add(paint);
+  const strip=canvasTex(512,32,(x,w,h)=>{ x.fillStyle='#f3f8fb'; x.fillRect(0,0,w,h); x.fillStyle='#7fb3d9'; x.fillRect(0,0,w,4); x.fillRect(0,h-4,w,4);
+    for(let i=0;i<16;i++){ x.fillStyle=['#e5322d','#f7851e','#ffc81a','#2e9e3e','#1f6fe0'][i%5]; x.beginPath(); x.arc(16+i*32,16,6,0,7); x.fill(); } });
+  strip.wrapS=THREE.RepeatWrapping; strip.repeat.set(5,1);
+  const st=new THREE.Mesh(new THREE.PlaneGeometry(40,0.32),lambert({map:strip})); st.position.set(0,3.08,-3.49); scene.add(st);
+  // window: sky turns to night as the hours pass
+  const win=new THREE.Group();
+  const frame=new THREE.Mesh(new THREE.BoxGeometry(2.3,1.7,0.08),lambert({color:0xffffff})); win.add(frame);
+  windowSky=new THREE.Mesh(new THREE.PlaneGeometry(2.05,1.45),new THREE.MeshBasicMaterial({color:0x9fd4ff})); windowSky.position.z=0.045; win.add(windowSky);
+  sunDisc=new THREE.Mesh(new THREE.CircleGeometry(0.16,24),new THREE.MeshBasicMaterial({color:0xffe066})); sunDisc.position.z=0.05; win.add(sunDisc);
+  const bar1=new THREE.Mesh(new THREE.BoxGeometry(0.06,1.45,0.03),lambert({color:0xffffff})); bar1.position.z=0.06;
+  const bar2=new THREE.Mesh(new THREE.BoxGeometry(2.05,0.06,0.03),lambert({color:0xffffff})); bar2.position.z=0.06; win.add(bar1,bar2);
+  win.position.set(-2.4,4.3,-3.45); scene.add(win);
+}
+
+/* ---------- cups ---------- */
+const H=1.3, GB=0.05, V0=1.0;
+const rOut=y=>0.35+0.06*Math.min(Math.max(y,0),H)/H, rIn=y=>rOut(y)-0.025;
+const cupG=[], cups=[];
+function buildCups(){
+  const pts=[new THREE.Vector2(0.001,0)];
+  for(let i=0;i<=10;i++){ const y=H*i/10; pts.push(new THREE.Vector2(rOut(y),y)); }
+  for(let i=10;i>=0;i--){ const y=GB+(H-GB)*i/10; pts.push(new THREE.Vector2(rIn(y),y)); }
+  pts.push(new THREE.Vector2(0.001,GB));
+  const glassGeo=new THREE.LatheGeometry(pts,40);
+  const glassMat=phong({color:0xf4fbff,transparent:true,opacity:0.2,shininess:140,specular:0xffffff,side:THREE.DoubleSide,depthWrite:false});
+  const rimGeo=new THREE.TorusGeometry(rOut(H)-0.012,0.016,6,40), rimMat=phong({color:0xffffff,transparent:true,opacity:0.55,shininess:160,depthWrite:false});
+  const shineMat=new THREE.MeshBasicMaterial({color:0xffffff,transparent:true,opacity:0.32,depthWrite:false});
+  const shadowMat=new THREE.MeshBasicMaterial({color:0x5a4020,transparent:true,opacity:0.14,depthWrite:false});
+  for(let i=0;i<5;i++){
+    const g=new THREE.Group(); g.userData.action='cup:'+i;
+    const water=new THREE.Mesh(new THREE.CylinderGeometry(1,1,1,36,1),phong({color:0xff0000,emissive:0x000000,transparent:true,opacity:0.9,shininess:90,specular:0x888888,depthWrite:false}));
+    water.renderOrder=2; water.userData.base=Float32Array.from(water.geometry.attributes.position.array);
+    const surf=new THREE.Mesh(new THREE.CircleGeometry(1,36),phong({color:0xff0000,transparent:true,opacity:0.9,shininess:120,specular:0xffffff,depthWrite:false}));
+    surf.rotation.x=-Math.PI/2; surf.renderOrder=3;
+    const glass=new THREE.Mesh(glassGeo,glassMat); glass.renderOrder=5;
+    const rim=new THREE.Mesh(rimGeo,rimMat); rim.rotation.x=Math.PI/2; rim.position.y=H; rim.renderOrder=6;
+    const shine=new THREE.Mesh(new THREE.PlaneGeometry(0.06,0.9),shineMat); shine.position.set(-0.22,0.72,0.3); shine.rotation.y=-0.6; shine.renderOrder=7;
+    const sh=new THREE.Mesh(new THREE.CircleGeometry(0.44,28),shadowMat); sh.rotation.x=-Math.PI/2; sh.position.y=0.003;
+    g.add(sh,water,surf,glass,rim,shine,hitVol(0.46,1.45,0.72));
+    g.userData.water=water; g.userData.surf=surf;
+    cupG.push(g); scene.add(g);
+    cups.push({V:0,pig:{},shown:-1,col:new THREE.Color(1,1,1)});
+  }
+}
+function setWaterMesh(i){
+  const c=cups[i], g=cupG[i], w=g.userData.water, s=g.userData.surf;
+  const L=GB+c.V;
+  if(c.V<0.004){ w.visible=s.visible=false; c.shown=c.V; return; }
+  w.visible=s.visible=true;
+  if(Math.abs(c.shown-c.V)>0.0008){
+    const base=w.userData.base, a=w.geometry.attributes.position;
+    for(let k=0;k<a.count;k++){ const bx=base[k*3], by=base[k*3+1], bz=base[k*3+2];
+      const y=GB+0.004+(by+0.5)*(L-GB-0.004), r=rIn(y)-0.008;
+      a.array[k*3]=bx*r; a.array[k*3+1]=y; a.array[k*3+2]=bz*r; }
+    a.needsUpdate=true; w.geometry.computeBoundingSphere();
+    const rs=rIn(L)-0.008; s.scale.set(rs,rs,1); s.position.y=L+0.002;
+    c.shown=c.V;
+  }
+}
+function cupColor(i,out){
+  const c=cups[i], e=Object.entries(c.pig).filter(p=>p[1]>1e-5).sort((p,q)=>q[1]-p[1]);
+  if(!e.length){ out.set(0xffffff); return null; }
+  const c1=byId(e[0][0]);
+  if(e.length===1){ out.set(c1.hex); return {one:c1}; }
+  const tot=e[0][1]+e[1][1], f2=e[1][1]/tot, c2=byId(e[1][0]), k=findCombo(c1.id,c2.id);
+  out.set(c1.hex).lerp(new THREE.Color(k.hex),Math.min(1,f2/0.5));
+  const rest=e.slice(2).reduce((s,p)=>s+p[1],0)/(tot+1e-9);
+  if(rest>0.04) out.lerp(new THREE.Color(0x8a5a2b),Math.min(0.6,rest*1.5));
+  return {one:f2<0.2?c1:null,a:c1,b:c2,combo:k,f2};
+}
+function refreshCupColors(){
+  for(let i=0;i<5;i++){
+    cupColor(i,cups[i].col);
+    const g=cupG[i];
+    g.userData.water.material.color.copy(cups[i].col).multiplyScalar(0.9); g.userData.water.material.emissive.copy(cups[i].col).multiplyScalar(0.22);
+    g.userData.surf.material.color.copy(cups[i].col).lerp(new THREE.Color(1,1,1),0.28);
+  }
+}
+
+/* ---------- paper towels ---------- */
+const TW=256, TWW=48, TN=96;       // texture rows, columns; curve samples
+const paperBase=new Float32Array(TWW*TW);
+(function(){
+  for(let y=0;y<TW;y++) for(let x=0;x<TWW;x++){
+    let l=0.965+(Math.random()-0.5)*0.05;
+    const q=Math.abs(((x+y)%12)-6)+Math.abs(((x-y+1200)%12)-6);
+    if(q<2) l-=0.06; else if(q<3) l-=0.025;
+    if(x>=22&&x<=25) l-=0.045;
+    if(x<2||x>=TWW-2) l-=0.06;
+    paperBase[y*TWW+x]=l;
+  }
+})();
+const colJit=new Float32Array(TWW);
+for(let x=0;x<TWW;x++) colJit[x]=0.012*Math.sin(x*0.7)+0.01*Math.sin(x*1.9+1)+0.006*(Math.random()-0.5);
+const towels=[];
+let ghostTex;
+function buildTowels(){
+  ghostTex=canvasTex(32,64,(x,w,h)=>{ x.clearRect(0,0,w,h); x.fillStyle='#ffffff'; x.fillRect(0,0,w,40); });
+  ghostTex.wrapS=ghostTex.wrapT=THREE.RepeatWrapping; ghostTex.repeat.set(1,9);
+  for(let k=0;k<4;k++){
+    const cv=document.createElement('canvas'); cv.width=TWW; cv.height=TW;
+    const ctx=cv.getContext('2d'), img=ctx.createImageData(TWW,TW);
+    const tex=new THREE.CanvasTexture(cv); tex.anisotropy=4;
+    const mesh=new THREE.Mesh(new THREE.BufferGeometry(),lambert({map:tex,side:THREE.DoubleSide,transparent:true,opacity:1}));
+    mesh.castShadow=true; mesh.renderOrder=1; mesh.visible=false; mesh.userData.action='towel:'+k;
+    const ghost=new THREE.Mesh(new THREE.BufferGeometry(),new THREE.MeshBasicMaterial({color:0x4d9bf0,map:ghostTex,transparent:true,opacity:0.5,depthWrite:false,side:THREE.DoubleSide}));
+    ghost.renderOrder=8; ghost.userData.action='gap:'+k;
+    const gap=new THREE.Mesh(new THREE.BoxGeometry(0.6,1.1,0.7),hitMat); gap.userData.action='gap:'+k;
+    scene.add(mesh,ghost,gap);
+    towels.push({k,mesh,ghost,gap,tex,ctx,img,placed:false,anim:1,fA:0,fB:0,flow:0,ys:[],pts:[],apex:0.5,key:'',lastDraw:0,dripP:null,dripQ:null,dripAcc:0});
+  }
+}
+function towelCurve(pa,pb){
+  const d=pb.clone().sub(pa); d.y=0; const dist=d.length(); d.normalize();
+  const at=(base,s,y)=>base.clone().addScaledVector(d,s).setY(y);
+  const mid=pa.clone().add(pb).multiplyScalar(0.5);
+  const lift=Math.max(0.18,0.1+dist*0.12);
+  return {d,pts:[at(pa,0.07,GB+0.05),at(pa,0.17,0.5),at(pa,rIn(H)-0.075,H-0.1),at(pa,rOut(H)+0.025,H+0.1),mid.clone().setY(H+lift),
+    at(pb,-(rOut(H)+0.025),H+0.1),at(pb,-(rIn(H)-0.075),H-0.1),at(pb,-0.17,0.5),at(pb,-0.07,GB+0.05)]};
+}
+function ribbonGeo(P,S,w,fold){
+  const n=P.length, pos=new Float32Array(n*3*3), uv=new Float32Array(n*3*2), idx=[];
+  const T=new THREE.Vector3(), N=new THREE.Vector3();
+  for(let i=0;i<n;i++){
+    T.copy(P[Math.min(n-1,i+1)]).sub(P[Math.max(0,i-1)]).normalize();
+    N.crossVectors(T,S).normalize();
+    const v=i/(n-1), p=P[i];
+    const cols=[p.clone().addScaledVector(S,-w/2),p.clone().addScaledVector(N,fold),p.clone().addScaledVector(S,w/2)];
+    cols.forEach((q,c)=>{ pos.set([q.x,q.y,q.z],(i*3+c)*3); uv.set([c/2,v],(i*3+c)*2); });
+    if(i<n-1) for(let c=0;c<2;c++){ const a=i*3+c, b=a+1, cc=a+3, dd=a+4; idx.push(a,cc,b, b,cc,dd); }
+  }
+  const g=new THREE.BufferGeometry();
+  g.setAttribute('position',new THREE.BufferAttribute(pos,3)); g.setAttribute('uv',new THREE.BufferAttribute(uv,2));
+  g.setIndex(idx); g.computeVertexNormals(); return g;
+}
+function layoutTowel(t){
+  const pa=cupG[t.k].position, pb=cupG[t.k+1].position;
+  const {d,pts}=towelCurve(pa,pb);
+  const curve=new THREE.CatmullRomCurve3(pts,false,'centripetal');
+  const P=curve.getSpacedPoints(TN-1);
+  const S=new THREE.Vector3().crossVectors(d,V(0,1,0)).normalize();
+  t.mesh.geometry.dispose(); t.mesh.geometry=ribbonGeo(P,S,0.24,0.045);
+  t.ghost.geometry.dispose(); t.ghost.geometry=ribbonGeo(P,S,0.25,0.047);
+  t.pts=P; t.ys=P.map(p=>p.y);
+  let mi=0; t.ys.forEach((y,i)=>{ if(y>t.ys[mi]) mi=i; }); t.apex=mi/(TN-1);
+  // where drips fall into each cup: just inside the rim
+  const inA=P.findIndex((p,i)=>i<mi&&p.y>H-0.18), inB=TN-1-[...P].reverse().findIndex((p,i)=>i<TN-1-mi&&p.y>H-0.18);
+  t.dripA=P[Math.max(0,inA)].clone(); t.dripB=P[Math.min(TN-1,inB)].clone();
+  const mid=pa.clone().add(pb).multiplyScalar(0.5);
+  t.gap.position.set(mid.x,H+0.2,mid.z); t.gap.rotation.y=Math.atan2(-d.z,d.x);
+  t.key='';
+}
+/* param (0..1 from that end) up to which the towel sits under the water */
+function submerged(t,level,fromB){
+  let i=0; const n=TN-1;
+  while(i<n){ const y=t.ys[fromB?n-i:i]; if(y>level) break; i++; }
+  return i/n;
+}
+const tmpA=new THREE.Color(), tmpB=new THREE.Color();
+function drawTowel(t,force){
+  const cA=cups[t.k].col, cB=cups[t.k+1].col;
+  const key=[t.fA.toFixed(3),t.fB.toFixed(3),cA.getHexString(),cB.getHexString()].join();
+  if(!force&&key===t.key) return;
+  const now=performance.now(); if(!force&&now-t.lastDraw<70) return;
+  t.key=key; t.lastDraw=now;
+  const d=t.img.data, fA=t.fA, fB=t.fB;
+  for(let r=0;r<TW;r++){
+    const v=1-(r+0.5)/TW;
+    for(let x=0;x<TWW;x++){
+      const j=colJit[x];
+      const aA=fA>0.001?Math.min(1,Math.max(0,(fA+j-v)/0.035)):0;
+      const aB=fB>0.001?Math.min(1,Math.max(0,(fB+j-(1-v))/0.035)):0;
+      let R=1,G=1,B=1,s=0;
+      if(aA>0&&aB>0){ const lo=1-fB, hi=fA, m=hi-lo>0.001?Math.min(1,Math.max(0,(v-lo)/(hi-lo))):0.5;
+        R=cA.r+(cB.r-cA.r)*m; G=cA.g+(cB.g-cA.g)*m; B=cA.b+(cB.b-cA.b)*m; s=Math.max(aA,aB); }
+      else if(aA>0){ R=cA.r; G=cA.g; B=cA.b; s=aA; }
+      else if(aB>0){ R=cB.r; G=cB.g; B=cB.b; s=aB; }
+      const k=s*0.88, base=paperBase[r*TWW+x]*(1-0.07*s);
+      const o=(r*TWW+x)*4;
+      d[o]=255*base*(1-k+k*R); d[o+1]=255*base*(1-k+k*G); d[o+2]=255*base*(1-k+k*B); d[o+3]=255;
+    }
+  }
+  t.ctx.putImageData(t.img,0,0); t.tex.needsUpdate=true;
+}
+
+/* ---------- towel roll (another way to add a bridge) ---------- */
+let roll;
+function buildRoll(){
+  roll=new THREE.Group(); roll.userData.action='roll';
+  const rt=canvasTex(128,128,(x,w,h)=>{ x.fillStyle='#fbfbf8'; x.fillRect(0,0,w,h); x.fillStyle='rgba(0,0,0,.06)';
+    for(let i=0;i<w;i+=8) for(let j=0;j<h;j+=8) if(((i+j)/8)%2===0) x.fillRect(i+2,j+2,3,3);
+    x.fillStyle='rgba(0,0,0,.08)'; x.fillRect(0,62,w,2); });
+  rt.wrapS=rt.wrapT=THREE.RepeatWrapping; rt.repeat.set(2,1);
+  const body=new THREE.Mesh(new THREE.CylinderGeometry(0.28,0.28,0.85,32,1,true),lambert({map:rt})); body.castShadow=true;
+  const endMat=lambert({color:0xf1f0ea});
+  const e1=new THREE.Mesh(new THREE.RingGeometry(0.09,0.28,32),endMat); e1.rotation.x=-Math.PI/2; e1.position.y=0.425;
+  const e2=e1.clone(); e2.rotation.x=Math.PI/2; e2.position.y=-0.425;
+  const core=new THREE.Mesh(new THREE.CylinderGeometry(0.09,0.09,0.86,20,1,true),lambert({color:0xb98a55,side:THREE.DoubleSide}));
+  const tail=new THREE.Mesh(new THREE.PlaneGeometry(0.6,0.5),lambert({map:rt,side:THREE.DoubleSide})); tail.userData.isTail=true;
+  const inner=new THREE.Group(); inner.add(body,e1,e2,core,tail,hitVol(0.36,1.0,0)); roll.add(inner); roll.userData.inner=inner; roll.userData.tail=tail;
+  scene.add(roll);
+}
+
+/* ---------- drips + ripples ---------- */
+const drips=[], ripples=[];
+const dripGeo=new THREE.SphereGeometry(0.03,10,8);
+for(let i=0;i<18;i++){ const m=new THREE.Mesh(dripGeo,phong({color:0xff0000,shininess:120,transparent:true,opacity:0.9})); m.scale.y=1.4; m.visible=false; m.renderOrder=4; scene.add(m); drips.push({m,on:false,v:0,cup:0}); }
+for(let i=0;i<10;i++){ const m=new THREE.Mesh(new THREE.RingGeometry(0.8,1,28),new THREE.MeshBasicMaterial({color:0xffffff,transparent:true,opacity:0,depthWrite:false,side:THREE.DoubleSide})); m.rotation.x=-Math.PI/2; m.visible=false; m.renderOrder=4; scene.add(m); ripples.push({m,t:9}); }
+let lastDripSound=0;
+function spawnDrip(p,cup,col){
+  const d=drips.find(q=>!q.on); if(!d) return;
+  d.on=true; d.v=0; d.cup=cup; d.m.visible=true; d.m.position.copy(p); d.m.position.y-=0.03; d.m.material.color.copy(col);
+}
+function ripple(x,y,z,col){ const r=ripples.find(q=>q.t>=0.8); if(!r) return; r.t=0; r.m.visible=true; r.m.position.set(x,y+0.004,z); r.m.material.color.copy(col).lerp(new THREE.Color(1,1,1),0.5); }
+
+/* ---------- layout ---------- */
+let portrait=false;
+function layout(){
+  portrait=innerWidth/innerHeight<0.9;
+  if(portrait){ // zigzag: full cups in the back row, empty cups in front, so all five fit a narrow screen
+    for(let i=0;i<5;i++){ cupG[i].position.set((i-2)*0.74,0,i%2?0.42:-0.42); cupG[i].rotation.y=0; }
+  } else { // a gentle arc
+    const R=7, step=0.19, zs=[]; for(let i=0;i<5;i++){ const a=(i-2)*step; zs.push(-R*(1-Math.cos(a))); }
+    const zm=zs.reduce((s,z)=>s+z,0)/5;
+    for(let i=0;i<5;i++){ const a=(i-2)*step; cupG[i].position.set(R*Math.sin(a),0,zs[i]-zm); cupG[i].rotation.y=-a*0.5; }
+  }
+  towels.forEach(t=>{ layoutTowel(t); drawTowel(t,true); });
+  const inner=roll.userData.inner, tail=roll.userData.tail;
+  if(portrait){ roll.position.set(1.3,0.28,1.45); inner.rotation.set(Math.PI/2,0,0); tail.position.set(0.28,0.25,0.25); tail.rotation.set(0,Math.PI/2,Math.PI/2); }
+  else { roll.position.set(3.6,0.425,0.15); inner.rotation.set(0,0,0); tail.position.set(0,-0.1,0.3); tail.rotation.set(0,0,0); tail.scale.set(0.9,1.2,1); }
+  if(!portrait) tail.visible=false; else tail.visible=true;
+}
+
+/* ---------- camera ---------- */
+let fitR=9, offX=0, offY=0, yaw=0, pitch=0;
+const target=new THREE.Vector3();
+function keyPoints(){
+  const pts=[];
+  cupG.forEach(g=>{ const p=g.position; pts.push(V(p.x-0.42,0,p.z),V(p.x+0.42,0,p.z),V(p.x,0,p.z+0.42),V(p.x-0.42,H,p.z),V(p.x+0.42,H,p.z),V(p.x,H+0.35,p.z)); });
+  const r=roll.position;
+  if(portrait) pts.push(V(r.x+0.28,0,r.z+0.45),V(r.x-0.28,0,r.z+0.45),V(r.x+0.28,0.56,r.z));
+  else pts.push(V(r.x+0.3,0,r.z),V(r.x+0.3,0.9,r.z),V(r.x,0,r.z+0.3));
+  return pts;
+}
+function aimCamera(R){
+  const p=(portrait?0.62:0.5)+pitch;
+  camera.position.set(target.x+R*Math.sin(yaw)*Math.cos(p),target.y+R*Math.sin(p),target.z+R*Math.cos(yaw)*Math.cos(p));
+  camera.lookAt(target);
+}
+function freeBand(){
+  const w=innerWidth,h=innerHeight; let r={top:h*0.2,bot:h*0.75,left:12,right:w-12};
+  try{ const b=$('.bubble').getBoundingClientRect(), t=$('.top').getBoundingClientRect(), tr=$('.tray').getBoundingClientRect();
+    const below={top:Math.max(t.bottom,b.bottom)+4,bot:tr.top-4,left:12,right:w-12};
+    const beside={top:t.bottom+4,bot:tr.top-4,left:b.right+8,right:w-12};
+    const score=q=>Math.min(q.right-q.left,(q.bot-q.top)*1.5);
+    r=score(beside)>score(below)*1.15?beside:below;
+    if(r.bot-r.top<h*0.25){ r={top:h*0.2,bot:h*0.75,left:12,right:w-12}; }
+  }catch(e){}
+  return r;
+}
+function fitCamera(){
+  const w=innerWidth,h=innerHeight;
+  camera.aspect=w/h; camera.fov=portrait?42:36;
+  target.set(0,0.75,portrait?0.1:0);
+  const sy=yaw, sp=pitch; yaw=0; pitch=0;
+  const band=freeBand(), allowX=(band.right-band.left)/w*0.96, allowY=(band.bot-band.top)/h*0.94, pts=keyPoints(), v=new THREE.Vector3();
+  let R=9, box=null; camera.clearViewOffset();
+  for(let it=0;it<7;it++){
+    aimCamera(R); camera.updateProjectionMatrix(); camera.updateMatrixWorld();
+    box={x0:1e9,x1:-1e9,y0:1e9,y1:-1e9};
+    pts.forEach(p=>{ v.copy(p).project(camera); box.x0=Math.min(box.x0,v.x); box.x1=Math.max(box.x1,v.x); box.y0=Math.min(box.y0,v.y); box.y1=Math.max(box.y1,v.y); });
+    const k=Math.max((box.x1-box.x0)/2/allowX,(box.y1-box.y0)/2/allowY);
+    R=Math.max(3.5,Math.min(30,R*Math.min(2,Math.max(0.5,k))));
+  }
+  fitR=R; offX=((box.x0+box.x1)/2+1)/2*w-(band.left+band.right)/2; offY=(1-(box.y0+box.y1)/2)/2*h-(band.top+band.bot)/2;
+  yaw=sy; pitch=sp;
+}
+function placeCamera(){
+  const w=innerWidth,h=innerHeight;
+  renderer.setSize(w,h,false);
+  aimCamera(fitR); camera.setViewOffset(w,h,offX,offY,w,h); camera.updateProjectionMatrix();
+}
+let resizeT=0;
+function onResize(){ layout(); fitCamera(); placeCamera(); }
+let refitT=0, lastBubbleH=0;
+function refitSoon(){ clearTimeout(refitT); refitT=setTimeout(()=>{ const hb=$('.bubble').offsetHeight; if(Math.abs(hb-lastBubbleH)>20){ lastBubbleH=hb; fitCamera(); placeCamera(); } },60); }
+function onResizeSoon(){ clearTimeout(resizeT); resizeT=setTimeout(onResize,120); }
+
+/* ---------- tweens ---------- */
+const tweens=[];
+function tween(dur,fn,done){ tweens.push({t:0,dur,fn,done}); }
+const ease=t=>t<0.5?4*t*t*t:1-Math.pow(-2*t+2,3)/2;
+
+/* ============================================================
+   SIMULATION (time in hours)
+   ============================================================ */
+let phase='setup', hours=0, boostT=0, idleT=0, lastHourTick=0;
+const CLIMB=0.5, DOWN=1.4, K=0.2;
+const ms={};           // milestones already narrated
+const level=i=>GB+cups[i].V;
+function transfer(a,b,dv){
+  const A=cups[a], Bc=cups[b]; dv=Math.min(dv,A.V); if(dv<=0) return 0;
+  const f=dv/A.V;
+  for(const id in A.pig){ const m=A.pig[id]*f; A.pig[id]-=m; Bc.pig[id]=(Bc.pig[id]||0)+m; }
+  A.V-=dv; Bc.V+=dv; return dv;
+}
+function updateWet(t){
+  // parts of the towel under water are wet right away
+  const sa=cups[t.k].V>0.004?submerged(t,level(t.k),false):0, sb=cups[t.k+1].V>0.004?submerged(t,level(t.k+1),true):0;
+  t.fA=Math.max(t.fA,sa); t.fB=Math.max(t.fB,sb);
+}
+function simStep(dtH){
+  let totalFlow=0;
+  towels.forEach(t=>{
+    if(!t.placed||t.anim<1) { t.flow=0; return; }
+    const a=t.k, b=t.k+1, la=level(a), lb=level(b), yA=t.ys[0], yB=t.ys[TN-1];
+    const ap=t.apex, bp=1-t.apex;
+    if(la>yA+0.012&&t.fA<1){ let r=t.fA<ap?CLIMB:DOWN; if(t.flow<-0.002) r*=0.15; t.fA=Math.min(t.flow<-0.002?ap*0.8:1,t.fA+r*dtH); }
+    if(lb>yB+0.012&&t.fB<1){ let r=t.fB<bp?CLIMB:DOWN; if(t.flow>0.002) { r*=0.15; } t.fB=Math.min(t.flow>0.002?Math.max(t.fB,bp*0.8):1,t.fB+r*dtH); }
+    updateWet(t);
+    let q=0;
+    if(t.fA+t.fB>=1){
+      if(la>lb&&la>yA) q=K*(la-Math.max(lb,yB));
+      else if(lb>la&&lb>yB) q=-K*(lb-Math.max(la,yA));
+    }
+    if(q>0) q=transfer(a,b,q*dtH)/Math.max(dtH,1e-6); else if(q<0) q=-transfer(b,a,-q*dtH)/Math.max(dtH,1e-6);
+    t.flow=q; totalFlow+=Math.abs(q);
+    // milestones
+    if(!ms.climb&&(t.fA>0.02||t.fB>0.02)){ ms.climb=true; }
+    if(!ms.top&&(t.fA>=ap||t.fB>=bp)){ ms.top=true; narrate('Up, up, over the top!','Lên, lên, qua đỉnh rồi!'); }
+  });
+  return totalFlow;
+}
+/* drips follow the flow */
+function spawnDrips(dtReal){
+  towels.forEach(t=>{
+    if(!t.placed||Math.abs(t.flow)<0.004) return;
+    const into=t.flow>0?t.k+1:t.k, from=t.flow>0?t.k:t.k+1;
+    if(level(into)>H-0.2) return;
+    t.dripAcc+=dtReal*Math.min(3.5,0.8+Math.abs(t.flow)*12);
+    if(t.dripAcc>1){ t.dripAcc=0; spawnDrip(t.flow>0?t.dripB:t.dripA,into,cups[from].col); }
+  });
+}
+function mixCheck(){
+  for(const i of [1,3]){
+    if(ms['mix'+i]||cups[i].V<0.1) continue;
+    const info=cupColor(i,tmpA); if(!info) continue;
+    const leftT=towels[i-1].placed, rightT=towels[i].placed;
+    if(info.combo&&info.f2>=0.3){
+      ms['mix'+i]=true;
+      const A=info.a, B=info.b, k=info.combo;
+      narrate('Look, '+k.en.toLowerCase()+'! '+A.en+' and '+B.en.toLowerCase()+' make '+k.en.toLowerCase()+'!','Nhìn kìa, màu '+k.vi+'! '+A.vi+' và '+B.vil+' thành màu '+k.vi+'!',()=>showMix(A,B,k));
+    } else if(info.one&&(!(leftT&&rightT)||srcColor[(i-1)/2]===srcColor[(i+1)/2])&&cups[i].V>0.18){
+      ms['mix'+i]=true;
+      const c=info.one;
+      narrate('This cup is '+c.en.toLowerCase()+' too!','Cốc này cũng màu '+c.vil+'!');
+    }
+  }
+}
+let mixTimer=0;
+function showMix(A,B,k){
+  const m=$('#mix');
+  m.innerHTML='<div class="row"><span class="dot" style="background:'+A.hex+'"></span>+<span class="dot" style="background:'+B.hex+'"></span></div><span class="dot big" style="background:'+k.hex+'"></span>';
+  m.hidden=false; chime(); refitSoon();
+  clearTimeout(mixTimer); mixTimer=setTimeout(()=>{ m.hidden=true; refitSoon(); },6500);
+}
+
+/* ============================================================
+   ACTIONS
+   ============================================================ */
+const placedCount=()=>towels.filter(t=>t.placed).length;
+function refreshUI(){
+  const n=placedCount();
+  $('#btnTowel').classList.toggle('next',phase==='setup'&&n<4);
+  $('#btnTowel').classList.toggle('dim',n>=4||phase==='done');
+  $('#btnWait').classList.toggle('next',(phase==='setup'&&n===4)||(phase==='running'&&hours<0.05));
+  $('#btnWait').classList.toggle('dim',phase==='done');
+  cupsUI.classList.toggle('dim',phase!=='setup');
+  $('#btnNew').classList.toggle('next',phase==='done');
+  $('#hrs').hidden=phase==='setup';
+}
+function addTowel(k,speak){
+  if(phase==='done'){ setTip('All done! Tap New cups to play again.','Xong rồi! Bấm Cốc mới để chơi lại nhé.'); return; }
+  if(k==null) k=towels.findIndex(t=>!t.placed);
+  if(k<0){ setTip('All 4 bridges are ready! Tap Wait.','Đủ 4 cầu giấy rồi! Bấm Chờ nào.'); return; }
+  const t=towels[k];
+  if(t.placed){ click(); setTip('This paper towel is a bridge for the water.','Tờ giấy này là cây cầu cho nước đi qua.'); return; }
+  t.placed=true; t.anim=0; t.fA=0; t.fB=0; t.flow=0; t.key='';
+  t.mesh.visible=true; t.ghost.visible=false; t.mesh.material.transparent=true; t.mesh.material.opacity=0;
+  rustle(); idleT=0;
+  updateWet(t); drawTowel(t,true);
+  tween(0.7,p=>{ const e=ease(p); t.mesh.position.y=(1-e)*1.4; t.mesh.material.opacity=Math.min(1,p*2.2); },()=>{
+    t.mesh.position.y=0; t.anim=1; t.mesh.material.opacity=1; t.mesh.material.transparent=false; t.mesh.material.needsUpdate=true; splash(); });
+  const n=placedCount();
+  if(speak!==false){
+    if(n===4) setTip(phase==='running'?'All 4 bridges! Keep waiting.':'All 4 bridges! Now tap Wait and watch.',phase==='running'?'Đủ 4 cầu giấy! Chờ tiếp nào.':'Đủ 4 cầu giấy! Giờ bấm Chờ nào và xem nhé.');
+    else if(n===1) setTip('A paper towel bridge! Add more.','Một cây cầu giấy! Thêm nữa nào.');
+    else setTip(n+' bridges! Add another paper towel.','Được '+n+' cầu rồi! Thêm giấy nữa nào.');
+  }
+  refreshUI();
+}
+function tapCup(i){
+  click(); idleT=0;
+  bounceCup(i);
+  const k=SRC.indexOf(i);
+  if(phase!=='setup'){
+    if(k>=0) setTip('Tap New cups to change the colors.','Bấm Cốc mới để đổi màu nhé.');
+    else { const info=cupColor(i,tmpA); if(info&&cups[i].V>0.05){ const nm=info.one?[info.one.en,info.one.vil]:[info.combo.en,info.combo.vi]; setTip('This cup is '+nm[0].toLowerCase()+' now!','Cốc này giờ màu '+nm[1]+'!'); } else setTip('This cup is still empty. Wait and see!','Cốc này còn trống. Chờ xem nhé!'); }
+    return;
+  }
+  if(k<0){ setTip('This cup is empty. The water will walk in here!','Cốc này trống. Nước sẽ đi vào đây!'); return; }
+  srcColor[k]=(srcColor[k]+1)%COLORS.length;
+  try{ localStorage.setItem('ww-colors',JSON.stringify(srcColor)); }catch(e){}
+  const c=COLORS[srcColor[k]];
+  cups[i].pig={[c.id]:cups[i].V};
+  refreshCupColors(); syncCupsUI(); towels.forEach(t=>drawTowel(t,true));
+  const nb=[k-1,k+1].filter(j=>j>=0&&j<3).map(j=>COLORS[srcColor[j]]);
+  let en='Now this cup is '+c.en.toLowerCase()+'!', vi='Bây giờ cốc này màu '+c.vil+'!';
+  if(nb.length){ const o=nb[0]; if(o.id!==c.id){ const m=findCombo(c.id,o.id); en+=' With '+o.en.toLowerCase()+' it may make '+m.en.toLowerCase()+'.'; vi+=' Với màu '+o.vil+' có thể thành màu '+m.vi+'.'; } }
+  setTip(en,vi);
+}
+function bounceCup(i){ const g=cupG[i]; tween(0.35,p=>{ g.position.y=Math.sin(Math.PI*p)*0.12; },()=>{ g.position.y=0; }); }
+function pressWait(){
+  idleT=0;
+  if(phase==='done'){ setTip('The water has stopped walking. Tap New cups to play again!','Nước đã ngừng đi rồi. Bấm Cốc mới để chơi lại nhé!'); return; }
+  const n=placedCount();
+  if(n===0){ click(); setTip('The water needs a bridge! Add a paper towel first.','Nước cần một cây cầu! Thêm giấy trước nhé.'); return; }
+  tick();
+  if(phase==='setup'){
+    phase='running'; boostT=2.5; refreshUI();
+    setTip('Tick, tock! Time goes fast. The water is climbing!','Tích tắc! Thời gian trôi nhanh. Nước đang leo lên!');
+    return;
+  }
+  boostT=3; tone(700,1400,0.18,0.08,'triangle');
+  if(performance.now()>holdUntil&&!nq.length) setTip('Faster, faster! Tick, tock!','Nhanh nữa, nhanh nữa! Tích tắc!');
+}
+function newCups(){
+  phase='setup'; hours=0; boostT=0; idleT=0; lastHourTick=0; nq.length=0;
+  for(const k in ms) delete ms[k];
+  cups.forEach((c,i)=>{ c.shown=-1; const s=SRC.indexOf(i); if(s>=0){ c.V=V0; c.pig={[COLORS[srcColor[s]].id]:V0}; } else { c.V=0; c.pig={}; } setWaterMesh(i); });
+  towels.forEach(t=>{ t.placed=false; t.fA=t.fB=0; t.flow=0; t.mesh.visible=false; t.ghost.visible=true; t.key=''; });
+  drips.forEach(d=>{ d.on=false; d.m.visible=false; });
+  $('#mix').hidden=true;
+  refreshCupColors(); refreshUI();
+}
+$('#btnTowel').onclick=()=>{unlock();addTowel(null);};
+$('#btnWait').onclick=()=>{unlock();pressWait();};
+$('#btnNew').onclick=()=>{unlock();click();newCups();setTip('New cups! Tap between two cups to add a paper towel bridge.','Cốc mới đây! Chạm vào giữa hai cốc để đặt cầu giấy nhé.');refitSoon();};
+
+function doAction(a){
+  unlock(); if(!a) return;
+  if(a.startsWith('cup:')) tapCup(+a.split(':')[1]);
+  else if(a.startsWith('gap:')||a.startsWith('towel:')) addTowel(+a.split(':')[1]);
+  else if(a==='roll') addTowel(null);
+}
+
+/* ---------- pointer ---------- */
+const ray=new THREE.Raycaster(), ndc=new THREE.Vector2();
+let down=null;
+function hitAction(e){
+  const r=canvas.getBoundingClientRect();
+  ndc.set(((e.clientX-r.left)/r.width)*2-1,-((e.clientY-r.top)/r.height)*2+1);
+  ray.setFromCamera(ndc,camera);
+  const targets=[...cupG,roll,...towels.map(t=>t.gap),...towels.filter(t=>t.placed).map(t=>t.mesh)];
+  const hits=ray.intersectObjects(targets,true);
+  for(const h of hits){ let o=h.object; while(o){ if(o.userData&&o.userData.action) return o.userData.action; o=o.parent; } }
+  return null;
+}
+canvas.addEventListener('pointerdown',e=>{ down={x:e.clientX,y:e.clientY,yaw,pitch,drag:false}; canvas.setPointerCapture(e.pointerId); });
+canvas.addEventListener('pointermove',e=>{
+  if(down){ const dx=e.clientX-down.x, dy=e.clientY-down.y;
+    if(!down.drag&&Math.hypot(dx,dy)>9) down.drag=true;
+    if(down.drag){ yaw=Math.max(-0.8,Math.min(0.8,down.yaw-dx*0.006)); pitch=Math.max(-0.25,Math.min(0.35,down.pitch+dy*0.004)); placeCamera(); } }
+  else if(e.pointerType==='mouse'){ canvas.style.cursor=hitAction(e)?'pointer':'grab'; }
+});
+canvas.addEventListener('pointerup',e=>{ if(down&&!down.drag) doAction(hitAction(e)); down=null; });
+canvas.addEventListener('pointercancel',()=>{ down=null; });
+
+/* ---------- loop ---------- */
+let simT=0, started=false; const clock=new THREE.Clock();
+const hH=$('#hHand'), mH=$('#mHand'), hrsEl=$('#hrs');
+const DAY=new THREE.Color(0x9fd4ff), DUSK=new THREE.Color(0xffb37a), NIGHT=new THREE.Color(0x1d2a55);
+function updateClock(){
+  const clockH=9+hours;
+  hH.setAttribute('transform','rotate('+((clockH%12)*30).toFixed(1)+' 12 12)');
+  mH.setAttribute('transform','rotate('+((clockH%1)*360).toFixed(1)+' 12 12)');
+  const hr=Math.floor(hours); const txt=hr>=24?'1 day':hr+' h';
+  if(hrsEl.textContent!==txt) hrsEl.textContent=txt;
+  const tod=clockH%24;
+  const day=tod>=7&&tod<18, dusk=(tod>=18&&tod<19.5)||(tod>=5.5&&tod<7);
+  windowSky.material.color.lerp(day?DAY:dusk?DUSK:NIGHT,0.1);
+  sunDisc.material.color.setHex(day||dusk?0xffe066:0xf4f1de);
+  const a=((tod-6)/12)*Math.PI; sunDisc.position.set(day||dusk?-Math.cos(a)*0.75:0.55,day||dusk?-0.45+Math.sin(Math.max(0,a))*0.7:0.35,0.05);
+}
+function frame(){
+  const dt=Math.min(0.1,clock.getDelta()); simT+=dt;
+  for(let i=tweens.length-1;i>=0;i--){ const tw=tweens[i]; tw.t+=dt; const p=Math.min(1,tw.t/tw.dur); tw.fn(p); if(p>=1){ tweens.splice(i,1); tw.done&&tw.done(); } }
+  // ghost bridges pulse to say "tap here"
+  const pulse=0.35+0.25*Math.sin(simT*4);
+  towels.forEach(t=>{ if(!t.placed) t.ghost.material.opacity=phase==='setup'?pulse:0.12; });
+  if(phase==='setup'&&started){
+    idleT+=dt;
+    if(placedCount()===4&&idleT>9){ idleT=0; phase='running'; boostT=0; refreshUI(); setTip("Let's wait and watch. The water is climbing!",'Mình cùng chờ và xem nhé. Nước đang leo lên!'); }
+  }
+  if(phase==='running'){
+    boostT=Math.max(0,boostT-dt);
+    const rate=(hours<1.3?0.13:0.42)*(boostT>0?3:1);
+    let dtH=rate*dt, flow=0;
+    const sub=Math.ceil(dtH/0.02); for(let s=0;s<sub;s++) flow=simStep(dtH/sub);
+    hours+=dtH;
+    if(Math.floor(hours)>lastHourTick){ lastHourTick=Math.floor(hours); tick();
+      if(lastHourTick%6===0&&lastHourTick<24) narrate(lastHourTick+' hours later!',lastHourTick+' tiếng sau!'); }
+    if(!ms.drip&&(cups[1].V>0.012||cups[3].V>0.012||towels.some(t=>t.placed&&Math.abs(t.flow)>0.004))){ ms.drip=true; narrate('Drip, drip! The water is walking into the empty cup!','Tí tách! Nước đang đi sang cốc trống!'); }
+    if(!ms.half&&(cups[1].V>0.3||cups[3].V>0.3)){ ms.half=true; narrate('The empty cups are filling up. The full cups go down!','Cốc trống đang đầy dần. Cốc đầy thì thấp xuống!'); }
+    mixCheck();
+    spawnDrips(dt);
+    if((hours>3&&flow<0.012)||hours>=24){
+      phase='done'; refreshUI(); chime(); setTimeout(chime,500);
+      const all=placedCount()===4;
+      narrate(all?'Now the water in all the cups is about the same. A rainbow of cups!':'The water stopped walking. The cups are about the same now!',
+        all?'Bây giờ nước trong các cốc gần bằng nhau. Cầu vồng cốc nước!':'Nước đã ngừng đi. Các cốc gần bằng nhau rồi!');
+      narrate('Tap New cups to try other colors!','Bấm Cốc mới để thử màu khác nhé!');
+    }
+  }
+  for(let i=0;i<5;i++) setWaterMesh(i);
+  if(phase==='running'||tweens.length) refreshCupColors();
+  towels.forEach(t=>{ if(t.placed){ updateWet(t); drawTowel(t,false); } });
+  // drips
+  drips.forEach(d=>{ if(!d.on) return; d.v+=6*dt; d.m.position.y-=d.v*dt; const L=level(d.cup);
+    if(d.m.position.y<=L){ d.on=false; d.m.visible=false; ripple(d.m.position.x,L,d.m.position.z,d.m.material.color);
+      const now=performance.now(); if(now-lastDripSound>220){ lastDripSound=now; drip(); } } });
+  ripples.forEach(r=>{ if(r.t>=0.8) return; r.t+=dt; const s=0.02+r.t*0.28; r.m.scale.set(s,s,1); r.m.material.opacity=0.7*(1-r.t/0.8); if(r.t>=0.8) r.m.visible=false; });
+  // surfaces shimmer a little
+  cupG.forEach((g,i)=>{ g.userData.surf.material.opacity=0.86+0.06*Math.sin(simT*2+i); });
+  updateClock();
+  pumpNarration();
+  renderer.render(scene,camera);
+  requestAnimationFrame(frame);
+}
+async function keepAwake(){ try{ if(navigator.wakeLock) await navigator.wakeLock.request('screen'); }catch(e){} }
+async function boot(){
+  try{ await Promise.race([document.fonts.load('800 20px "Baloo 2"'),new Promise(r=>setTimeout(r,2000))]); }catch(e){}
+  buildRoom(); buildCups(); buildTowels(); buildRoll();
+  cupG.forEach(g=>g.traverse(m=>{ if(m.isMesh&&!m.material.transparent) m.castShadow=true; }));
+  newCups();
+  onResize();
+  addEventListener('resize',onResizeSoon); addEventListener('orientationchange',onResizeSoon);
+  try{ if(window.visualViewport) visualViewport.addEventListener('resize',onResizeSoon); }catch(e){}
+  requestAnimationFrame(frame);
+  $('#loadNote').textContent='Three cups of colored water and two empty cups. Build paper towel bridges and watch the water walk!';
+  $('#goBtn').disabled=false;
+}
+$('#goBtn').onclick=()=>{
+  unlock(); $('#startScreen').hidden=true; started=true; keepAwake();
+  document.addEventListener('visibilitychange',()=>{ if(document.visibilityState==='visible') keepAwake(); });
+  onResize();
+  setTip('Tap between two cups to add a paper towel bridge!','Chạm vào giữa hai cốc để đặt cầu giấy nhé!');
+};
+boot();
+})();
+</script>
+</body>
+</html>

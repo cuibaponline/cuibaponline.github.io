@@ -1,0 +1,746 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#191c24">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<style>
+*,*::before,*::after{box-sizing:border-box}
+body{margin:0;font-size:14px}
+img{max-width:100%}
+</style>
+<title>Colored Shadows</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;800&family=Nunito:wght@600;800&family=Patrick+Hand&display=swap">
+<style>
+/* Layout: full-bleed 3D dark room with a big white wall; title + tools on top, bilingual bubble with a tiny "light mixer" badge, lamp tray at the bottom. Deliberately single light-UI theme over a dark scene. */
+:root{
+  --room:#15171e;       /* darkened room */
+  --ink:#1e2b44;
+  --marker:#2c68b2;
+  --sun:#ffcd34;
+  --card:#ffffff;
+  --line:#d8dde6;
+  --shadow:rgba(8,10,18,.4);
+  --red:#ff3b30;
+  --green:#2ee04a;
+  --blue:#2f6bff;
+  --off:#3a3f4b;
+  --f-display:'Baloo 2','Nunito',system-ui,sans-serif;
+  --f-body:'Nunito',system-ui,-apple-system,'Segoe UI',sans-serif;
+  --f-hand:'Patrick Hand','Comic Sans MS','Chalkboard SE',cursive;
+  color-scheme:light;
+}
+[hidden]{display:none!important}
+html,body{height:100%;overflow:hidden}
+body{background:var(--room);color:var(--ink);font-family:var(--f-body);-webkit-tap-highlight-color:transparent;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;touch-action:manipulation}
+#c{position:fixed;inset:0;width:100%;height:100%;display:block;touch-action:none;outline:none}
+button{font:inherit;color:inherit;cursor:pointer;border:0;background:none}
+button:focus-visible{outline:3px solid var(--sun);outline-offset:3px}
+
+.hud{position:fixed;inset:0;pointer-events:none;display:flex;flex-direction:column;justify-content:space-between;
+  padding:calc(env(safe-area-inset-top,0px) + 12px) 16px calc(env(safe-area-inset-bottom,0px) + 12px);gap:10px}
+.hud > *{pointer-events:auto}
+.top{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;pointer-events:none}
+.top > *{pointer-events:auto}
+.brand{background:var(--card);border-radius:18px;padding:6px 16px 8px;box-shadow:0 4px 0 var(--line),0 8px 20px var(--shadow);min-width:0}
+.brand h1{margin:0;font-family:var(--f-display);font-weight:800;font-size:1.4rem;line-height:1.05;white-space:nowrap}
+.brand h1 .r{color:#e5322d}.brand h1 .g{color:#1fa347}.brand h1 .b{color:#1f6fe0}
+.brand p{margin:0;font-family:var(--f-hand);font-size:1.2rem;color:var(--marker);line-height:1.1;white-space:nowrap}
+.tools{display:flex;gap:8px;flex:none}
+.tool{min-width:48px;height:48px;border-radius:14px;background:var(--card);display:grid;place-items:center;padding:0 12px;
+  box-shadow:0 4px 0 var(--line),0 8px 18px var(--shadow);font-family:var(--f-display);font-weight:800;font-size:.95rem;white-space:nowrap}
+.tool svg{width:24px;height:24px}
+.tool[aria-pressed="false"] .on{display:none}.tool[aria-pressed="true"] .off{display:none}
+
+.col{flex:1;display:flex;flex-direction:column;gap:10px;align-items:center;pointer-events:none}
+.bubble{pointer-events:auto;max-width:min(580px,100%);background:var(--card);border-radius:22px;padding:10px 12px 10px 12px;
+  display:flex;align-items:center;gap:12px;box-shadow:0 5px 0 var(--line),0 10px 24px var(--shadow)}
+.bubble .txt{min-width:0;flex:1}
+.bubble .en{margin:0;font-family:var(--f-display);font-weight:800;font-size:1.22rem;line-height:1.15;text-wrap:balance}
+.bubble .vi{margin:2px 0 0;font-family:var(--f-hand);font-size:1.28rem;line-height:1.1;color:var(--marker);text-wrap:balance}
+.say{flex:none;width:46px;height:46px;border-radius:50%;background:var(--marker);color:#fff;display:grid;place-items:center}
+.say svg{width:24px;height:24px}
+
+/* the little light mixer: circles add up like light (screen blend) */
+.venn{flex:none;position:relative;width:56px;height:50px;border-radius:14px;background:#0d0f15;isolation:isolate;overflow:hidden}
+.venn span{position:absolute;width:27px;height:27px;border-radius:50%;background:var(--c);mix-blend-mode:screen;transition:opacity .35s,transform .35s}
+.venn .vr{left:6px;top:4px}.venn .vg{left:23px;top:4px}.venn .vb{left:14.5px;top:19px}
+.venn span.dark{opacity:0;transform:scale(.6)}
+.venn.magic{animation:magic 1.2s ease-in-out 2}
+@keyframes magic{0%,100%{transform:scale(1);box-shadow:0 0 0 0 rgba(255,255,255,0)}50%{transform:scale(1.18);box-shadow:0 0 0 5px #fff6c8,0 0 22px 8px rgba(255,255,255,.8)}}
+
+.tray{align-self:center;max-width:100%;background:var(--card);border-radius:26px;padding:10px 12px;display:flex;flex-wrap:wrap;
+  justify-content:center;align-items:stretch;gap:10px 14px;box-shadow:0 6px 0 var(--line),0 12px 30px var(--shadow)}
+.group{display:flex;gap:6px;align-items:stretch}
+.pick{width:60px;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;gap:3px;padding:6px 0 5px;border-radius:14px;transition:background .2s,transform .15s}
+.bulb{margin-bottom:10px}
+.pick b{font-family:var(--f-display);font-weight:800;font-size:.76rem;line-height:1}
+.pick i{font-style:normal;font-family:var(--f-hand);font-size:.88rem;line-height:1;color:var(--marker);white-space:nowrap}
+.bulb{width:36px;height:36px;border-radius:50%;background:var(--off);position:relative;box-shadow:0 0 0 4px #fff,0 0 0 6px var(--line);transition:background .25s,box-shadow .25s}
+.bulb::after{content:"";position:absolute;left:50%;bottom:-9px;width:14px;height:6px;margin-left:-7px;border-radius:2px;background:#9aa3b2}
+.pick[aria-pressed="true"] .bulb{background:var(--c);box-shadow:0 0 0 4px #fff,0 0 0 6px var(--c),0 0 16px 6px var(--c)}
+.pick[aria-pressed="true"]{background:#fff6d6}
+.pick[aria-pressed="false"] b,.pick[aria-pressed="false"] i{opacity:.6}
+.act{min-width:74px;min-height:62px;border-radius:18px;background:#eef1f6;display:flex;flex-direction:column;align-items:center;justify-content:center;
+  padding:4px 8px;box-shadow:inset 0 -4px 0 var(--line);transition:transform .15s,background .2s}
+.act svg{width:26px;height:26px}
+.act b{font-family:var(--f-display);font-weight:800;font-size:.86rem;line-height:1.05;white-space:nowrap}
+.act i{font-style:normal;font-family:var(--f-hand);font-size:.92rem;line-height:1;color:var(--marker);white-space:nowrap}
+.act[aria-pressed="true"]{background:var(--sun)}
+.act:active,.pick:active{transform:scale(.94)}
+.act.limit{opacity:.5}
+.next{animation:nudge 1.4s ease-in-out infinite}
+@keyframes nudge{0%,100%{transform:scale(1)}50%{transform:scale(1.08)}}
+@media (prefers-reduced-motion:reduce){.next,.venn.magic{animation:none!important}}
+
+.overlay{position:fixed;inset:0;display:grid;place-items:center;padding:16px;background:rgba(21,23,30,.62);backdrop-filter:blur(3px);z-index:5}
+.start{background:var(--card);border-radius:28px;padding:22px 26px 26px;text-align:center;max-width:420px;box-shadow:0 16px 40px var(--shadow)}
+.start h2{margin:0;font-family:var(--f-display);font-weight:800;font-size:2rem;line-height:1.05}
+.start .vi{margin:2px 0 12px;font-family:var(--f-hand);font-size:1.6rem;color:var(--marker)}
+.start p.note{margin:0 0 16px;font-size:.95rem;line-height:1.45;color:#4a5670}
+.go{background:var(--sun);border-radius:20px;padding:12px 26px;font-family:var(--f-display);font-weight:800;font-size:1.4rem;
+  box-shadow:inset 0 -5px 0 rgba(0,0,0,.12);display:inline-flex;flex-direction:column;align-items:center;line-height:1.05}
+.go i{font-style:normal;font-family:var(--f-hand);font-size:1.2rem;font-weight:400}
+.start .venn{margin:0 auto 12px;width:84px;height:74px;border-radius:18px}
+.start .venn span{width:40px;height:40px}
+.start .venn .vr{left:9px;top:6px}.start .venn .vg{left:35px;top:6px}.start .venn .vb{left:22px;top:28px}
+
+.sheet{position:fixed;inset:0;z-index:6;display:grid;place-items:center;padding:16px;background:rgba(10,14,24,.5)}
+.sheet .box{background:var(--card);border-radius:24px;max-width:620px;width:100%;max-height:100%;overflow:auto;padding:20px 22px 22px}
+.sheet h2{margin:0 0 4px;font-family:var(--f-display);font-weight:800;font-size:1.5rem}
+.sheet h3{margin:16px 0 4px;font-family:var(--f-display);font-weight:800;font-size:1.1rem}
+.sheet p,.sheet li{font-size:.98rem;line-height:1.5;max-width:65ch}
+.sheet p{margin:4px 0}
+.sheet .vi{color:var(--marker)}
+.sheet ul{margin:4px 0;padding-left:20px}
+.sheet .x{float:right;width:44px;height:44px;border-radius:50%;background:#eef1f6;display:grid;place-items:center;font-weight:800;font-size:1.2rem}
+.err{max-width:420px;text-align:center;font-size:1rem;line-height:1.5}
+
+@media (max-width:620px){
+  .hud{gap:8px}
+  .brand{padding:4px 12px 6px;border-radius:14px;flex:0 1 auto;overflow:hidden}
+  .brand h1,.brand p{overflow:hidden;text-overflow:ellipsis}
+  .brand h1{font-size:1.1rem}.brand p{font-size:.98rem}
+  .tools{gap:6px}
+  .tool{min-width:42px;height:42px;padding:0 8px;font-size:.8rem;border-radius:12px}
+  .tool svg{width:22px;height:22px}
+  .bubble{align-self:stretch;padding:8px;border-radius:18px;gap:8px}
+  .bubble .en{font-size:1.02rem}.bubble .vi{font-size:1.12rem}
+  .venn{width:48px;height:44px;border-radius:12px}
+  .venn span{width:23px;height:23px}
+  .venn .vr{left:5px;top:4px}.venn .vg{left:20px;top:4px}.venn .vb{left:12.5px;top:17px}
+  .say{width:42px;height:42px}
+  .tray{align-self:stretch;flex-direction:column;padding:8px;gap:8px;border-radius:22px}
+  .group{width:100%;justify-content:space-between;gap:4px}
+  .group > *{flex:1 1 0;min-width:0}
+  .pick{width:auto}
+  .act{min-width:0;min-height:56px;padding:4px 2px}
+  .act b{font-size:.8rem}.act i{font-size:.84rem}
+}
+@media (max-width:400px){ .tools #langBtn{display:none} }
+@media (max-height:520px){
+  .brand{display:none}
+  .top{position:absolute;top:calc(env(safe-area-inset-top,0px) + 10px);right:16px}
+  .col{align-items:flex-start}
+  .bubble{max-width:min(440px,48%);padding:6px 8px}
+  .bubble .en{font-size:.98rem}.bubble .vi{font-size:1.05rem}
+  .venn{width:46px;height:42px}
+  .venn span{width:22px;height:22px}
+  .venn .vr{left:5px;top:3px}.venn .vg{left:19px;top:3px}.venn .vb{left:12px;top:16px}
+  .say{width:38px;height:38px}
+  .tray{padding:6px 10px;gap:8px;flex-wrap:nowrap}
+  .pick{width:66px;padding:4px 0}
+  .pick i{font-size:.8rem}
+  .bulb{width:30px;height:30px}
+  .act{min-height:50px;min-width:64px}
+}
+</style>
+</head>
+<body>
+<canvas id="c" tabindex="-1" aria-label="3D dark room: a red, a green and a blue lamp shine on a white wall behind a wooden toy rocket, making colored shadows"></canvas>
+
+<div class="hud">
+  <div class="top">
+    <div class="brand">
+      <h1><span class="r">Colored</span> <span class="b">Shadows</span></h1>
+      <p lang="vi">Bóng màu</p>
+    </div>
+    <div class="tools">
+      <button class="tool" id="langBtn" aria-label="Voice language">EN + VI</button>
+      <button class="tool" id="muteBtn" aria-pressed="true" aria-label="Sound">
+        <svg class="on" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9h4l5-4v14l-5-4H4z" fill="currentColor"/><path d="M16.5 8.5a5 5 0 0 1 0 7M19 6a8.5 8.5 0 0 1 0 12"/></svg>
+        <svg class="off" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9h4l5-4v14l-5-4H4z" fill="currentColor"/><path d="M17 9l5 6M22 9l-5 6"/></svg>
+      </button>
+      <button class="tool" id="infoBtn" aria-label="For grown-ups">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><circle cx="12" cy="12" r="9.5"/><path d="M9.3 9.3a2.8 2.8 0 1 1 3.9 2.6c-.8.4-1.2 1-1.2 1.8v.5"/><circle cx="12" cy="17.3" r=".6" fill="currentColor"/></svg>
+      </button>
+    </div>
+  </div>
+
+  <div class="col">
+    <div class="bubble" role="status" aria-live="polite">
+      <div class="venn" id="venn" aria-hidden="true"><span class="vr" style="--c:#ff0000"></span><span class="vg" style="--c:#00ff00"></span><span class="vb" style="--c:#0000ff"></span></div>
+      <div class="txt">
+        <p class="en" id="tipEn">Tap a lamp to turn it off or on!</p>
+        <p class="vi" id="tipVi" lang="vi">Chạm vào đèn để tắt hoặc bật nhé!</p>
+      </div>
+      <button class="say" id="sayBtn" aria-label="Say it again">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9h4l5-4v14l-5-4H4z" fill="currentColor"/><path d="M16.5 8.5a5 5 0 0 1 0 7"/></svg>
+      </button>
+    </div>
+  </div>
+
+  <nav class="tray" aria-label="Controls">
+    <div class="group" id="lampsUI" role="group" aria-label="Lamps">
+      <button class="act" id="allBtn">
+        <svg viewBox="0 0 24 24"><circle cx="8" cy="9" r="5.5" fill="#ff3b30" opacity=".9"/><circle cx="16" cy="9" r="5.5" fill="#2ee04a" opacity=".9"/><circle cx="12" cy="15.5" r="5.5" fill="#2f6bff" opacity=".9"/><circle cx="12" cy="11.3" r="2.2" fill="#fff"/></svg>
+        <b id="allEn">All on</b><i lang="vi" id="allVi">Bật hết</i>
+      </button>
+    </div>
+    <div class="group">
+      <button class="act" id="closerBtn">
+        <svg viewBox="0 0 24 24" fill="none" stroke="#1e2b44" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="3" width="6" height="10" rx="3" fill="#d9a86a"/><path d="M12 15v6M8.5 18l3.5 3.5 3.5-3.5"/></svg>
+        <b>Closer</b><i lang="vi">Gần hơn</i>
+      </button>
+      <button class="act" id="fartherBtn">
+        <svg viewBox="0 0 24 24" fill="none" stroke="#1e2b44" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="9.5" y="11" width="5" height="9" rx="2.5" fill="#d9a86a"/><path d="M12 9V2.5M8.5 6L12 2.5 15.5 6"/></svg>
+        <b>Farther</b><i lang="vi">Xa hơn</i>
+      </button>
+      <button class="act" id="roomBtn" aria-pressed="false">
+        <svg viewBox="0 0 24 24"><path d="M12 2a6.5 6.5 0 0 0-3.8 11.8c.6.5.8 1.1.8 1.7V17h6v-1.5c0-.6.3-1.2.8-1.7A6.5 6.5 0 0 0 12 2z" fill="#ffe27a" stroke="#1e2b44" stroke-width="1.6"/><path d="M9.5 20h5M10.5 22.5h3" stroke="#1e2b44" stroke-width="1.8" stroke-linecap="round"/></svg>
+        <b>Room light</b><i lang="vi">Đèn phòng</i>
+      </button>
+    </div>
+  </nav>
+</div>
+
+<div class="overlay" id="startScreen">
+  <div class="start">
+    <div class="venn" aria-hidden="true"><span class="vr" style="--c:#ff0000"></span><span class="vg" style="--c:#00ff00"></span><span class="vb" style="--c:#0000ff"></span></div>
+    <h2>Colored Shadows</h2>
+    <p class="vi" lang="vi">Bóng màu</p>
+    <p class="note" id="loadNote">Turning off the room lights…</p>
+    <button class="go" id="goBtn" disabled>Let's play! <i lang="vi">Chơi thôi!</i></button>
+  </div>
+</div>
+
+<div class="sheet" id="info" hidden>
+  <div class="box" role="dialog" aria-labelledby="infoTitle">
+    <button class="x" id="infoClose" aria-label="Close">✕</button>
+    <h2 id="infoTitle">For grown-ups</h2>
+    <p class="vi" lang="vi">Dành cho ba mẹ</p>
+
+    <h3>How to play</h3>
+    <ul>
+      <li>Tap a <b>lamp</b> (or its button) to switch it on or off. <b>All on</b> turns on all three.</li>
+      <li>Drag the <b>wooden rocket</b> left and right. <b>Closer</b> moves it toward the lamps (big shadows), <b>Farther</b> moves it toward the wall (small shadows).</li>
+      <li>Tap any spot on the <b>wall</b> to hear which lights reach it. Drag the empty room to look around.</li>
+    </ul>
+    <p class="vi" lang="vi">Chạm vào đèn để bật hoặc tắt. Kéo tên lửa gỗ sang trái, sang phải. Nút “Gần hơn” đưa đồ chơi lại gần đèn (bóng to), “Xa hơn” đưa lại gần tường (bóng nhỏ). Chạm vào tường để nghe ánh sáng nào chiếu tới chỗ đó.</p>
+
+    <h3>Why it happens</h3>
+    <p>Mixing <b>light</b> is different from mixing <b>paint</b>. Light <em>adds up</em>: red + green light makes yellow, green + blue makes cyan (light blue), red + blue makes magenta (pink-purple), and all three together make white. Paint works the other way, because each paint soaks up (absorbs) some colors: red + green paint makes a muddy brown.</p>
+    <p>A shadow is just a place where the toy blocks one lamp. The other two lamps still reach it, so the shadow is lit by their mix. Where the toy blocks the red lamp, only green + blue arrive, so that shadow is cyan. Each lamp stands in a different place, so each makes its own shadow. Nearer the lamps, the toy blocks more light and the shadows grow.</p>
+    <p>Phone and TV screens use this trick: every picture is made of tiny red, green and blue lights. Look very closely at a screen with a magnifying glass to see them.</p>
+    <p class="vi" lang="vi">Trộn ánh sáng khác với trộn màu vẽ. Ánh sáng thì cộng thêm: đỏ + xanh lá = vàng, xanh lá + xanh dương = xanh lơ, đỏ + xanh dương = hồng tím (hồng cánh sen), cả ba = trắng. Còn màu vẽ thì mỗi màu hút bớt ánh sáng, nên màu đỏ + xanh lá lại thành màu nâu. Cái bóng là chỗ đồ chơi che mất một đèn; hai đèn còn lại vẫn chiếu tới, nên bóng có màu của hai đèn đó. Màn hình điện thoại và tivi cũng được tạo từ những đèn nhỏ xíu màu đỏ, xanh lá và xanh dương.</p>
+
+    <h3>Questions to ask</h3>
+    <ul>
+      <li>What color do red and green light make? <span class="vi" lang="vi">Ánh sáng đỏ và xanh lá thành màu gì?</span></li>
+      <li>With only one lamp, what color is the shadow? Why? <span class="vi" lang="vi">Khi chỉ có một đèn, cái bóng màu gì? Vì sao?</span></li>
+      <li>How many shadows does the rocket have when all three lamps are on? <span class="vi" lang="vi">Khi bật cả ba đèn, tên lửa có mấy cái bóng?</span></li>
+      <li>What happens to the shadows when the rocket comes closer to the lamps? <span class="vi" lang="vi">Khi tên lửa lại gần đèn, các cái bóng thay đổi thế nào?</span></li>
+    </ul>
+
+    <h3>Try it at home</h3>
+    <p>In a dark room, cover three phone flashlights with red, green and blue cellophane (or see-through plastic folders), held with a rubber band. Shine them together at a white wall and put a small toy between the lights and the wall. Move the toy and watch the colored shadows. A grown-up handles the phones; do not shine lights into eyes.</p>
+    <p class="vi" lang="vi">Trong phòng tối, bọc ba đèn pin điện thoại bằng giấy bóng kính đỏ, xanh lá và xanh dương (giữ bằng dây thun). Chiếu cả ba lên bức tường trắng, rồi đặt một món đồ chơi nhỏ ở giữa đèn và tường. Di chuyển đồ chơi để xem bóng màu. Ba mẹ cầm điện thoại giúp bé và không chiếu đèn vào mắt nhé.</p>
+    <p style="font-size:.85rem;color:#5b6780">Cellophane colors are not perfectly pure, so real shadows look a little softer than in the game. The spoken Vietnamese uses your device's Vietnamese voice; the words are always on screen.</p>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+(function(){
+'use strict';
+const $=s=>document.querySelector(s);
+
+/* ---------- content ---------- */
+const LAMPS=[
+  {id:'r', en:'Red',   vi:'Đỏ',         vil:'đỏ',         hex:'#ff3b30', light:0xff0000, lens:0xff2a1f, gain:1.0},
+  {id:'g', en:'Green', vi:'Xanh lá',    vil:'xanh lá',    hex:'#2ee04a', light:0x00ff00, lens:0x33ff4a, gain:0.95},
+  {id:'b', en:'Blue',  vi:'Xanh dương', vil:'xanh dương', hex:'#2f6bff', light:0x0000ff, lens:0x3a6bff, gain:1.35},
+];
+// what color a spot on the wall is, by which lamps reach it
+const MIX={
+  '':   {en:'black',   vi:'đen'},
+  'r':  {en:'red',     vi:'đỏ'},
+  'g':  {en:'green',   vi:'xanh lá'},
+  'b':  {en:'blue',    vi:'xanh dương'},
+  'rg': {en:'yellow',  vi:'vàng'},
+  'gb': {en:'cyan, a light blue', vi:'xanh lơ'},
+  'rb': {en:'magenta, a bright pink', vi:'hồng tím (hồng cánh sen)'},
+  'rgb':{en:'white',   vi:'trắng'},
+};
+const cap=s=>s.charAt(0).toUpperCase()+s.slice(1);
+const joinEn=a=>a.length<2?a.join(''):a.slice(0,-1).join(', ')+' and '+a[a.length-1];
+const joinVi=a=>a.length<2?a.join(''):a.slice(0,-1).join(', ')+' và '+a[a.length-1];
+
+/* ---------- UI build ---------- */
+const lampsUI=$('#lampsUI');
+const lampBtns=LAMPS.map((L,i)=>{
+  const el=document.createElement('button'); el.className='pick'; el.setAttribute('aria-pressed','true');
+  el.setAttribute('aria-label',L.en+' lamp / Đèn '+L.vil);
+  el.innerHTML='<span class="bulb" style="--c:'+L.hex+'"></span><b>'+L.en+'</b><i lang="vi">'+L.vi+'</i>';
+  el.onclick=()=>{unlock();toggleLamp(i,true);};
+  lampsUI.insertBefore(el,$('#allBtn'));
+  return el;
+});
+
+/* ---------- speech + sound ---------- */
+let soundOn=true, voiceMode='both';
+try{ const v=localStorage.getItem('cs-voice'); if(v) voiceMode=v; if(localStorage.getItem('cs-mute')==='1') soundOn=false; }catch(e){}
+const langBtn=$('#langBtn'), muteBtn=$('#muteBtn');
+const LANG_LABEL={both:'EN + VI',en:'EN',vi:'VI'};
+function syncTools(){ langBtn.textContent=LANG_LABEL[voiceMode]||'EN + VI'; muteBtn.setAttribute('aria-pressed',String(soundOn)); }
+syncTools();
+langBtn.onclick=()=>{ voiceMode=voiceMode==='both'?'en':voiceMode==='en'?'vi':'both'; try{localStorage.setItem('cs-voice',voiceMode)}catch(e){} syncTools(); sayTip(); };
+muteBtn.onclick=()=>{ soundOn=!soundOn; try{localStorage.setItem('cs-mute',soundOn?'0':'1')}catch(e){} syncTools(); if(!soundOn){try{speechSynthesis.cancel()}catch(e){}} };
+let voices=[];
+function loadVoices(){ try{ voices=window.speechSynthesis?speechSynthesis.getVoices():[]; }catch(e){} }
+try{ if(window.speechSynthesis){ loadVoices(); speechSynthesis.onvoiceschanged=loadVoices; } }catch(e){}
+const pickVoice=l=>voices.find(v=>v.lang&&v.lang.toLowerCase().replace('_','-').startsWith(l));
+function say(en,vi){
+  if(!soundOn) return;
+  try{
+    const ss=window.speechSynthesis; if(!ss) return;
+    const busyNow=ss.speaking||ss.pending; ss.cancel();
+    const q=[];
+    if(voiceMode!=='vi') q.push({t:en,l:'en-US',v:pickVoice('en-us')||pickVoice('en')});
+    if(voiceMode!=='en') q.push({t:vi,l:'vi-VN',v:pickVoice('vi')});
+    const go=()=>q.forEach(o=>{ const u=new SpeechSynthesisUtterance(o.t); u.lang=o.l; if(o.v) u.voice=o.v; u.rate=o.l==='vi-VN'?0.95:0.92; u.pitch=1.15; ss.speak(u); });
+    if(busyNow) setTimeout(go,80); else go();
+  }catch(e){}
+}
+let ac=null;
+function unlock(){ if(!ac){ try{ ac=new (window.AudioContext||window.webkitAudioContext)(); }catch(e){} } if(ac&&ac.state==='suspended') ac.resume(); }
+function tone(f0,f1,dur,vol,type){
+  if(!soundOn||!ac) return;
+  const t=ac.currentTime,o=ac.createOscillator(),g=ac.createGain();
+  o.type=type||'sine'; o.frequency.setValueAtTime(f0,t); o.frequency.exponentialRampToValueAtTime(f1,t+dur);
+  g.gain.setValueAtTime(vol,t); g.gain.exponentialRampToValueAtTime(0.0001,t+dur);
+  o.connect(g).connect(ac.destination); o.start(t); o.stop(t+dur+0.02);
+}
+const buzz=ms=>{ try{ if(soundOn&&navigator.vibrate) navigator.vibrate(ms); }catch(e){} };
+const click=()=>{ tone(1200,700,0.05,0.12,'square'); buzz(12); };
+const switchOn=()=>{ buzz(14); tone(500,1000,0.12,0.14,'triangle'); };
+const switchOff=()=>{ buzz(10); tone(700,300,0.12,0.12,'triangle'); };
+const whoosh=()=>tone(300,900,0.25,0.08,'triangle');
+const tick=()=>tone(1500,1300,0.03,0.05,'square');
+const sparkle=()=>{ [784,988,1175,1568,1976].forEach((f,i)=>setTimeout(()=>tone(f,f,0.3,0.1,'triangle'),i*90)); };
+
+let tip={en:'',vi:''}, tipSeq=0;
+function setTip(en,vi,speak){ tip={en,vi}; tipSeq++; if(typeof refitSoon==='function') refitSoon(); $('#tipEn').textContent=en; $('#tipVi').textContent=vi; if(speak!==false) say(en,vi); }
+function sayTip(){ say(tip.en,tip.vi); }
+$('#sayBtn').onclick=()=>{unlock();sayTip();};
+$('#infoBtn').onclick=()=>{ $('#info').hidden=false; };
+$('#infoClose').onclick=()=>{ $('#info').hidden=true; };
+$('#info').addEventListener('click',e=>{ if(e.target.id==='info') $('#info').hidden=true; });
+
+if(typeof THREE==='undefined'){
+  $('#loadNote').className='err';
+  $('#loadNote').textContent='The 3D engine could not load. Check the internet connection and open the page again.';
+  return;
+}
+
+/* ============================================================
+   SCENE
+   ============================================================ */
+const canvas=$('#c');
+const renderer=new THREE.WebGLRenderer({canvas,antialias:true});
+renderer.setPixelRatio(Math.min(2,window.devicePixelRatio||1));
+renderer.shadowMap.enabled=true; renderer.shadowMap.type=THREE.PCFSoftShadowMap;
+const scene=new THREE.Scene();
+const camera=new THREE.PerspectiveCamera(40,1,0.1,100);
+const DARK=new THREE.Color(0x101218), LIT=new THREE.Color(0xd9dcd6);
+scene.background=DARK.clone();
+const MOBILE=/Mobi|Android|iPhone|iPad/i.test(navigator.userAgent)||Math.min(screen.width,screen.height)<700;
+const SM=MOBILE?512:1024;
+
+const hemi=new THREE.HemisphereLight(0xffffff,0x8a8f9a,0.05); scene.add(hemi);
+const roomL=new THREE.DirectionalLight(0xfff6e8,0); roomL.position.set(2,8,7); scene.add(roomL);
+
+function canvasTex(w,h,draw){ const c=document.createElement('canvas'); c.width=w; c.height=h; draw(c.getContext('2d'),w,h); const t=new THREE.CanvasTexture(c); t.anisotropy=4; return t; }
+const phong=o=>new THREE.MeshPhongMaterial(o), lambert=o=>new THREE.MeshLambertMaterial(o);
+const hitMat=new THREE.MeshBasicMaterial({transparent:true,opacity:0,depthWrite:false,colorWrite:false});
+function hitVol(r,h,y){ const m=new THREE.Mesh(new THREE.CylinderGeometry(r,r,h,12),hitMat); m.position.y=y; return m; }
+const glowTex=canvasTex(128,128,(x,w,h)=>{ const g=x.createRadialGradient(64,64,0,64,64,64); g.addColorStop(0,'rgba(255,255,255,1)'); g.addColorStop(0.3,'rgba(255,255,255,.6)'); g.addColorStop(1,'rgba(255,255,255,0)'); x.fillStyle=g; x.fillRect(0,0,w,h); });
+
+const WALL_Z=-3;
+let wall;
+function buildRoom(){
+  const wood=canvasTex(256,256,(x,w,h)=>{ x.fillStyle='#6e5238'; x.fillRect(0,0,w,h);
+    for(let i=0;i<8;i++){ x.fillStyle=i%2?'#684d34':'#76583c'; x.fillRect(0,i*32,w,31); x.fillStyle='rgba(30,18,8,.35)'; x.fillRect(0,i*32+31,w,1); } });
+  wood.wrapS=wood.wrapT=THREE.RepeatWrapping; wood.repeat.set(6,6);
+  const floor=new THREE.Mesh(new THREE.PlaneGeometry(30,30),phong({map:wood,shininess:8,specular:0x111111}));
+  floor.rotation.x=-Math.PI/2; floor.position.z=6; floor.receiveShadow=true; scene.add(floor);
+  wall=new THREE.Mesh(new THREE.PlaneGeometry(22,9),phong({color:0xf6f6f2,shininess:0,specular:0x000000}));
+  wall.position.set(0,4.5,WALL_Z); wall.receiveShadow=true; scene.add(wall);
+  const base=new THREE.Mesh(new THREE.BoxGeometry(22,0.22,0.06),lambert({color:0xe6e2da})); base.position.set(0,0.11,WALL_Z+0.03); base.receiveShadow=true; scene.add(base);
+}
+
+/* ---------- lamps ---------- */
+const lamps=[];
+const lampI=[1,1,1], lampOn=[true,true,true];
+function buildLamps(){
+  const dark=phong({color:0x2e323c,shininess:60});
+  LAMPS.forEach((L,i)=>{
+    const g=new THREE.Group(); g.userData.action='lamp:'+i;
+    const base=new THREE.Mesh(new THREE.CylinderGeometry(0.34,0.38,0.08,28),dark); base.position.y=0.04;
+    const post=new THREE.Mesh(new THREE.CylinderGeometry(0.045,0.045,0.8,10),phong({color:0x9aa3b2,shininess:80})); post.position.y=0.44;
+    const knuckle=new THREE.Mesh(new THREE.SphereGeometry(0.08,12,10),dark); knuckle.position.y=0.86;
+    const head=new THREE.Group(); head.position.y=0.95;
+    const shell=new THREE.Mesh(new THREE.CylinderGeometry(0.27,0.17,0.46,28),phong({color:new THREE.Color(L.hex).multiplyScalar(0.8),emissive:new THREE.Color(L.hex).multiplyScalar(0.28),shininess:70}));
+    shell.rotation.x=Math.PI/2;
+    const back=new THREE.Mesh(new THREE.CircleGeometry(0.17,24),dark); back.position.z=-0.231; back.rotation.y=Math.PI;
+    const lens=new THREE.Mesh(new THREE.CircleGeometry(0.24,28),new THREE.MeshBasicMaterial({color:L.lens})); lens.position.z=0.232;
+    const rim=new THREE.Mesh(new THREE.TorusGeometry(0.255,0.022,8,28),phong({color:0xdfe3ea,shininess:120})); rim.position.z=0.232;
+    const glow=new THREE.Sprite(new THREE.SpriteMaterial({map:glowTex,color:L.lens,transparent:true,blending:THREE.AdditiveBlending,depthWrite:false}));
+    glow.scale.set(1.2,1.2,1); glow.position.z=0.3;
+    head.add(shell,back,lens,rim,glow);
+    g.add(base,post,knuckle,head,hitVol(0.48,1.35,0.66));
+    const sl=new THREE.SpotLight(L.light,L.gain,0,0.46,0.35,1);
+    sl.castShadow=true; sl.shadow.mapSize.set(SM,SM); sl.shadow.bias=-0.0012; sl.shadow.camera.near=0.4; sl.shadow.camera.far=16;
+    scene.add(sl,sl.target);
+    const beam=new THREE.Mesh(new THREE.CylinderGeometry(1,1,1,32,1,true),new THREE.MeshBasicMaterial({color:L.light,transparent:true,opacity:0.04,blending:THREE.AdditiveBlending,depthWrite:false,side:THREE.DoubleSide}));
+    beam.renderOrder=5; scene.add(beam);
+    g.userData={action:'lamp:'+i,head,lens,glow,sl,beam,aim:new THREE.Vector3()};
+    lamps.push(g); scene.add(g);
+  });
+}
+function aimLamp(i,pos,aim){
+  const g=lamps[i], u=g.userData;
+  g.position.copy(pos); u.aim.copy(aim);
+  g.updateMatrixWorld(true);
+  const hw=new THREE.Vector3(); u.head.getWorldPosition(hw);
+  u.head.lookAt(aim); u.head.updateMatrixWorld(true);
+  const lensW=new THREE.Vector3(0,0,0.34); u.head.localToWorld(lensW);
+  u.sl.position.copy(lensW); u.sl.target.position.copy(aim); u.sl.target.updateMatrixWorld();
+  // beam cone from the lens to the wall
+  const dir=aim.clone().sub(lensW), len=dir.length();
+  u.beam.geometry.dispose();
+  u.beam.geometry=new THREE.CylinderGeometry(0.24,len*Math.tan(0.46)*0.92,len,32,1,true);
+  u.beam.position.copy(lensW).addScaledVector(dir,0.5);
+  u.beam.quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0),dir.clone().normalize().negate());
+}
+
+/* ---------- the toy: a wooden rocket on a stand ---------- */
+let toy, rocket, dragRing;
+const toyMeshes=[];
+function buildToy(){
+  const grain=canvasTex(128,256,(x,w,h)=>{ x.fillStyle='#d9a86a'; x.fillRect(0,0,w,h);
+    for(let i=0;i<26;i++){ x.strokeStyle='rgba(140,90,40,'+(0.12+Math.random()*0.18)+')'; x.lineWidth=1+Math.random()*2; x.beginPath(); const px=Math.random()*w; x.moveTo(px,0); x.bezierCurveTo(px+10,h*0.3,px-10,h*0.7,px+4,h); x.stroke(); } });
+  const woodM=lambert({map:grain});
+  const darkWood=lambert({color:0x9a6a3a});
+  const paint=lambert({color:0xe8e2d0});
+  toy=new THREE.Group(); toy.userData.action='toy';
+  const base=new THREE.Mesh(new THREE.CylinderGeometry(0.42,0.46,0.1,28),darkWood); base.position.y=0.05;
+  const pole=new THREE.Mesh(new THREE.CylinderGeometry(0.045,0.045,0.72,10),darkWood); pole.position.y=0.44;
+  rocket=new THREE.Group(); rocket.position.y=0.78;
+  const body=new THREE.Mesh(new THREE.CylinderGeometry(0.22,0.2,0.78,28),woodM); body.position.y=0.39+0.08;
+  const nose=new THREE.Mesh(new THREE.ConeGeometry(0.22,0.46,28),paint); nose.position.y=0.86+0.23;
+  const band=new THREE.Mesh(new THREE.CylinderGeometry(0.225,0.225,0.08,28),darkWood); band.position.y=0.72;
+  const win=new THREE.Mesh(new THREE.CylinderGeometry(0.08,0.08,0.04,20),lambert({color:0x6e8fb8})); win.rotation.x=Math.PI/2; win.position.set(0,0.52,0.215);
+  const nozzle=new THREE.Mesh(new THREE.CylinderGeometry(0.14,0.18,0.12,20),darkWood); nozzle.position.y=0.02;
+  rocket.add(body,nose,band,win,nozzle);
+  const finShape=new THREE.Shape(); finShape.moveTo(0,0); finShape.lineTo(0.3,-0.12); finShape.lineTo(0.3,0.06); finShape.lineTo(0,0.42); finShape.lineTo(0,0);
+  const finGeo=new THREE.ExtrudeGeometry(finShape,{depth:0.04,bevelEnabled:false}); finGeo.translate(0.17,0,-0.02);
+  for(let k=0;k<3;k++){ const f=new THREE.Mesh(finGeo,paint); f.rotation.y=k*Math.PI*2/3+Math.PI/2; f.position.y=0.02; rocket.add(f); }
+  toy.add(base,pole,rocket);
+  toy.traverse(m=>{ if(m.isMesh){ m.castShadow=true; m.receiveShadow=true; toyMeshes.push(m); } });
+  toy.add(hitVol(0.6,2.1,1.0));
+  // floor ring with arrows: "drag me"
+  const rt=canvasTex(256,128,(x,w,h)=>{ x.clearRect(0,0,w,h); x.fillStyle='rgba(255,255,255,.95)';
+    const arr=(dir)=>{ x.save(); x.translate(w/2,h/2); x.scale(dir,1); x.beginPath(); x.moveTo(78,-26); x.lineTo(124,0); x.lineTo(78,26); x.lineTo(78,12); x.lineTo(52,12); x.lineTo(52,-12); x.lineTo(78,-12); x.closePath(); x.fill(); x.restore(); };
+    arr(1); arr(-1); x.strokeStyle='rgba(255,255,255,.9)'; x.lineWidth=6; x.beginPath(); x.ellipse(w/2,h/2,40,40,0,0,7); x.stroke(); });
+  dragRing=new THREE.Mesh(new THREE.PlaneGeometry(1.9,0.95),new THREE.MeshBasicMaterial({map:rt,transparent:true,opacity:0.35,depthWrite:false}));
+  dragRing.rotation.x=-Math.PI/2; dragRing.position.y=0.012; dragRing.renderOrder=2; toy.add(dragRing);
+  scene.add(toy);
+}
+
+/* wall probe marker */
+let marker;
+function buildMarker(){
+  marker=new THREE.Group();
+  const a=new THREE.Mesh(new THREE.RingGeometry(0.2,0.3,40),new THREE.MeshBasicMaterial({color:0x1e2b44,transparent:true,opacity:0,depthWrite:false}));
+  const b=new THREE.Mesh(new THREE.RingGeometry(0.12,0.2,40),new THREE.MeshBasicMaterial({color:0xffffff,transparent:true,opacity:0,depthWrite:false}));
+  marker.add(a,b); marker.userData.t=9; marker.renderOrder=8; scene.add(marker);
+}
+
+/* ---------- layout ---------- */
+let portrait=false;
+const TOY_Z=[-1.9,-1.1,-0.3,0.5,1.2];
+let toyZi=2, toyXMax=1.4;
+function layout(){
+  portrait=innerWidth/innerHeight<0.9;
+  const sx=portrait?1.2:1.7, lz=portrait?3.2:3.4;
+  toyXMax=portrait?1.0:1.4;
+  const aimY=1.5, ax=portrait?0.55:0.8;
+  aimLamp(0,new THREE.Vector3(-sx,0,lz),new THREE.Vector3(-ax,aimY,WALL_Z));
+  aimLamp(1,new THREE.Vector3(0,0,lz+0.15),new THREE.Vector3(0,aimY+0.35,WALL_Z));
+  aimLamp(2,new THREE.Vector3(sx,0,lz),new THREE.Vector3(ax,aimY,WALL_Z));
+  toy.position.x=Math.max(-toyXMax,Math.min(toyXMax,toy.position.x));
+  if(!toyMoving) toy.position.z=TOY_Z[toyZi];
+}
+
+/* ---------- camera ---------- */
+let fitR=9, offX=0, offY=0;
+const target=new THREE.Vector3(), V=(x,y,z)=>new THREE.Vector3(x,y,z);
+let yaw=0, pitch=0;
+function keyPoints(){
+  const wx=portrait?2.9:3.3, sx=portrait?1.2:1.7, lz=portrait?3.2:3.4, wy=portrait?4.3:3.5;
+  return [V(-wx,0,WALL_Z),V(wx,0,WALL_Z),V(-wx,wy,WALL_Z),V(wx,wy,WALL_Z),V(-sx-0.4,0,lz+(portrait?0.4:0.2)),V(sx+0.4,0,lz+(portrait?0.4:0.2)),V(-sx,1.25,lz),V(sx,1.25,lz)];
+}
+function aimCamera(R){
+  const p=(portrait?0.4:0.26)+pitch;
+  camera.position.set(target.x+R*Math.sin(yaw)*Math.cos(p),target.y+R*Math.sin(p),target.z+R*Math.cos(yaw)*Math.cos(p));
+  camera.lookAt(target);
+}
+function freeBand(){
+  const w=innerWidth,h=innerHeight; let r={top:h*0.2,bot:h*0.75,left:12,right:w-12};
+  try{ const b=$('.bubble').getBoundingClientRect(), t=$('.top').getBoundingClientRect(), tr=$('.tray').getBoundingClientRect();
+    const below={top:Math.max(t.bottom,b.bottom)+4,bot:tr.top-4,left:12,right:w-12};
+    const beside={top:t.bottom+4,bot:tr.top-4,left:b.right+8,right:w-12};
+    const score=q=>Math.min(q.right-q.left,(q.bot-q.top)*1.5);
+    r=score(beside)>score(below)*1.15?beside:below;
+    if(r.bot-r.top<h*0.25){ r={top:h*0.2,bot:h*0.75,left:12,right:w-12}; }
+  }catch(e){}
+  return r;
+}
+function fitCamera(){
+  const w=innerWidth,h=innerHeight;
+  camera.aspect=w/h; camera.fov=portrait?44:38;
+  target.set(0,1.3,0.2);
+  const sy=yaw, sp=pitch; yaw=0; pitch=0;
+  const band=freeBand(), allowX=(band.right-band.left)/w*0.96, allowY=(band.bot-band.top)/h*0.94, pts=keyPoints(), v=new THREE.Vector3();
+  let R=10, box=null; camera.clearViewOffset();
+  for(let it=0;it<7;it++){
+    aimCamera(R); camera.updateProjectionMatrix(); camera.updateMatrixWorld();
+    box={x0:1e9,x1:-1e9,y0:1e9,y1:-1e9};
+    pts.forEach(p=>{ v.copy(p).project(camera); box.x0=Math.min(box.x0,v.x); box.x1=Math.max(box.x1,v.x); box.y0=Math.min(box.y0,v.y); box.y1=Math.max(box.y1,v.y); });
+    const k=Math.max((box.x1-box.x0)/2/allowX,(box.y1-box.y0)/2/allowY);
+    R=Math.max(6,Math.min(34,R*Math.min(2,Math.max(0.5,k))));
+  }
+  fitR=R; offX=((box.x0+box.x1)/2+1)/2*w-(band.left+band.right)/2; offY=(1-(box.y0+box.y1)/2)/2*h-(band.top+band.bot)/2;
+  yaw=sy; pitch=sp;
+}
+function placeCamera(){
+  const w=innerWidth,h=innerHeight;
+  renderer.setSize(w,h,false);
+  aimCamera(fitR); camera.setViewOffset(w,h,offX,offY,w,h); camera.updateProjectionMatrix();
+}
+let resizeT=0;
+function onResize(){ layout(); fitCamera(); placeCamera(); }
+let refitT=0, lastBubbleH=0;
+function refitSoon(){ clearTimeout(refitT); refitT=setTimeout(()=>{ const hb=$('.bubble').offsetHeight; if(Math.abs(hb-lastBubbleH)>20){ lastBubbleH=hb; fitCamera(); placeCamera(); } },60); }
+function onResizeSoon(){ clearTimeout(resizeT); resizeT=setTimeout(onResize,120); }
+
+/* ---------- tweens ---------- */
+const tweens=[];
+function tween(dur,fn,done){ tweens.push({t:0,dur,fn,done}); }
+const ease=t=>t<0.5?4*t*t*t:1-Math.pow(-2*t+2,3)/2;
+
+/* ============================================================
+   ACTIONS
+   ============================================================ */
+let roomOn=false, toyMoving=false, spinning=false, magicShown=0;
+const onKey=()=>LAMPS.filter((L,i)=>lampOn[i]).map(L=>L.id).join('');
+function syncLampUI(){
+  lampBtns.forEach((b,i)=>b.setAttribute('aria-pressed',String(lampOn[i])));
+  const all=lampOn.every(Boolean);
+  $('#allEn').textContent=all?'All off':'All on'; $('#allVi').textContent=all?'Tắt hết':'Bật hết';
+  document.querySelectorAll('#venn span').forEach((s,i)=>s.classList.toggle('dark',!lampOn[i]));
+  lampBtns.forEach(b=>b.classList.toggle('next',lampOn.every(o=>!o)));
+  lamps.forEach((g,i)=>{ g.userData.lens.material.color.setHex(lampOn[i]?LAMPS[i].lens:0x2a2d35); });
+}
+function magic(){
+  const v=$('#venn'); v.classList.remove('magic'); void v.offsetWidth; v.classList.add('magic');
+  sparkle(); buzz(40); magicShown++;
+  setTip('White light! All three colors together make white.','Ánh sáng trắng! Ba màu gộp lại thành màu trắng.');
+  const seq=tipSeq;
+  setTimeout(()=>{ if(seq===tipSeq&&lampOn.every(Boolean))
+    setTip('Look at the shadows! Where the toy blocks the red lamp, the shadow shows the other colors!','Nhìn các cái bóng kìa! Chỗ đồ chơi che đèn đỏ, cái bóng hiện các màu còn lại!'); },5200);
+}
+function narrateMix(){
+  const on=LAMPS.filter((L,i)=>lampOn[i]), k=onKey();
+  if(on.length===0) setTip('All the lamps are off. It is dark! Tap a lamp.','Tắt hết đèn rồi. Tối quá! Chạm vào một cái đèn nhé.');
+  else if(on.length===1){ const L=on[0];
+    setTip(L.en+' light only. The wall is '+L.en.toLowerCase()+', and the shadow is black: no light gets there!',
+      'Chỉ có ánh sáng '+L.vil+'. Tường màu '+L.vil+', còn bóng màu đen vì không có ánh sáng chiếu tới!'); }
+  else if(on.length===2){ const m=MIX[k];
+    setTip(on[0].en+' + '+on[1].en.toLowerCase()+' light = '+m.en+'! Each shadow shows the other lamp\'s color.',
+      'Ánh sáng '+on[0].vil+' + '+on[1].vil+' = màu '+m.vi+'! Mỗi cái bóng có màu của đèn còn lại.'); }
+  else magic();
+}
+function toggleLamp(i,speak){
+  lampOn[i]=!lampOn[i]; lampOn[i]?switchOn():switchOff();
+  syncLampUI(); if(speak) narrateMix();
+}
+function allLamps(){
+  const all=lampOn.every(Boolean);
+  if(all){ lampOn.fill(false); switchOff(); syncLampUI(); narrateMix(); }
+  else { lampOn.fill(true); switchOn(); syncLampUI(); magic(); }
+}
+function setRoom(on,speak){
+  roomOn=on; $('#roomBtn').setAttribute('aria-pressed',String(on));
+  hemi.intensity=on?0.55:0.05; roomL.intensity=on?0.55:0;
+  if(speak){ click(); setTip(on?'Room light on. The colored shadows fade away!':'Room light off. Now the colored shadows shine!',
+    on?'Bật đèn phòng. Bóng màu mờ đi mất rồi!':'Tắt đèn phòng. Giờ bóng màu hiện rõ rồi!'); }
+}
+function syncDepthUI(){ $('#closerBtn').classList.toggle('limit',toyZi===TOY_Z.length-1); $('#fartherBtn').classList.toggle('limit',toyZi===0); }
+function moveDepth(d){
+  if(toyMoving) return;
+  const ni=toyZi+d;
+  if(ni<0||ni>=TOY_Z.length){ click();
+    if(d>0) setTip('The rocket is as close to the lamps as it can go! Try Farther.','Tên lửa ở gần đèn nhất rồi! Thử nút Xa hơn nhé.');
+    else setTip('The rocket is right by the wall! Try Closer.','Tên lửa sát tường rồi! Thử nút Gần hơn nhé.');
+    return; }
+  toyZi=ni; toyMoving=true; whoosh(); syncDepthUI();
+  const z0=toy.position.z, z1=TOY_Z[ni];
+  tween(0.8,p=>{ const e=ease(p); toy.position.z=z0+(z1-z0)*e; toy.position.y=Math.sin(Math.PI*e)*0.15; },()=>{ toyMoving=false; toy.position.y=0; });
+  if(d>0) setTip('Closer to the lamps: the shadows get BIG!','Gần đèn hơn: các cái bóng to ra!');
+  else setTip('Closer to the wall: the shadows get small!','Gần tường hơn: các cái bóng nhỏ lại!');
+}
+function spinToy(){
+  if(spinning) return; spinning=true; whoosh();
+  const r0=rocket.rotation.y;
+  tween(1.3,p=>{ rocket.rotation.y=r0+ease(p)*Math.PI*2; toy.position.y=Math.sin(Math.PI*p)*0.12; },()=>{ spinning=false; toy.position.y=0; });
+  setTip('Wheee! Drag the rocket left and right. Watch the colored shadows!','Vèo! Kéo tên lửa sang trái, sang phải. Xem bóng màu nhé!');
+}
+const tmpV=new THREE.Vector3(), probeRay=new THREE.Raycaster();
+function probeWall(p){
+  const reach=[], blocked=[];
+  LAMPS.forEach((L,i)=>{
+    if(!lampOn[i]) return;
+    const u=lamps[i].userData, from=u.sl.position;
+    const d=tmpV.copy(p).sub(from), dist=d.length(); d.normalize();
+    const axis=u.aim.clone().sub(from).normalize();
+    if(Math.acos(Math.min(1,axis.dot(d)))>0.46*0.9) return;
+    probeRay.set(from,d); probeRay.far=dist-0.05;
+    if(probeRay.intersectObjects(toyMeshes,false).length) blocked.push(L); else reach.push(L);
+  });
+  const key=reach.map(L=>L.id).join(''), m=MIX[key];
+  let en,vi;
+  if(reach.length===0){ en='No light reaches this spot, so it is black!'; vi='Không có ánh sáng nào tới chỗ này, nên nó màu đen!'; }
+  else if(reach.length===1){ en='Only '+reach[0].en.toLowerCase()+' light reaches here: '+m.en+'!'; vi='Chỉ có ánh sáng '+reach[0].vil+' tới đây: màu '+m.vi+'!'; }
+  else if(reach.length===2){ en=reach[0].en+' and '+reach[1].en.toLowerCase()+' light reach here: '+m.en+'!'; vi='Ánh sáng '+reach[0].vil+' và '+reach[1].vil+' tới đây: màu '+m.vi+'!'; }
+  else { en='All three lights reach here: white!'; vi='Cả ba ánh sáng tới đây: màu trắng!'; }
+  if(blocked.length){ en+=' The toy blocks the '+joinEn(blocked.map(L=>L.en.toLowerCase()))+' lamp.'; vi+=' Đồ chơi che đèn '+joinVi(blocked.map(L=>L.vil))+'.'; }
+  if(lampOn.every(o=>!o)){ en='It is dark! Turn on a lamp first.'; vi='Tối quá! Bật một cái đèn trước nhé.'; }
+  click();
+  marker.position.set(p.x,p.y,WALL_Z+0.02); marker.userData.t=0;
+  setTip(en,vi);
+}
+
+function doAction(a,point){
+  unlock(); if(!a) return;
+  if(a.startsWith('lamp:')) toggleLamp(+a.split(':')[1],true);
+  else if(a==='toy') spinToy();
+  else if(a==='wall'&&point) probeWall(point);
+}
+$('#allBtn').onclick=()=>{unlock();allLamps();};
+$('#roomBtn').onclick=()=>{unlock();setRoom(!roomOn,true);};
+$('#closerBtn').onclick=()=>{unlock();moveDepth(1);};
+$('#fartherBtn').onclick=()=>{unlock();moveDepth(-1);};
+
+/* ---------- pointer: drag the toy, drag to look, tap to use ---------- */
+const ray=new THREE.Raycaster(), ndc=new THREE.Vector2();
+const dragPlane=new THREE.Plane(new THREE.Vector3(0,1,0),-1.2);
+let down=null;
+function setRay(e){ const r=canvas.getBoundingClientRect(); ndc.set(((e.clientX-r.left)/r.width)*2-1,-((e.clientY-r.top)/r.height)*2+1); ray.setFromCamera(ndc,camera); }
+function hitAction(e){
+  setRay(e);
+  const hits=ray.intersectObjects([toy,...lamps,wall],true);
+  for(const h of hits){
+    if(h.object===wall) return {a:'wall',p:h.point.clone()};
+    let o=h.object; while(o){ if(o.userData&&o.userData.action) return {a:o.userData.action}; o=o.parent; }
+  }
+  return {a:null};
+}
+function planeX(e){ setRay(e); const p=new THREE.Vector3(); return ray.ray.intersectPlane(dragPlane,p)?p.x:null; }
+canvas.addEventListener('pointerdown',e=>{
+  const h=hitAction(e);
+  down={x:e.clientX,y:e.clientY,yaw,pitch,drag:false,hit:h,tx:toy.position.x,px:h.a==='toy'?planeX(e):null,moved:0,lastTick:toy.position.x};
+  canvas.setPointerCapture(e.pointerId);
+});
+canvas.addEventListener('pointermove',e=>{
+  if(down){ const dx=e.clientX-down.x, dy=e.clientY-down.y;
+    if(!down.drag&&Math.hypot(dx,dy)>9){ down.drag=true; if(down.hit.a==='toy') unlock(); }
+    if(down.drag){
+      if(down.hit.a==='toy'&&down.px!==null){ const px=planeX(e); if(px!==null){
+          const nx=Math.max(-toyXMax,Math.min(toyXMax,down.tx+(px-down.px)));
+          down.moved=Math.max(down.moved,Math.abs(nx-down.tx)); toy.position.x=nx;
+          if(Math.abs(nx-down.lastTick)>0.2){ tick(); down.lastTick=nx; } } }
+      else { yaw=Math.max(-0.7,Math.min(0.7,down.yaw-dx*0.006)); pitch=Math.max(-0.2,Math.min(0.3,down.pitch+dy*0.004)); placeCamera(); } } }
+  else if(e.pointerType==='mouse'){ const h=hitAction(e); canvas.style.cursor=h.a==='toy'?'ew-resize':h.a?'pointer':'grab'; }
+});
+canvas.addEventListener('pointerup',e=>{
+  if(down){
+    if(!down.drag) doAction(down.hit.a,down.hit.p);
+    else if(down.hit.a==='toy'&&down.moved>0.3){
+      const on=lampOn.filter(Boolean).length;
+      if(on>=2) setTip('The colored shadows move with the rocket!','Bóng màu di chuyển theo tên lửa!');
+      else if(on===1) setTip('The shadow moves with the rocket! Turn on more lamps for colors.','Cái bóng di chuyển theo tên lửa! Bật thêm đèn để có bóng màu nhé.');
+      else setTip('Turn on a lamp to see the shadows!','Bật đèn lên để thấy bóng nhé!');
+    }
+  }
+  down=null;
+});
+canvas.addEventListener('pointercancel',()=>{ down=null; });
+
+/* ---------- loop ---------- */
+let simT=0; const clock=new THREE.Clock();
+function frame(){
+  const dt=Math.min(0.1,clock.getDelta()); simT+=dt;
+  for(let i=tweens.length-1;i>=0;i--){ const tw=tweens[i]; tw.t+=dt; const p=Math.min(1,tw.t/tw.dur); tw.fn(p); if(p>=1){ tweens.splice(i,1); tw.done&&tw.done(); } }
+  scene.background.lerp(roomOn?LIT:DARK,Math.min(1,dt*6));
+  lamps.forEach((g,i)=>{ const u=g.userData;
+    lampI[i]+=((lampOn[i]?1:0)-lampI[i])*Math.min(1,dt*12);
+    u.sl.intensity=LAMPS[i].gain*lampI[i];
+    u.glow.material.opacity=lampI[i]*(roomOn?0.45:0.95);
+    u.beam.material.opacity=lampI[i]*(roomOn?0.012:0.04+0.006*Math.sin(simT*2+i));
+  });
+  dragRing.material.opacity=(down&&down.hit&&down.hit.a==='toy')?0.7:0.22+0.12*Math.sin(simT*3);
+  if(marker.userData.t<2.2){ marker.userData.t+=dt; const t=marker.userData.t, o=t<1.6?1:Math.max(0,1-(t-1.6)/0.6), s=1+0.25*Math.sin(t*6)*(t<1?1:0);
+    marker.children[0].material.opacity=o*0.9; marker.children[1].material.opacity=o; marker.scale.set(s,s,1); }
+  renderer.render(scene,camera);
+  requestAnimationFrame(frame);
+}
+async function keepAwake(){ try{ if(navigator.wakeLock) await navigator.wakeLock.request('screen'); }catch(e){} }
+async function boot(){
+  try{ await Promise.race([document.fonts.load('800 20px "Baloo 2"'),new Promise(r=>setTimeout(r,2000))]); }catch(e){}
+  buildRoom(); buildLamps(); buildToy(); buildMarker();
+  syncLampUI(); syncDepthUI();
+  onResize();
+  addEventListener('resize',onResizeSoon); addEventListener('orientationchange',onResizeSoon);
+  try{ if(window.visualViewport) visualViewport.addEventListener('resize',onResizeSoon); }catch(e){}
+  requestAnimationFrame(frame);
+  $('#loadNote').textContent='A red, a green and a blue lamp shine on a white wall. Switch the lamps and move the wooden rocket!';
+  $('#goBtn').disabled=false;
+}
+$('#goBtn').onclick=()=>{
+  unlock(); $('#startScreen').hidden=true; keepAwake();
+  document.addEventListener('visibilitychange',()=>{ if(document.visibilityState==='visible') keepAwake(); });
+  onResize();
+  setTip('Three lamps: red, green and blue! Tap a lamp to turn it off or on.','Ba cái đèn: đỏ, xanh lá và xanh dương! Chạm vào đèn để tắt hoặc bật nhé.');
+};
+boot();
+})();
+</script>
+</body>
+</html>

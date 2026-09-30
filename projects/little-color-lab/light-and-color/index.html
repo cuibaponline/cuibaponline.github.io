@@ -1,0 +1,803 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#191c24">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<style>
+*,*::before,*::after{box-sizing:border-box}
+body{margin:0;font-size:14px}
+img{max-width:100%}
+</style>
+<title>Light and Color Lab</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;800&family=Nunito:wght@600;800&family=Patrick+Hand&display=swap">
+<style>
+/* Layout: full-bleed 3D dark classroom; mode tabs + tools on top, bilingual bubble, toy tray at the bottom. Deliberately single light-UI theme over a scene that can be dark or lit. */
+:root{
+  --room:#191c24;       /* darkened classroom */
+  --ink:#1e2b44;
+  --marker:#2c68b2;
+  --glow:#fff6d8;       /* light box glow */
+  --sun:#ffcd34;
+  --card:#ffffff;
+  --line:#d8dde6;
+  --shadow:rgba(10,14,24,.35);
+  --f-display:'Baloo 2','Nunito',system-ui,sans-serif;
+  --f-body:'Nunito',system-ui,-apple-system,'Segoe UI',sans-serif;
+  --f-hand:'Patrick Hand','Comic Sans MS','Chalkboard SE',cursive;
+  color-scheme:light;
+}
+[hidden]{display:none!important}
+html,body{height:100%;overflow:hidden}
+body{background:var(--room);color:var(--ink);font-family:var(--f-body);-webkit-tap-highlight-color:transparent;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;touch-action:manipulation}
+#c{position:fixed;inset:0;width:100%;height:100%;display:block;touch-action:none;outline:none}
+button{font:inherit;color:inherit;cursor:pointer;border:0;background:none}
+button:focus-visible{outline:3px solid var(--sun);outline-offset:3px}
+
+.hud{position:fixed;inset:0;pointer-events:none;display:flex;flex-direction:column;justify-content:space-between;
+  padding:calc(env(safe-area-inset-top,0px) + 12px) 16px calc(env(safe-area-inset-bottom,0px) + 12px);gap:10px}
+.hud > *{pointer-events:auto}
+.top{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;pointer-events:none}
+.top > *{pointer-events:auto}
+.tabs{display:flex;background:var(--card);border-radius:18px;padding:4px;gap:4px;box-shadow:0 4px 0 var(--line),0 8px 20px var(--shadow);min-width:0}
+.tab{border-radius:14px;padding:4px 12px 5px;display:flex;align-items:center;gap:8px;min-height:48px;text-align:left;min-width:0}
+.tab svg{width:26px;height:26px;flex:none}
+.tab span{display:flex;flex-direction:column;min-width:0}
+.tab b{font-family:var(--f-display);font-weight:800;font-size:.98rem;line-height:1.05;white-space:nowrap}
+.tab i{font-style:normal;font-family:var(--f-hand);font-size:1rem;line-height:1;color:var(--marker);white-space:nowrap}
+.tab[aria-selected="true"]{background:var(--sun)}
+.tools{display:flex;gap:8px;flex:none}
+.tool{min-width:48px;height:48px;border-radius:14px;background:var(--card);display:grid;place-items:center;padding:0 12px;
+  box-shadow:0 4px 0 var(--line),0 8px 18px var(--shadow);font-family:var(--f-display);font-weight:800;font-size:.95rem;white-space:nowrap}
+.tool svg{width:24px;height:24px}
+.tool[aria-pressed="false"] .on{display:none}.tool[aria-pressed="true"] .off{display:none}
+
+.col{flex:1;display:flex;flex-direction:column;gap:10px;align-items:center;pointer-events:none}
+.bubble{pointer-events:auto;max-width:min(560px,100%);background:var(--card);border-radius:22px;padding:10px 12px 10px 18px;
+  display:flex;align-items:center;gap:12px;box-shadow:0 5px 0 var(--line),0 10px 24px var(--shadow)}
+.bubble .txt{min-width:0}
+.bubble .en{margin:0;font-family:var(--f-display);font-weight:800;font-size:1.25rem;line-height:1.15;text-wrap:balance}
+.bubble .vi{margin:2px 0 0;font-family:var(--f-hand);font-size:1.3rem;line-height:1.1;color:var(--marker);text-wrap:balance}
+.say{flex:none;width:46px;height:46px;border-radius:50%;background:var(--marker);color:#fff;display:grid;place-items:center}
+.say svg{width:24px;height:24px}
+
+.tray{align-self:center;max-width:100%;background:var(--card);border-radius:26px;padding:10px 12px;display:flex;flex-wrap:wrap;
+  justify-content:center;align-items:center;gap:10px 14px;box-shadow:0 6px 0 var(--line),0 12px 30px var(--shadow)}
+.group{display:flex;gap:6px;align-items:stretch}
+.pick{width:56px;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;gap:2px;padding:4px 0;border-radius:14px;transition:background .2s}
+.pick b{font-family:var(--f-display);font-weight:800;font-size:.72rem;line-height:1}
+.pick i{font-style:normal;font-family:var(--f-hand);font-size:.85rem;line-height:1;color:var(--marker);white-space:nowrap}
+.pick[aria-pressed="true"]{background:#fff2c2;box-shadow:inset 0 0 0 3px var(--sun)}
+.bot{display:flex;flex-direction:column;align-items:center}
+.bot .neck{width:15px;height:9px;border-radius:3px;background:repeating-linear-gradient(0deg,#b38a55 0 2px,#d3ad78 2px 4px)}
+.bot .body{width:30px;height:34px;border-radius:9px;background:var(--c);box-shadow:inset -6px -5px 0 rgba(0,0,0,.14),inset 5px 4px 0 rgba(255,255,255,.35)}
+.lamp{width:40px;height:40px;border-radius:50%;background:var(--c);box-shadow:0 0 0 4px #fff,0 0 0 6px var(--line),0 0 14px 4px var(--c)}
+.lamp.white{box-shadow:0 0 0 4px #fff,0 0 0 6px var(--line),0 0 12px 3px #ffe9a8}
+.act{min-width:74px;min-height:62px;border-radius:18px;background:#eef1f6;display:flex;flex-direction:column;align-items:center;justify-content:center;
+  padding:4px 8px;box-shadow:inset 0 -4px 0 var(--line);transition:transform .15s,background .2s}
+.act svg{width:26px;height:26px}
+.act b{font-family:var(--f-display);font-weight:800;font-size:.86rem;line-height:1.05;white-space:nowrap}
+.act i{font-style:normal;font-family:var(--f-hand);font-size:.92rem;line-height:1;color:var(--marker);white-space:nowrap}
+.act[aria-pressed="true"]{background:var(--sun)}
+.act:active,.pick:active{transform:scale(.94)}
+
+.overlay{position:fixed;inset:0;display:grid;place-items:center;padding:16px;background:rgba(25,28,36,.72);backdrop-filter:blur(4px);z-index:5}
+.start{background:var(--card);border-radius:28px;padding:22px 26px 26px;text-align:center;max-width:420px;box-shadow:0 16px 40px var(--shadow)}
+.start h2{margin:0;font-family:var(--f-display);font-weight:800;font-size:2rem;line-height:1.05}
+.start .vi{margin:2px 0 12px;font-family:var(--f-hand);font-size:1.6rem;color:var(--marker)}
+.start p.note{margin:0 0 16px;font-size:.95rem;line-height:1.45;color:#4a5670}
+.go{background:var(--sun);border-radius:20px;padding:12px 26px;font-family:var(--f-display);font-weight:800;font-size:1.4rem;
+  box-shadow:inset 0 -5px 0 rgba(0,0,0,.12);display:inline-flex;flex-direction:column;align-items:center;line-height:1.05}
+.go i{font-style:normal;font-family:var(--f-hand);font-size:1.2rem;font-weight:400}
+.spectrum{height:14px;border-radius:7px;margin:0 auto 14px;width:180px;background:linear-gradient(90deg,#ff2a1f,#ff8a14,#ffe11a,#2fd33a,#2f6bff,#9b3dff)}
+
+.sheet{position:fixed;inset:0;z-index:6;display:grid;place-items:center;padding:16px;background:rgba(10,14,24,.5)}
+.sheet .box{background:var(--card);border-radius:24px;max-width:620px;width:100%;max-height:100%;overflow:auto;padding:20px 22px 22px}
+.sheet h2{margin:0 0 4px;font-family:var(--f-display);font-weight:800;font-size:1.5rem}
+.sheet h3{margin:16px 0 4px;font-family:var(--f-display);font-weight:800;font-size:1.1rem}
+.sheet p,.sheet li{font-size:.98rem;line-height:1.5;max-width:65ch}
+.sheet p{margin:4px 0}
+.sheet .vi{color:var(--marker)}
+.sheet ul{margin:4px 0;padding-left:20px}
+.sheet .x{float:right;width:44px;height:44px;border-radius:50%;background:#eef1f6;display:grid;place-items:center;font-weight:800;font-size:1.2rem}
+.err{max-width:420px;text-align:center;font-size:1rem;line-height:1.5}
+
+@media (max-width:620px){
+  .hud{gap:8px}
+  .tab{padding:3px 8px 4px;gap:6px;min-height:44px}
+  .tab svg{width:22px;height:22px}
+  .tab b{font-size:.82rem}.tab i{font-size:.86rem}
+  .tools{gap:6px}
+  .tool{min-width:42px;height:42px;padding:0 8px;font-size:.8rem;border-radius:12px}
+  .tool svg{width:22px;height:22px}
+  .bubble{align-self:stretch;padding:8px 8px 8px 14px;border-radius:18px;gap:8px;justify-content:space-between}
+  .bubble .en{font-size:1.02rem}.bubble .vi{font-size:1.12rem}
+  .say{width:42px;height:42px}
+  .tray{align-self:stretch;flex-direction:column;padding:8px;gap:8px;border-radius:22px}
+  .group{width:100%;justify-content:space-between;gap:4px}
+  .group > *{flex:1 1 0;min-width:0}
+  .pick{width:auto}
+  .act{min-width:0;min-height:54px;padding:4px 2px}
+  .act b{font-size:.8rem}.act i{font-size:.84rem}
+}
+@media (max-width:440px){ .tab svg{display:none} .tab{padding:3px 9px 4px} }
+@media (max-width:400px){ .tools #langBtn{display:none} .tab i{font-size:.8rem} }
+@media (max-height:520px){
+  .top{position:absolute;top:calc(env(safe-area-inset-top,0px) + 10px);left:16px;right:16px}
+  .col{padding-top:58px;align-items:flex-start}
+  .bubble{max-width:min(560px,55%);padding:6px 8px 6px 12px}
+  .bubble .en{font-size:.98rem}.bubble .vi{font-size:1.05rem}
+  .say{width:38px;height:38px}
+  .tray{padding:6px 10px;gap:8px}
+  .act{min-height:50px;min-width:66px}
+}
+</style>
+</head>
+<body>
+<canvas id="c" tabindex="-1" aria-label="3D darkened classroom with colored bottles, a light box, a flashlight and a plate of fruit"></canvas>
+
+<div class="hud">
+  <div class="top">
+    <div class="tabs" role="tablist" aria-label="Experiments">
+      <button class="tab" role="tab" id="tabA" aria-selected="true">
+        <svg viewBox="0 0 24 24"><rect x="2" y="15" width="20" height="6" rx="1.5" fill="#fff6d8" stroke="#1e2b44" stroke-width="1.6"/><rect x="4" y="8" width="4" height="7" rx="1.2" fill="#e8262a"/><rect x="10" y="8" width="4" height="7" rx="1.2" fill="#1f6fe0"/><rect x="16" y="8" width="4" height="7" rx="1.2" fill="#ffd21f"/></svg>
+        <span><b>Glowing bottles</b><i lang="vi">Chai phát sáng</i></span>
+      </button>
+      <button class="tab" role="tab" id="tabB" aria-selected="false">
+        <svg viewBox="0 0 24 24"><path d="M3 4l6 6-2 2-6-6z" fill="#9aa3b2" stroke="#1e2b44" stroke-width="1.4"/><path d="M9 10l12 8-3 3-8-12z" fill="#ff3b30" opacity=".75"/><circle cx="19" cy="19" r="3" fill="#ffb3ad"/></svg>
+        <span><b>Colored lights</b><i lang="vi">Đèn màu</i></span>
+      </button>
+    </div>
+    <div class="tools">
+      <button class="tool" id="langBtn" aria-label="Voice language">EN + VI</button>
+      <button class="tool" id="muteBtn" aria-pressed="true" aria-label="Sound">
+        <svg class="on" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9h4l5-4v14l-5-4H4z" fill="currentColor"/><path d="M16.5 8.5a5 5 0 0 1 0 7M19 6a8.5 8.5 0 0 1 0 12"/></svg>
+        <svg class="off" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9h4l5-4v14l-5-4H4z" fill="currentColor"/><path d="M17 9l5 6M22 9l-5 6"/></svg>
+      </button>
+      <button class="tool" id="infoBtn" aria-label="For grown-ups">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><circle cx="12" cy="12" r="9.5"/><path d="M9.3 9.3a2.8 2.8 0 1 1 3.9 2.6c-.8.4-1.2 1-1.2 1.8v.5"/><circle cx="12" cy="17.3" r=".6" fill="currentColor"/></svg>
+      </button>
+    </div>
+  </div>
+
+  <div class="col">
+    <div class="bubble" role="status" aria-live="polite">
+      <div class="txt">
+        <p class="en" id="tipEn">Tap a bottle to put it on the flashlight!</p>
+        <p class="vi" id="tipVi" lang="vi">Chạm vào một chai để đặt lên đèn pin nhé!</p>
+      </div>
+      <button class="say" id="sayBtn" aria-label="Say it again">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9h4l5-4v14l-5-4H4z" fill="currentColor"/><path d="M16.5 8.5a5 5 0 0 1 0 7"/></svg>
+      </button>
+    </div>
+  </div>
+
+  <nav class="tray" aria-label="Controls">
+    <div class="group" id="bottlesUI" role="group" aria-label="Colored bottles"></div>
+    <div class="group" id="lampsUI" role="group" aria-label="Flashlight colors" hidden></div>
+    <div class="group" id="togglesA">
+      <button class="act" id="tFlash" aria-pressed="true">
+        <svg viewBox="0 0 24 24"><rect x="7" y="13" width="10" height="9" rx="2" fill="#3b4150"/><circle cx="12" cy="15.5" r="1.6" fill="#fff6c8"/><path d="M12 12L8 2h8z" fill="#ffe27a" opacity=".85"/></svg>
+        <b>Flashlight</b><i lang="vi">Đèn pin</i>
+      </button>
+      <button class="act" id="tBox" aria-pressed="true">
+        <svg viewBox="0 0 24 24"><rect x="2" y="13" width="20" height="7" rx="1.5" fill="#b88b5a" stroke="#1e2b44" stroke-width="1.4"/><rect x="3.5" y="12" width="17" height="2.5" rx="1" fill="#fff6d8" stroke="#1e2b44" stroke-width="1.2"/><path d="M6 9l-1-3M12 8V4M18 9l1-3" stroke="#e0a800" stroke-width="1.8" stroke-linecap="round"/></svg>
+        <b>Light box</b><i lang="vi">Hộp đèn</i>
+      </button>
+      <button class="act roomBtn" aria-pressed="false">
+        <svg viewBox="0 0 24 24"><path d="M12 2a6.5 6.5 0 0 0-3.8 11.8c.6.5.8 1.1.8 1.7V17h6v-1.5c0-.6.3-1.2.8-1.7A6.5 6.5 0 0 0 12 2z" fill="#ffe27a" stroke="#1e2b44" stroke-width="1.6"/><path d="M9.5 20h5M10.5 22.5h3" stroke="#1e2b44" stroke-width="1.8" stroke-linecap="round"/></svg>
+        <b>Room light</b><i lang="vi">Đèn phòng</i>
+      </button>
+    </div>
+    <div class="group" id="togglesB" hidden>
+      <button class="act roomBtn" aria-pressed="false">
+        <svg viewBox="0 0 24 24"><path d="M12 2a6.5 6.5 0 0 0-3.8 11.8c.6.5.8 1.1.8 1.7V17h6v-1.5c0-.6.3-1.2.8-1.7A6.5 6.5 0 0 0 12 2z" fill="#ffe27a" stroke="#1e2b44" stroke-width="1.6"/><path d="M9.5 20h5M10.5 22.5h3" stroke="#1e2b44" stroke-width="1.8" stroke-linecap="round"/></svg>
+        <b>Room light</b><i lang="vi">Đèn phòng</i>
+      </button>
+    </div>
+  </nav>
+</div>
+
+<div class="overlay" id="startScreen">
+  <div class="start">
+    <div class="spectrum" aria-hidden="true"></div>
+    <h2>Light &amp; Color</h2>
+    <p class="vi" lang="vi">Ánh sáng và màu sắc</p>
+    <p class="note" id="loadNote">Turning off the classroom lights…</p>
+    <button class="go" id="goBtn" disabled>Let's play! <i lang="vi">Chơi thôi!</i></button>
+  </div>
+</div>
+
+<div class="sheet" id="info" hidden>
+  <div class="box" role="dialog" aria-labelledby="infoTitle">
+    <button class="x" id="infoClose" aria-label="Close">✕</button>
+    <h2 id="infoTitle">For grown-ups</h2>
+    <p class="vi" lang="vi">Dành cho ba mẹ</p>
+
+    <h3>Glowing bottles</h3>
+    <p>White light is really all the rainbow colors traveling together. In the game you can see them as little colored sparks. When the light goes through the red bottle, the colored water catches (absorbs) the other colors and only red gets out, so the paper above glows red. A yellow bottle lets red and green through, and our eyes see that mix as yellow.</p>
+    <p class="vi" lang="vi">Ánh sáng trắng thật ra là tất cả các màu cầu vồng đi cùng nhau. Khi ánh sáng đi qua chai nước đỏ, nước màu giữ lại các màu khác, chỉ có màu đỏ đi ra, nên tấm giấy phía trên sáng màu đỏ.</p>
+
+    <h3>Colored lights</h3>
+    <p>We see a strawberry as red because it bounces red light back to our eyes and keeps the rest. Under green or blue light there is no red to bounce, so the strawberry looks dark. A white egg bounces every color, so it takes the color of whatever light shines on it.</p>
+    <p class="vi" lang="vi">Quả dâu có màu đỏ vì nó phản chiếu ánh sáng đỏ vào mắt mình. Dưới đèn xanh không có màu đỏ để phản chiếu, nên quả dâu trông tối đen. Quả trứng trắng phản chiếu mọi màu, nên đèn màu gì thì trứng thành màu đó.</p>
+
+    <h3>Questions to ask</h3>
+    <ul>
+      <li>What color will the paper be with the blue bottle? <span class="vi" lang="vi">Với chai xanh dương, tờ giấy sẽ màu gì?</span></li>
+      <li>Which fruit disappears under blue light? <span class="vi" lang="vi">Dưới đèn xanh dương, quả nào biến mất?</span></li>
+      <li>Why does the egg change color every time? <span class="vi" lang="vi">Vì sao quả trứng đổi màu liên tục?</span></li>
+    </ul>
+
+    <h3>Try it at home</h3>
+    <p>Fill clear bottles with water and a few drops of food coloring. In a dark room, set one on a phone flashlight and hold white paper above it. For colored lights, cover the flashlight with colored cellophane or a see-through plastic folder and shine it on fruit.</p>
+    <p class="vi" lang="vi">Đổ nước pha màu vào chai trong. Trong phòng tối, đặt chai lên đèn pin điện thoại và cầm tờ giấy trắng phía trên. Để làm đèn màu, bọc đèn pin bằng giấy bóng kính màu rồi chiếu lên trái cây.</p>
+    <p style="font-size:.85rem;color:#5b6780">Drag the scene to look around. The spoken Vietnamese uses your device's Vietnamese voice; the words are always on screen.</p>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+(function(){
+'use strict';
+const $=s=>document.querySelector(s);
+
+/* ---------- content ---------- */
+// Light bands carried inside white light (drawn as sparks)
+const BANDS=[
+  {c:[1,0.1,0.08]},{c:[1,0.45,0.02]},{c:[1,0.95,0.1]},{c:[0.15,1,0.2]},{c:[0.15,0.4,1]},{c:[0.7,0.1,1]}
+];
+// which bands each bottle lets through: red, orange, yellow, green, blue, violet
+const BOTTLES=[
+  {id:'green',  en:'Green',  vi:'Xanh lá',    hex:'#6fcf2a', pass:[0,0,0.5,1,0.25,0],
+    sayEn:'The green bottle lets green light through!', sayVi:'Chai xanh lá cho ánh sáng xanh lá đi qua!'},
+  {id:'orange', en:'Orange', vi:'Cam',        hex:'#ff7a1a', pass:[1,1,0.35,0,0,0],
+    sayEn:'The orange bottle lets red and orange light through!', sayVi:'Chai cam cho ánh sáng đỏ và cam đi qua!'},
+  {id:'pink',   en:'Pink',   vi:'Hồng',       hex:'#e0189a', pass:[1,0.2,0,0,0.3,1],
+    sayEn:'The pink bottle lets red and purple light through!', sayVi:'Chai hồng cho ánh sáng đỏ và tím đi qua!'},
+  {id:'red',    en:'Red',    vi:'Đỏ',         hex:'#e8262a', pass:[1,0.2,0,0,0,0],
+    sayEn:'The red bottle lets only red light through. It catches the other colors!', sayVi:'Chai đỏ chỉ cho ánh sáng đỏ đi qua. Chai giữ lại các màu khác!'},
+  {id:'blue',   en:'Blue',   vi:'Xanh dương', hex:'#1f6fe0', pass:[0,0,0,0.25,1,0.5],
+    sayEn:'The blue bottle lets blue light through!', sayVi:'Chai xanh dương cho ánh sáng xanh dương đi qua!'},
+  {id:'yellow', en:'Yellow', vi:'Vàng',       hex:'#ffd21f', pass:[1,1,1,0.6,0,0],
+    sayEn:'The yellow bottle lets red and green light through. Together they look yellow!', sayVi:'Chai vàng cho ánh sáng đỏ và xanh lá đi qua. Gộp lại thành màu vàng!'},
+];
+const LIGHTS=[
+  {id:'white', en:'White', vi:'Trắng',      vil:'trắng',      hex:'#ffffff', rgb:[1,1,1]},
+  {id:'red',   en:'Red',   vi:'Đỏ',         vil:'đỏ',         hex:'#ff3b30', rgb:[1,0.07,0.05]},
+  {id:'green', en:'Green', vi:'Xanh lá',    vil:'xanh lá',    hex:'#2ecc40', rgb:[0.08,1,0.12]},
+  {id:'blue',  en:'Blue',  vi:'Xanh dương', vil:'xanh dương', hex:'#2f6bff', rgb:[0.1,0.22,1]},
+];
+// what each object looks like under each light: [English, Vietnamese] ; 'dark' means it looks black
+const FRUITS=[
+  {id:'strawberry', en:'strawberry',  vi:'quả dâu tây',   plural:false, looks:{white:['red','đỏ'],red:['red','đỏ'],green:['dark'],blue:['dark']}},
+  {id:'banana',     en:'banana',      vi:'quả chuối',     plural:false, looks:{white:['yellow','vàng'],red:['red','đỏ'],green:['green','xanh lá'],blue:['dark']}},
+  {id:'leaf',       en:'leaf',        vi:'chiếc lá',      plural:false, looks:{white:['green','xanh lá'],red:['dark'],green:['green','xanh lá'],blue:['dark']}},
+  {id:'blueberry',  en:'blueberries', vi:'quả việt quất', plural:true,  looks:{white:['blue','xanh dương'],red:['dark'],green:['dark'],blue:['blue','xanh dương']}},
+  {id:'orange',     en:'orange',      vi:'quả cam',       plural:false, looks:{white:['orange','cam'],red:['red','đỏ'],green:['dark green','xanh sẫm'],blue:['dark']}},
+  {id:'egg',        en:'egg',         vi:'quả trứng',     plural:false, looks:{white:['white','trắng'],red:['red','đỏ'],green:['green','xanh lá'],blue:['blue','xanh dương']}},
+];
+
+/* ---------- UI build ---------- */
+const bottlesUI=$('#bottlesUI'), lampsUI=$('#lampsUI');
+BOTTLES.forEach((b,i)=>{
+  const el=document.createElement('button'); el.className='pick'; el.setAttribute('aria-pressed','false');
+  el.setAttribute('aria-label',b.en+' bottle / Chai '+b.vi.toLowerCase());
+  el.innerHTML='<span class="bot" style="--c:'+b.hex+'"><span class="neck"></span><span class="body"></span></span><b>'+b.en+'</b><i lang="vi">'+b.vi+'</i>';
+  el.onclick=()=>{unlock();tapBottle(i);};
+  bottlesUI.appendChild(el);
+});
+LIGHTS.forEach((l,i)=>{
+  const el=document.createElement('button'); el.className='pick'; el.setAttribute('aria-pressed',i===0?'true':'false');
+  el.setAttribute('aria-label',l.en+' light / Đèn '+l.vil);
+  el.innerHTML='<span class="lamp'+(i===0?' white':'')+'" style="--c:'+l.hex+'"></span><b>'+l.en+'</b><i lang="vi">'+l.vi+'</i>';
+  el.onclick=()=>{unlock();setLight(i,true);};
+  lampsUI.appendChild(el);
+});
+
+/* ---------- speech + sound ---------- */
+let soundOn=true, voiceMode='both';
+try{ const v=localStorage.getItem('lcl-voice'); if(v) voiceMode=v; if(localStorage.getItem('lcl-mute')==='1') soundOn=false; }catch(e){}
+const langBtn=$('#langBtn'), muteBtn=$('#muteBtn');
+const LANG_LABEL={both:'EN + VI',en:'EN',vi:'VI'};
+function syncTools(){ langBtn.textContent=LANG_LABEL[voiceMode]; muteBtn.setAttribute('aria-pressed',String(soundOn)); }
+syncTools();
+langBtn.onclick=()=>{ voiceMode=voiceMode==='both'?'en':voiceMode==='en'?'vi':'both'; try{localStorage.setItem('lcl-voice',voiceMode)}catch(e){} syncTools(); sayTip(); };
+muteBtn.onclick=()=>{ soundOn=!soundOn; try{localStorage.setItem('lcl-mute',soundOn?'0':'1')}catch(e){} syncTools(); if(!soundOn){try{speechSynthesis.cancel()}catch(e){}} };
+let voices=[];
+function loadVoices(){ try{ voices=window.speechSynthesis?speechSynthesis.getVoices():[]; }catch(e){} }
+try{ if(window.speechSynthesis){ loadVoices(); speechSynthesis.onvoiceschanged=loadVoices; } }catch(e){}
+const pickVoice=l=>voices.find(v=>v.lang&&v.lang.toLowerCase().replace('_','-').startsWith(l));
+function say(en,vi){
+  if(!soundOn) return;
+  try{
+    const ss=window.speechSynthesis; if(!ss) return;
+    const busyNow=ss.speaking||ss.pending; ss.cancel();
+    const q=[];
+    if(voiceMode!=='vi') q.push({t:en,l:'en-US',v:pickVoice('en-us')||pickVoice('en')});
+    if(voiceMode!=='en') q.push({t:vi,l:'vi-VN',v:pickVoice('vi')});
+    const go=()=>q.forEach(o=>{ const u=new SpeechSynthesisUtterance(o.t); u.lang=o.l; if(o.v) u.voice=o.v; u.rate=o.l==='vi-VN'?0.95:0.92; u.pitch=1.15; ss.speak(u); });
+    if(busyNow) setTimeout(go,80); else go();
+  }catch(e){}
+}
+let ac=null;
+function unlock(){ if(!ac){ try{ ac=new (window.AudioContext||window.webkitAudioContext)(); }catch(e){} } if(ac&&ac.state==='suspended') ac.resume(); }
+function tone(f0,f1,dur,vol,type){
+  if(!soundOn||!ac) return;
+  const t=ac.currentTime,o=ac.createOscillator(),g=ac.createGain();
+  o.type=type||'sine'; o.frequency.setValueAtTime(f0,t); o.frequency.exponentialRampToValueAtTime(f1,t+dur);
+  g.gain.setValueAtTime(vol,t); g.gain.exponentialRampToValueAtTime(0.0001,t+dur);
+  o.connect(g).connect(ac.destination); o.start(t); o.stop(t+dur+0.02);
+}
+const click=()=>{ tone(1200,700,0.05,0.12,'square'); try{ if(soundOn&&navigator.vibrate) navigator.vibrate(12);}catch(e){} };
+const whoosh=()=>tone(300,900,0.25,0.08,'triangle');
+const sparkle=()=>{ [880,1175,1568].forEach((f,i)=>setTimeout(()=>tone(f,f,0.22,0.1,'triangle'),i*90)); };
+
+let tip={en:'',vi:''};
+function setTip(en,vi,speak){ tip={en,vi}; if(typeof refitSoon==='function') refitSoon(); $('#tipEn').textContent=en; $('#tipVi').textContent=vi; if(speak!==false) say(en,vi); }
+function sayTip(){ say(tip.en,tip.vi); }
+$('#sayBtn').onclick=()=>{unlock();sayTip();};
+$('#infoBtn').onclick=()=>{ $('#info').hidden=false; };
+$('#infoClose').onclick=()=>{ $('#info').hidden=true; };
+$('#info').addEventListener('click',e=>{ if(e.target.id==='info') $('#info').hidden=true; });
+
+if(typeof THREE==='undefined'){
+  $('#loadNote').className='err';
+  $('#loadNote').textContent='The 3D engine could not load. Check the internet connection and open the page again.';
+  return;
+}
+
+/* ============================================================
+   SCENE
+   ============================================================ */
+const canvas=$('#c');
+const renderer=new THREE.WebGLRenderer({canvas,antialias:true});
+renderer.setPixelRatio(Math.min(2,window.devicePixelRatio||1));
+renderer.shadowMap.enabled=true; renderer.shadowMap.type=THREE.PCFSoftShadowMap;
+const scene=new THREE.Scene();
+const camera=new THREE.PerspectiveCamera(40,1,0.1,100);
+const DARK=new THREE.Color(0x14161d), LIT=new THREE.Color(0xeef0ea);
+scene.background=DARK.clone();
+
+const hemi=new THREE.HemisphereLight(0xffffff,0xb9c4d6,0.06); scene.add(hemi);
+const sunL=new THREE.DirectionalLight(0xffffff,0); sunL.position.set(4,9,6); scene.add(sunL);
+
+function canvasTex(w,h,draw){ const c=document.createElement('canvas'); c.width=w; c.height=h; draw(c.getContext('2d'),w,h); const t=new THREE.CanvasTexture(c); t.anisotropy=4; return t; }
+const phong=o=>new THREE.MeshPhongMaterial(o), lambert=o=>new THREE.MeshLambertMaterial(o);
+const hitMat=new THREE.MeshBasicMaterial({transparent:true,opacity:0,depthWrite:false,colorWrite:false});
+function hitVol(r,h,y){ const m=new THREE.Mesh(new THREE.CylinderGeometry(r,r,h,12),hitMat); m.position.y=y; return m; }
+const glowTex=canvasTex(128,128,(x,w,h)=>{ const g=x.createRadialGradient(64,64,0,64,64,64); g.addColorStop(0,'rgba(255,255,255,1)'); g.addColorStop(0.35,'rgba(255,255,255,.7)'); g.addColorStop(1,'rgba(255,255,255,0)'); x.fillStyle=g; x.fillRect(0,0,w,h); });
+
+/* room */
+function buildRoom(){
+  const wood=canvasTex(256,256,(x,w,h)=>{ x.fillStyle='#b99468'; x.fillRect(0,0,w,h);
+    for(let i=0;i<8;i++){ x.fillStyle=i%2?'#b28c60':'#c09c70'; x.fillRect(0,i*32,w,31); x.fillStyle='rgba(70,45,20,.25)'; x.fillRect(0,i*32+31,w,1); } });
+  wood.wrapS=wood.wrapT=THREE.RepeatWrapping; wood.repeat.set(7,7);
+  const floor=new THREE.Mesh(new THREE.PlaneGeometry(40,40),phong({map:wood,shininess:30}));
+  floor.rotation.x=-Math.PI/2; floor.receiveShadow=true; scene.add(floor);
+  const tiles=canvasTex(256,256,(x,w,h)=>{ x.fillStyle='#f3f4ef'; x.fillRect(0,0,w,h); x.strokeStyle='#d4d8cf'; x.lineWidth=4;
+    for(let i=0;i<=4;i++){ x.beginPath(); x.moveTo(i*64,0); x.lineTo(i*64,h); x.stroke(); x.beginPath(); x.moveTo(0,i*64); x.lineTo(w,i*64); x.stroke(); } });
+  tiles.wrapS=tiles.wrapT=THREE.RepeatWrapping; tiles.repeat.set(12,0.6);
+  const tw=new THREE.Mesh(new THREE.PlaneGeometry(40,1.2),lambert({map:tiles})); tw.position.set(0,0.6,-4.5); scene.add(tw);
+  const wall=new THREE.Mesh(new THREE.PlaneGeometry(40,14),lambert({color:0xf2f2ee})); wall.position.set(0,8.2,-4.51); scene.add(wall);
+  // paper pinwheel garland like the classroom photo
+  const pw=canvasTex(128,128,(x)=>{ x.translate(64,64); for(let k=0;k<4;k++){ x.rotate(Math.PI/2); x.fillStyle=k%2?'#e0342f':'#c4221e'; x.beginPath(); x.moveTo(0,0); x.lineTo(0,-56); x.quadraticCurveTo(40,-40,0,0); x.fill(); } x.fillStyle='#ffd21f'; x.beginPath(); x.arc(0,0,9,0,7); x.fill(); });
+  for(let i=0;i<11;i++){ const m=new THREE.Mesh(new THREE.PlaneGeometry(0.55,0.55),lambert({map:pw,transparent:true})); m.position.set(-4+i*0.8,3.6+Math.sin(i*0.8)*0.08,-4.48); m.rotation.z=i*0.5; scene.add(m); }
+}
+
+/* ============ MODE A: light box, bottles, flashlight ============ */
+const groupA=new THREE.Group(); scene.add(groupA);
+let boxBody, boxTop, boxHalo, boxLight, phone, led, card, spot, stand, beamLow, beamHigh, bottleLight;
+const bottles=[];
+let boxOn=true, flashOn=true, roomOn=false, onPhone=-1, moving=false;
+let BW=5.3, BD=1.4, ZP=1.6;
+const CARD_Y=3.0;
+
+function makeBottle(b){
+  const g=new THREE.Group();
+  const col=new THREE.Color(b.hex);
+  const liquid=new THREE.Mesh(new THREE.CylinderGeometry(0.28,0.28,0.84,28),phong({color:col,transparent:true,opacity:0.9,shininess:90,specular:0x666666,emissive:col.clone().multiplyScalar(0.4)}));
+  liquid.scale.z=0.82; liquid.position.y=0.46; liquid.castShadow=true;
+  const shellPts=[new THREE.Vector2(0.001,0),new THREE.Vector2(0.29,0),new THREE.Vector2(0.315,0.05),new THREE.Vector2(0.315,0.9),new THREE.Vector2(0.28,0.98),new THREE.Vector2(0.2,1.04),new THREE.Vector2(0.19,1.28)];
+  const shell=new THREE.Mesh(new THREE.LatheGeometry(shellPts,32),phong({color:0xffffff,transparent:true,opacity:0.2,shininess:150,specular:0xffffff,depthWrite:false,side:THREE.DoubleSide}));
+  shell.scale.z=0.82; shell.renderOrder=3;
+  const twineMat=lambert({color:0xb58c58});
+  for(let k=0;k<5;k++){ const t=new THREE.Mesh(new THREE.TorusGeometry(0.205,0.032,8,28),twineMat); t.rotation.x=Math.PI/2; t.position.y=1.04+k*0.05; t.castShadow=true; g.add(t); }
+  const halo=new THREE.Mesh(new THREE.PlaneGeometry(1.4,1.8),new THREE.MeshBasicMaterial({map:glowTex,color:col,transparent:true,opacity:0,blending:THREE.AdditiveBlending,depthWrite:false}));
+  halo.position.y=0.55; halo.renderOrder=4;
+  g.add(liquid,shell,halo,hitVol(0.36,1.35,0.66));
+  g.userData={liquid,halo,col,home:new THREE.Vector3(),action:null};
+  return g;
+}
+function buildModeA(){
+  const woodMat=lambert({color:0x8a5a34});
+  boxBody=new THREE.Mesh(new THREE.BoxGeometry(1,1,1),woodMat); boxBody.castShadow=true; boxBody.receiveShadow=true;
+  boxTop=new THREE.Mesh(new THREE.PlaneGeometry(1,1),new THREE.MeshBasicMaterial({color:0xfff8e6}));
+  boxTop.rotation.x=-Math.PI/2;
+  boxHalo=new THREE.Mesh(new THREE.PlaneGeometry(1,1),new THREE.MeshBasicMaterial({map:glowTex,color:0xfff1c8,transparent:true,opacity:0.6,blending:THREE.AdditiveBlending,depthWrite:false}));
+  boxHalo.rotation.x=-Math.PI/2; boxHalo.position.y=0.01;
+  boxLight=new THREE.PointLight(0xfff3dc,1.1,9,1.6); boxLight.position.set(0,1.4,0);
+  const box=new THREE.Group(); box.add(boxBody,boxTop,boxHalo,boxLight); box.userData.action='box'; groupA.add(box);
+  boxBody.userData.action='box'; boxTop.userData.action='box';
+
+  // phone flashlight, lying flat like in the class photo
+  phone=new THREE.Group(); phone.userData.action='flash';
+  const ph=new THREE.Mesh(new THREE.BoxGeometry(0.6,0.06,1.15),phong({color:0xe9ebee,shininess:80})); ph.position.y=0.03; ph.castShadow=true;
+  const cam=new THREE.Mesh(new THREE.BoxGeometry(0.26,0.02,0.36),phong({color:0x2b2f38})); cam.position.set(-0.08,0.07,0.0);
+  led=new THREE.Mesh(new THREE.CircleGeometry(0.05,20),new THREE.MeshBasicMaterial({color:0xffffff})); led.rotation.x=-Math.PI/2; led.position.set(0,0.071,0);
+  const ledGlow=new THREE.Mesh(new THREE.PlaneGeometry(0.9,0.9),new THREE.MeshBasicMaterial({map:glowTex,color:0xffffff,transparent:true,opacity:0.9,blending:THREE.AdditiveBlending,depthWrite:false}));
+  ledGlow.rotation.x=-Math.PI/2; ledGlow.position.y=0.075; led.userData.glow=ledGlow;
+  phone.add(ph,cam,led,ledGlow,hitVol(0.6,0.3,0.1)); groupA.add(phone);
+
+  // white paper on a stand, catching the light
+  card=new THREE.Group();
+  const paper=new THREE.Mesh(new THREE.PlaneGeometry(1.5,1.05),lambert({color:0xffffff,emissive:0x34363d,side:THREE.DoubleSide}));
+  spot=new THREE.Mesh(new THREE.PlaneGeometry(1.1,1.1),new THREE.MeshBasicMaterial({map:glowTex,color:0xffffff,transparent:true,opacity:1,depthWrite:false}));
+  spot.position.z=0.01; spot.renderOrder=6;
+  const clip=new THREE.Mesh(new THREE.BoxGeometry(0.16,0.12,0.06),phong({color:0x2c68b2})); clip.position.set(0.72,0.45,0.03);
+  card.add(paper,spot,clip); card.rotation.x=-0.42; groupA.add(card);
+  stand=new THREE.Mesh(new THREE.CylinderGeometry(0.025,0.025,1,8),phong({color:0x9aa3b2})); groupA.add(stand);
+  const standFoot=new THREE.Mesh(new THREE.CylinderGeometry(0.22,0.25,0.05,20),phong({color:0x6b7384})); stand.userData.foot=standFoot; groupA.add(standFoot);
+
+  const beamMat=()=>new THREE.MeshBasicMaterial({color:0xffffff,transparent:true,opacity:0.12,blending:THREE.AdditiveBlending,depthWrite:false,side:THREE.DoubleSide});
+  beamLow=new THREE.Mesh(new THREE.CylinderGeometry(1,1,1,24,1,true),beamMat()); beamLow.renderOrder=5;
+  beamHigh=new THREE.Mesh(new THREE.CylinderGeometry(1,1,1,24,1,true),beamMat()); beamHigh.renderOrder=5;
+  groupA.add(beamLow,beamHigh);
+  bottleLight=new THREE.PointLight(0xffffff,0,4.5,1.5); groupA.add(bottleLight);
+
+  BOTTLES.forEach((b,i)=>{ const g=makeBottle(b); g.userData.action='bottle:'+i; g.userData.index=i; bottles.push(g); groupA.add(g); });
+}
+
+/* light sparks: the rainbow colors hidden inside white light */
+const SPER=46, SN=BANDS.length*SPER;
+const sPos=new Float32Array(SN*3), sCol=new Float32Array(SN*3), sAlp=new Float32Array(SN), sSiz=new Float32Array(SN), sU=new Float32Array(SN), sBand=new Uint8Array(SN), sJ=new Float32Array(SN);
+let sparks;
+function buildSparks(){
+  for(let i=0;i<SN;i++){ const b=i%BANDS.length; sBand[i]=b; sU[i]=Math.random(); sJ[i]=Math.random();
+    sCol[i*3]=BANDS[b].c[0]; sCol[i*3+1]=BANDS[b].c[1]; sCol[i*3+2]=BANDS[b].c[2]; }
+  const g=new THREE.BufferGeometry();
+  g.setAttribute('position',new THREE.BufferAttribute(sPos,3));
+  g.setAttribute('aColor',new THREE.BufferAttribute(sCol,3));
+  g.setAttribute('aAlpha',new THREE.BufferAttribute(sAlp,1));
+  g.setAttribute('aSize',new THREE.BufferAttribute(sSiz,1));
+  const m=new THREE.ShaderMaterial({uniforms:{uScale:{value:500}},
+    vertexShader:'attribute vec3 aColor;attribute float aAlpha;attribute float aSize;uniform float uScale;varying vec3 vC;varying float vA;void main(){vC=aColor;vA=aAlpha;vec4 mv=modelViewMatrix*vec4(position,1.0);gl_PointSize=aSize*uScale/-mv.z;gl_Position=projectionMatrix*mv;}',
+    fragmentShader:'varying vec3 vC;varying float vA;void main(){vec2 p=gl_PointCoord-0.5;float d=length(p);float a=smoothstep(0.5,0.0,d)*vA;if(a<0.01)discard;gl_FragColor=vec4(vC*a,a);}',
+    transparent:true,depthWrite:false,blending:THREE.AdditiveBlending});
+  sparks=new THREE.Points(g,m); sparks.frustumCulled=false; sparks.renderOrder=7; groupA.add(sparks);
+}
+function passNow(){ return (onPhone>=0&&!moving)?BOTTLES[onPhone].pass:null; }
+function beamColor(pass){
+  let s=[0,0,0], F=[0,0,0], tot=0;
+  BANDS.forEach((B,i)=>{ const t=pass?pass[i]:1; for(let k=0;k<3;k++){ s[k]+=B.c[k]*t; F[k]+=B.c[k]; } tot+=t; });
+  const c=s.map((v,k)=>v/F[k]); const m=Math.max(...c)||1;
+  return {c:c.map(v=>v/m), bright:0.75+0.25*tot/6};
+}
+function updateSparks(dt){
+  const pass=passNow();
+  const y0=0.1, yB0=0.2, yB1=0.95, yTop=CARD_Y-0.02;
+  for(let i=0;i<SN;i++){
+    sU[i]+=dt*(0.34+sJ[i]*0.08); if(sU[i]>1) sU[i]-=1;
+    const u=sU[i], y=y0+u*(yTop-y0), b=sBand[i];
+    const ang=b/BANDS.length*Math.PI*2+simT*0.9+sJ[i]*0.6, r=0.05+0.05*sJ[i]+u*0.12;
+    sPos[i*3]=Math.cos(ang)*r; sPos[i*3+1]=y; sPos[i*3+2]=ZP+Math.sin(ang)*r;
+    let a=Math.min(1,u*14)*Math.min(1,(1-u)*10);
+    if(pass){ const t=pass[b]; if(y>yB1) a*=t; else if(y>yB0) a*=1+(t-1)*(y-yB0)/(yB1-yB0); }
+    sAlp[i]=flashOn?a*0.95:0;
+    sSiz[i]=0.1+0.05*sJ[i];
+  }
+  const g=sparks.geometry; g.attributes.position.needsUpdate=true; g.attributes.aAlpha.needsUpdate=true; g.attributes.aSize.needsUpdate=true;
+}
+function updateBeam(){
+  const pass=passNow(), bc=beamColor(pass), col=new THREE.Color(bc.c[0],bc.c[1],bc.c[2]);
+  const top=pass?1.3:0.1;
+  // lower beam: white light from the flashlight
+  const lowTop=pass?1.3:CARD_Y, lowLen=lowTop-0.08;
+  beamLow.position.set(0,0.08+lowLen/2,ZP); beamLow.scale.set(0.14+(pass?0:0.08),lowLen,0.14+(pass?0:0.08));
+  beamLow.material.opacity=flashOn?0.1:0; beamLow.material.color.setRGB(1,1,1);
+  const hiLen=CARD_Y-top;
+  beamHigh.visible=!!pass;
+  if(pass){ beamHigh.position.set(0,top+hiLen/2,ZP); beamHigh.scale.set(0.22,hiLen,0.22); beamHigh.material.color.copy(col); beamHigh.material.opacity=flashOn?0.16*bc.bright:0; }
+  spot.material.color.copy(col).multiplyScalar(bc.bright);
+  spot.material.opacity=flashOn?1:0;
+  led.material.color.setRGB(flashOn?1:0.35,flashOn?1:0.35,flashOn?1:0.35);
+  led.userData.glow.material.opacity=flashOn?0.9:0;
+  bottleLight.color.copy(col); bottleLight.intensity=(flashOn&&pass)?1.1:0; bottleLight.position.set(0,0.9,ZP);
+}
+function updateBottles(){
+  bottles.forEach((g,i)=>{
+    const L=g.userData.liquid, H=g.userData.halo, c=g.userData.col;
+    let k=roomOn?0.08:0.04;
+    if(i===onPhone&&!moving){ k=flashOn?1.05:k; }
+    else if(boxOn&&g.userData.onBox) k=0.55;
+    L.material.emissive.copy(c).multiplyScalar(k);
+    H.material.opacity=Math.max(0,(k-0.3))*0.55*(roomOn?0.5:1);
+  });
+}
+
+/* ============ MODE B: colored flashlight on fruit ============ */
+const groupB=new THREE.Group(); scene.add(groupB); groupB.visible=false;
+let spotLight, torch, beamB, lightIdx=0;
+const fruitGroups=[];
+function buildModeB(){
+  const plate=new THREE.Mesh(new THREE.CylinderGeometry(1.7,1.55,0.08,48),phong({color:0xffffff,shininess:60}));
+  plate.position.set(0,0.04,0.2); plate.receiveShadow=true; plate.castShadow=true; groupB.add(plate);
+  const rim=new THREE.Mesh(new THREE.TorusGeometry(1.66,0.05,8,64),phong({color:0xffffff,shininess:60})); rim.rotation.x=Math.PI/2; rim.position.set(0,0.09,0.2); groupB.add(rim);
+  const Y=0.09;
+  const mk=(i,obj,x,z,ry)=>{ const g=new THREE.Group(); g.add(obj); g.position.set(x,Y,z); g.rotation.y=ry||0; g.userData.action='fruit:'+i; g.traverse(m=>{ if(m.isMesh){ m.castShadow=true; m.receiveShadow=true; } }); fruitGroups.push(g); groupB.add(g); };
+  // strawberry
+  (()=>{ const o=new THREE.Group();
+    const pts=[new THREE.Vector2(0.001,0),new THREE.Vector2(0.08,0.04),new THREE.Vector2(0.17,0.16),new THREE.Vector2(0.22,0.3),new THREE.Vector2(0.21,0.4),new THREE.Vector2(0.14,0.46),new THREE.Vector2(0.001,0.47)];
+    const berryMat=phong({color:0xd8141e,shininess:70});
+    for(let k=0;k<2;k++){ const b=new THREE.Mesh(new THREE.LatheGeometry(pts,24),berryMat); b.rotation.z=Math.PI/2*0.9; b.position.set(k*0.28-0.14,0.2,k*0.25-0.1); b.rotation.y=k*1.2;
+      const top=new THREE.Mesh(new THREE.ConeGeometry(0.16,0.08,6),phong({color:0x2f9e2f})); top.position.y=0.47; b.add(top); o.add(b); }
+    o.add(hitVol(0.45,0.5,0.2)); mk(0,o,-0.95,-0.35,0.3); })();
+  // banana
+  (()=>{ const o=new THREE.Group();
+    const curve=new THREE.CatmullRomCurve3([new THREE.Vector3(-0.55,0.3,0),new THREE.Vector3(-0.25,0.14,0.08),new THREE.Vector3(0.1,0.12,0.1),new THREE.Vector3(0.45,0.2,0.02),new THREE.Vector3(0.6,0.34,-0.05)]);
+    const b=new THREE.Mesh(new THREE.TubeGeometry(curve,40,0.12,10),phong({color:0xf5d11c,shininess:50})); o.add(b);
+    const end=new THREE.Mesh(new THREE.SphereGeometry(0.06,8,6),phong({color:0x4a3a1c})); end.position.set(0.6,0.34,-0.05); o.add(end);
+    const stem=new THREE.Mesh(new THREE.CylinderGeometry(0.04,0.06,0.18,8),phong({color:0x7a8a2c})); stem.position.set(-0.6,0.36,0); stem.rotation.z=0.8; o.add(stem);
+    o.add(hitVol(0.45,0.5,0.2)); o.children[o.children.length-1].scale.x=1.5; mk(1,o,0.05,-0.8,-0.15); })();
+  // leaf
+  (()=>{ const o=new THREE.Group();
+    const s=new THREE.Shape(); s.moveTo(0,-0.5); s.bezierCurveTo(0.34,-0.25,0.32,0.25,0,0.5); s.bezierCurveTo(-0.32,0.25,-0.34,-0.25,0,-0.5);
+    const leaf=new THREE.Mesh(new THREE.ShapeGeometry(s,12),phong({color:0x2e9a2a,shininess:40,side:THREE.DoubleSide})); leaf.rotation.x=-Math.PI/2+0.12; leaf.position.y=0.04;
+    const rib=new THREE.Mesh(new THREE.BoxGeometry(0.02,0.01,0.95),phong({color:0x6bc45a})); rib.position.y=0.06;
+    o.add(leaf,rib,hitVol(0.4,0.2,0.05)); mk(2,o,1.0,-0.2,0.6); })();
+  // blueberries
+  (()=>{ const o=new THREE.Group(); const m=phong({color:0x2a3fc0,shininess:70});
+    [[0,0],[0.2,0.02],[-0.18,0.08],[0.06,0.2],[0.1,-0.18],[-0.1,-0.14],[0.26,-0.14]].forEach(([x,z],k)=>{ const b=new THREE.Mesh(new THREE.SphereGeometry(0.11,16,12),m); b.position.set(x,0.11+(k===3?0.12:0),z); o.add(b); });
+    o.add(hitVol(0.38,0.4,0.15)); mk(3,o,-0.7,0.75,0); })();
+  // orange
+  (()=>{ const o=new THREE.Group(); const b=new THREE.Mesh(new THREE.SphereGeometry(0.32,28,20),phong({color:0xf57a0a,shininess:35})); b.position.y=0.31;
+    const leaf=new THREE.Mesh(new THREE.SphereGeometry(0.08,8,6),phong({color:0x2f9e2f})); leaf.scale.set(1,0.3,0.5); leaf.position.set(0.05,0.63,0);
+    o.add(b,leaf,hitVol(0.36,0.7,0.32)); mk(4,o,0.7,0.8,0); })();
+  // egg
+  (()=>{ const o=new THREE.Group(); const e=new THREE.Mesh(new THREE.SphereGeometry(0.22,24,18),phong({color:0xf7f4ec,shininess:40})); e.scale.set(1,0.8,1.32); e.position.y=0.18;
+    o.add(e,hitVol(0.34,0.4,0.18)); mk(5,o,0.0,0.15,0.4); })();
+
+  // the flashlight
+  torch=new THREE.Group();
+  const body=new THREE.Mesh(new THREE.CylinderGeometry(0.16,0.16,1.1,20),phong({color:0x3b4150,shininess:60})); body.rotation.x=Math.PI/2; body.position.z=-0.55;
+  const head=new THREE.Mesh(new THREE.CylinderGeometry(0.28,0.17,0.35,24),phong({color:0x4a5162,shininess:60})); head.rotation.x=Math.PI/2; head.position.z=0.12;
+  const lens=new THREE.Mesh(new THREE.CircleGeometry(0.26,24),new THREE.MeshBasicMaterial({color:0xffffff})); lens.position.z=0.3; torch.userData.lens=lens;
+  torch.add(body,head,lens);
+  torch.position.set(-1.9,4.3,1.3); torch.lookAt(0,0.1,0.2); groupB.add(torch);
+  spotLight=new THREE.SpotLight(0xffffff,2.4,14,0.42,0.45,1);
+  spotLight.position.copy(torch.position); spotLight.target.position.set(0,0.1,0.2);
+  spotLight.castShadow=true; spotLight.shadow.mapSize.set(1024,1024); spotLight.shadow.bias=-0.002;
+  groupB.add(spotLight,spotLight.target);
+  // visible beam cone
+  const dir=new THREE.Vector3(0,0.1,0.2).sub(torch.position), len=dir.length();
+  beamB=new THREE.Mesh(new THREE.CylinderGeometry(0.26,len*Math.tan(0.42)*0.95,len,32,1,true),new THREE.MeshBasicMaterial({color:0xffffff,transparent:true,opacity:0.07,blending:THREE.AdditiveBlending,depthWrite:false,side:THREE.DoubleSide}));
+  beamB.position.copy(torch.position).addScaledVector(dir,0.5);
+  beamB.quaternion.setFromUnitVectors(new THREE.Vector3(0,-1,0),dir.clone().normalize());
+  beamB.renderOrder=5; groupB.add(beamB);
+}
+function setLight(i,speak){
+  lightIdx=i; const L=LIGHTS[i];
+  spotLight.color.setRGB(L.rgb[0],L.rgb[1],L.rgb[2]);
+  beamB.material.color.setRGB(L.rgb[0],L.rgb[1],L.rgb[2]);
+  torch.userData.lens.material.color.setRGB(Math.max(.3,L.rgb[0]),Math.max(.3,L.rgb[1]),Math.max(.3,L.rgb[2]));
+  [...lampsUI.children].forEach((b,k)=>b.setAttribute('aria-pressed',String(k===i)));
+  if(speak){ click();
+    if(i===0) setTip('White light! Every fruit shows its own color. Tap a fruit!','Đèn trắng! Quả nào cũng hiện đúng màu của nó. Chạm vào một quả nhé!');
+    else setTip(L.en+' light! Look, the fruits changed. Tap a fruit!','Đèn '+L.vil+'! Nhìn kìa, các quả đổi màu rồi. Chạm vào một quả nhé!');
+    if(roomOn) setTimeout(()=>setTip('Turn off the room light to see it better!','Tắt đèn phòng để nhìn rõ hơn nhé!'),2600);
+  }
+}
+function tapFruit(i){
+  const f=FRUITS[i], L=LIGHTS[lightIdx], look=f.looks[L.id];
+  click(); bounce(fruitGroups[i]);
+  const isEn=f.plural?'are':'is', lookEn=f.plural?'look':'looks';
+  if(L.id==='white') setTip('In white light, the '+f.en+' '+isEn+' '+look[0]+'.','Dưới ánh sáng trắng, '+f.vi+' màu '+look[1]+'.');
+  else if(look[0]==='dark') setTip('Under '+L.en.toLowerCase()+' light, the '+f.en+' '+lookEn+' dark! '+(f.plural?'They have':'It has')+' no '+L.en.toLowerCase()+' to bounce back.',
+    'Dưới đèn '+L.vil+', '+f.vi+' trông tối đen! Vì không có màu '+L.vil+' để phản chiếu lại.');
+  else setTip('Under '+L.en.toLowerCase()+' light, the '+f.en+' '+lookEn+' '+look[0]+'!','Dưới đèn '+L.vil+', '+f.vi+' trông màu '+look[1]+'!');
+}
+function bounce(g){ const y0=g.position.y; tween(0.4,p=>{ g.position.y=y0+Math.sin(Math.PI*p)*0.25; },()=>{ g.position.y=y0; }); }
+
+/* ---------- layout + camera ---------- */
+let portrait=false, mode='A';
+function layout(){
+  portrait=innerWidth/innerHeight<0.9;
+  if(portrait){ BW=3.2; BD=2.3; } else { BW=5.4; BD=1.4; }
+  ZP=BD/2+1.0;
+  boxBody.scale.set(BW,0.5,BD); boxBody.position.y=0.25;
+  boxTop.scale.set(BW-0.14,BD-0.14,1); boxTop.position.y=0.505;
+  boxHalo.scale.set(BW*1.9,BD*2.6,1);
+  bottles.forEach((g,i)=>{
+    const h=portrait? new THREE.Vector3(-0.95+(i%3)*0.95,0.5,-0.5+Math.floor(i/3)*1.0) : new THREE.Vector3(-2.2+i*0.88,0.5,0);
+    g.userData.home=h; if(i!==onPhone){ g.position.copy(h); g.userData.onBox=true; }
+    else { g.position.set(0,0.07,ZP); }
+  });
+  phone.position.set(0,0,ZP);
+  card.position.set(0,CARD_Y,ZP-0.05);
+  stand.scale.y=CARD_Y-0.5; stand.position.set(0.72,(CARD_Y-0.5)/2,ZP-0.5); stand.userData.foot.position.set(0.72,0.025,ZP-0.5);
+}
+let fitR=9, offX=0, offY=0;
+const target=new THREE.Vector3(), V=(x,y,z)=>new THREE.Vector3(x,y,z);
+let yaw=0, pitch=0;
+function keyPoints(){
+  if(mode==='B') return [V(-1.7,0,-1.5),V(1.7,0,-1.5),V(-1.7,0,1.9),V(1.7,0,1.9),V(0,0.7,0),V(-1.9,4.4,1.3),V(-1.5,3.9,1.1)];
+  const hw=BW/2, hd=BD/2;
+  return [V(-hw,0,-hd),V(hw,0,-hd),V(-hw,0,hd),V(hw,0,hd),V(-hw+0.3,1.3,0),V(hw-0.3,1.3,0),V(0,0,ZP+0.6),V(-0.8,CARD_Y+0.6,ZP),V(0.8,CARD_Y+0.6,ZP),V(0,CARD_Y-0.5,ZP+0.3)];
+}
+function aimCamera(R){
+  const p=(mode==='B'?0.62:(portrait?0.34:0.36))+pitch;
+  camera.position.set(target.x+R*Math.sin(yaw)*Math.cos(p),target.y+R*Math.sin(p),target.z+R*Math.cos(yaw)*Math.cos(p));
+  camera.lookAt(target);
+}
+function freeBand(){
+  const w=innerWidth,h=innerHeight; let r={top:h*0.2,bot:h*0.75,left:12,right:w-12};
+  try{ const b=$('.bubble').getBoundingClientRect(), t=$('.top').getBoundingClientRect(), tr=$('.tray').getBoundingClientRect();
+    const below={top:Math.max(t.bottom,b.bottom)+4,bot:tr.top-4,left:12,right:w-12};
+    const beside={top:t.bottom+4,bot:tr.top-4,left:b.right+8,right:w-12};
+    const score=q=>Math.min(q.right-q.left,(q.bot-q.top)*1.5);
+    r=score(beside)>score(below)*1.15?beside:below;
+    if(r.bot-r.top<h*0.25){ r={top:h*0.2,bot:h*0.75,left:12,right:w-12}; }
+  }catch(e){}
+  return r;
+}
+function fitCamera(){
+  const w=innerWidth,h=innerHeight;
+  camera.aspect=w/h; camera.fov=portrait?44:38;
+  if(mode==='B') target.set(0,0.4,0.2); else target.set(0,1.3,ZP*0.5);
+  const sy=yaw, sp=pitch; yaw=0; pitch=0;
+  const band=freeBand(), allowX=(band.right-band.left)/w*0.96, allowY=(band.bot-band.top)/h*0.94, pts=keyPoints(), v=new THREE.Vector3();
+  let R=9, box=null; camera.clearViewOffset();
+  for(let it=0;it<6;it++){
+    aimCamera(R); camera.updateProjectionMatrix(); camera.updateMatrixWorld();
+    box={x0:1e9,x1:-1e9,y0:1e9,y1:-1e9};
+    pts.forEach(p=>{ v.copy(p).project(camera); box.x0=Math.min(box.x0,v.x); box.x1=Math.max(box.x1,v.x); box.y0=Math.min(box.y0,v.y); box.y1=Math.max(box.y1,v.y); });
+    const k=Math.max((box.x1-box.x0)/2/allowX,(box.y1-box.y0)/2/allowY);
+    R=Math.max(4.5,Math.min(30,R*Math.min(2,Math.max(0.5,k))));
+  }
+  fitR=R; offX=((box.x0+box.x1)/2+1)/2*w-(band.left+band.right)/2; offY=(1-(box.y0+box.y1)/2)/2*h-(band.top+band.bot)/2;
+  yaw=sy; pitch=sp;
+}
+function placeCamera(){
+  const w=innerWidth,h=innerHeight;
+  renderer.setSize(w,h,false);
+  aimCamera(fitR); camera.setViewOffset(w,h,offX,offY,w,h); camera.updateProjectionMatrix();
+  if(sparks) sparks.material.uniforms.uScale.value=h*renderer.getPixelRatio()/(2*Math.tan(camera.fov*Math.PI/360));
+}
+let resizeT=0;
+function onResize(){ layout(); fitCamera(); placeCamera(); }
+let refitT=0, lastBubbleH=0;
+function refitSoon(){ clearTimeout(refitT); refitT=setTimeout(()=>{ const hb=$('.bubble').offsetHeight; if(Math.abs(hb-lastBubbleH)>20){ lastBubbleH=hb; fitCamera(); placeCamera(); } },60); }
+function onResizeSoon(){ clearTimeout(resizeT); resizeT=setTimeout(onResize,120); }
+
+/* ---------- tweens ---------- */
+const tweens=[];
+function tween(dur,fn,done){ tweens.push({t:0,dur,fn,done}); }
+const ease=t=>t<0.5?4*t*t*t:1-Math.pow(-2*t+2,3)/2;
+function moveTo(obj,to,dur,lift,done){ const f=obj.position.clone(); tween(dur,p=>{ const e=ease(p); obj.position.lerpVectors(f,to,e); obj.position.y+=Math.sin(Math.PI*e)*lift; },done); }
+
+/* ============================================================
+   ACTIONS
+   ============================================================ */
+function syncBottleUI(){ [...bottlesUI.children].forEach((b,k)=>b.setAttribute('aria-pressed',String(k===onPhone))); }
+function tapBottle(i){
+  if(moving) return;
+  click();
+  const g=bottles[i];
+  if(onPhone===i){
+    moving=true; whoosh();
+    g.userData.onBox=false;
+    moveTo(g,g.userData.home.clone(),0.7,1.0,()=>{ moving=false; g.userData.onBox=true; onPhone=-1; syncBottleUI();
+      setTip('White light again! All the rainbow colors are inside.','Lại là ánh sáng trắng! Bên trong có đủ màu cầu vồng.'); });
+    return;
+  }
+  moving=true; whoosh();
+  const prev=onPhone;
+  const place=()=>{
+    onPhone=i; syncBottleUI(); g.userData.onBox=false;
+    moveTo(g,new THREE.Vector3(0,0.07,ZP),0.8,1.1,()=>{ moving=false; sparkle();
+      const b=BOTTLES[i];
+      if(!flashOn){ setTip('Turn on the flashlight!','Bật đèn pin lên nhé!'); return; }
+      setTip(b.sayEn,b.sayVi); });
+  };
+  if(prev>=0){ const pg=bottles[prev]; moveTo(pg,pg.userData.home.clone(),0.6,1.0,()=>{ pg.userData.onBox=true; }); onPhone=-1; setTimeout(place,250); }
+  else place();
+}
+function toggleFlash(){
+  flashOn=!flashOn; click(); $('#tFlash').setAttribute('aria-pressed',String(flashOn));
+  if(!flashOn) setTip('Flashlight off. No light, no color!','Tắt đèn pin. Không có ánh sáng thì không có màu!');
+  else if(onPhone>=0) setTip(BOTTLES[onPhone].sayEn,BOTTLES[onPhone].sayVi);
+  else setTip('White light has all the rainbow colors inside. See the colored sparks?','Ánh sáng trắng có đủ màu cầu vồng bên trong. Thấy các đốm màu không?');
+}
+function toggleBox(){
+  boxOn=!boxOn; click(); $('#tBox').setAttribute('aria-pressed',String(boxOn));
+  boxTop.material.color.setHex(boxOn?0xfff8e6:0x3a3530); boxHalo.visible=boxOn; boxLight.intensity=boxOn?1.1:0;
+  setTip(boxOn?'Light box on. The bottles glow!':'Light box off.',boxOn?'Bật hộp đèn. Các chai phát sáng!':'Tắt hộp đèn.');
+}
+function setRoom(on,speak){
+  roomOn=on; document.querySelectorAll('.roomBtn').forEach(b=>b.setAttribute('aria-pressed',String(on)));
+  hemi.intensity=on?0.75:0.06; sunL.intensity=on?0.5:0;
+  if(speak){ click(); setTip(on?'Room light on. The colors are harder to see!':'Room light off. Now the colors shine!',on?'Bật đèn phòng. Khó nhìn thấy màu hơn!':'Tắt đèn phòng. Giờ màu sắc sáng rực!'); }
+}
+function setMode(m,speak){
+  mode=m; groupA.visible=m==='A'; groupB.visible=m==='B';
+  $('#tabA').setAttribute('aria-selected',String(m==='A')); $('#tabB').setAttribute('aria-selected',String(m==='B'));
+  bottlesUI.hidden=m!=='A'; $('#togglesA').hidden=m!=='A'; lampsUI.hidden=m!=='B'; $('#togglesB').hidden=m!=='B';
+  yaw=0; pitch=0; setRoom(false,false);
+  if(speak){ click();
+    if(m==='A') setTip('Tap a bottle to put it on the flashlight!','Chạm vào một chai để đặt lên đèn pin nhé!');
+    else setTip('Pick a light color, then tap a fruit!','Chọn màu đèn, rồi chạm vào một quả nhé!'); }
+  requestAnimationFrame(()=>{ fitCamera(); placeCamera(); });
+}
+$('#tabA').onclick=()=>{unlock(); if(mode!=='A') setMode('A',true);};
+$('#tabB').onclick=()=>{unlock(); if(mode!=='B') setMode('B',true);};
+$('#tFlash').onclick=()=>{unlock();toggleFlash();};
+$('#tBox').onclick=()=>{unlock();toggleBox();};
+document.querySelectorAll('.roomBtn').forEach(b=>b.onclick=()=>{unlock();setRoom(!roomOn,true);});
+
+function doAction(a){
+  unlock(); if(!a) return;
+  if(a.startsWith('bottle:')) tapBottle(+a.split(':')[1]);
+  else if(a==='flash') toggleFlash();
+  else if(a==='box') toggleBox();
+  else if(a.startsWith('fruit:')) tapFruit(+a.split(':')[1]);
+}
+
+/* ---------- pointer ---------- */
+const ray=new THREE.Raycaster(), ndc=new THREE.Vector2();
+let down=null;
+function hitAction(e){
+  const r=canvas.getBoundingClientRect();
+  ndc.set(((e.clientX-r.left)/r.width)*2-1,-((e.clientY-r.top)/r.height)*2+1);
+  ray.setFromCamera(ndc,camera);
+  const hits=ray.intersectObjects(mode==='A'?[...bottles,phone,boxBody,boxTop]:fruitGroups,true);
+  for(const h of hits){ let o=h.object; while(o){ if(o.userData&&o.userData.action) return o.userData.action; o=o.parent; } }
+  return null;
+}
+canvas.addEventListener('pointerdown',e=>{ down={x:e.clientX,y:e.clientY,yaw,pitch,drag:false}; canvas.setPointerCapture(e.pointerId); });
+canvas.addEventListener('pointermove',e=>{
+  if(down){ const dx=e.clientX-down.x, dy=e.clientY-down.y;
+    if(!down.drag&&Math.hypot(dx,dy)>9) down.drag=true;
+    if(down.drag){ yaw=Math.max(-0.8,Math.min(0.8,down.yaw-dx*0.006)); pitch=Math.max(-0.22,Math.min(0.3,down.pitch+dy*0.004)); placeCamera(); } }
+  else if(e.pointerType==='mouse'){ canvas.style.cursor=hitAction(e)?'pointer':'grab'; }
+});
+canvas.addEventListener('pointerup',e=>{ if(down&&!down.drag) doAction(hitAction(e)); down=null; });
+canvas.addEventListener('pointercancel',()=>{ down=null; });
+
+/* ---------- loop ---------- */
+let simT=0; const clock=new THREE.Clock();
+function frame(){
+  const dt=Math.min(0.1,clock.getDelta()); simT+=dt;
+  for(let i=tweens.length-1;i>=0;i--){ const tw=tweens[i]; tw.t+=dt; const p=Math.min(1,tw.t/tw.dur); tw.fn(p); if(p>=1){ tweens.splice(i,1); tw.done&&tw.done(); } }
+  scene.background.lerp(roomOn?LIT:DARK,Math.min(1,dt*6));
+  if(mode==='A'){ updateSparks(dt); updateBeam(); updateBottles(); }
+  else { beamB.material.opacity=roomOn?0.03:0.08+0.01*Math.sin(simT*3); }
+  renderer.render(scene,camera);
+  requestAnimationFrame(frame);
+}
+async function keepAwake(){ try{ if(navigator.wakeLock) await navigator.wakeLock.request('screen'); }catch(e){} }
+async function boot(){
+  try{ await Promise.race([document.fonts.load('800 20px "Baloo 2"'),new Promise(r=>setTimeout(r,2000))]); }catch(e){}
+  buildRoom(); buildModeA(); buildSparks(); buildModeB(); setLight(0,false);
+  onResize();
+  addEventListener('resize',onResizeSoon); addEventListener('orientationchange',onResizeSoon);
+  try{ if(window.visualViewport) visualViewport.addEventListener('resize',onResizeSoon); }catch(e){}
+  requestAnimationFrame(frame);
+  $('#loadNote').textContent='The classroom is dark and the light box is on. Tap the bottles, the flashlight and the fruits!';
+  $('#goBtn').disabled=false;
+}
+$('#goBtn').onclick=()=>{
+  unlock(); $('#startScreen').hidden=true; keepAwake();
+  document.addEventListener('visibilitychange',()=>{ if(document.visibilityState==='visible') keepAwake(); });
+  onResize();
+  setTip('Tap a bottle to put it on the flashlight!','Chạm vào một chai để đặt lên đèn pin nhé!');
+};
+boot();
+})();
+</script>
+</body>
+</html>

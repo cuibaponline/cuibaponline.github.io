@@ -3,7 +3,7 @@ name: Deploy to GitHub Pages
 on:
   push:
     branches:
-      - main
+      - master
   workflow_dispatch:
 
 permissions:
@@ -39,6 +39,10 @@ jobs:
 
           # Copy animal-learning build output
           cp -r dist/animal-learning/browser/* deploy/animal-learning/
+
+          # Copy static (no-build) threejs games
+          cp -r projects/little-color-lab deploy/little-color-lab
+          cp -r projects/rainbow-maker deploy/rainbow-maker
 
           # Create .nojekyll file to disable Jekyll processing
           touch deploy/.nojekyll

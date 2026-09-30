@@ -1,0 +1,1216 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#f5f8ef">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<style>
+*,*::before,*::after{box-sizing:border-box}
+body{margin:0;font-size:14px}
+img{max-width:100%}
+</style>
+<title>Paint Mixing Lab</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;800&family=Nunito:wght@600;800&family=Patrick+Hand&display=swap">
+<style>
+/* Layout: full-bleed 3D art table (palette, paint tubes, easel); tools + bilingual bubble on top, paint tray at the bottom. Deliberately single warm light theme (an art corner). */
+:root{
+  --paper:#f7efe1;      /* art corner wall */
+  --ink:#1e2b44;        /* navy text */
+  --marker:#2c68b2;     /* blue marker for Vietnamese lines */
+  --sun:#ffcd34;        /* "do this next" highlight */
+  --card:#ffffff;
+  --line:#e3d8c6;
+  --soft:#f4eee3;       /* button face */
+  --shadow:rgba(60,40,20,.2);
+  --f-display:'Baloo 2','Nunito',system-ui,sans-serif;
+  --f-body:'Nunito',system-ui,-apple-system,'Segoe UI',sans-serif;
+  --f-hand:'Patrick Hand','Comic Sans MS','Chalkboard SE',cursive;
+  color-scheme:light;
+}
+[hidden]{display:none!important}
+html,body{height:100%;overflow:hidden}
+body{background:var(--paper);color:var(--ink);font-family:var(--f-body);-webkit-tap-highlight-color:transparent;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;touch-action:manipulation}
+#c{position:fixed;inset:0;width:100%;height:100%;display:block;touch-action:none;outline:none}
+button{font:inherit;color:inherit;cursor:pointer;border:0;background:none}
+button:focus-visible{outline:3px solid var(--marker);outline-offset:3px}
+
+.hud{position:fixed;inset:0;pointer-events:none;display:flex;flex-direction:column;justify-content:space-between;
+  padding:calc(env(safe-area-inset-top,0px) + 12px) 16px calc(env(safe-area-inset-bottom,0px) + 12px);gap:10px}
+.hud > *{pointer-events:auto}
+.top{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;pointer-events:none}
+.top > *{pointer-events:auto}
+.brand{background:var(--card);border-radius:18px;padding:6px 16px 8px;box-shadow:0 4px 0 var(--line),0 8px 20px var(--shadow);min-width:0}
+.brand h1{margin:0;font-family:var(--f-display);font-weight:800;font-size:1.45rem;line-height:1.05;white-space:nowrap}
+.brand h1 span{color:#d9262b}.brand h1 span+span{color:#1f5fd0}
+.brand p{margin:0;font-family:var(--f-hand);font-size:1.2rem;color:var(--marker);line-height:1.1;white-space:nowrap}
+.tools{display:flex;gap:8px;flex:none}
+.tool{min-width:48px;height:48px;border-radius:14px;background:var(--card);display:grid;place-items:center;padding:0 12px;
+  box-shadow:0 4px 0 var(--line),0 8px 18px var(--shadow);font-family:var(--f-display);font-weight:800;font-size:.95rem;white-space:nowrap}
+.tool svg{width:24px;height:24px}
+.tool[aria-pressed="false"] .on{display:none}.tool[aria-pressed="true"] .off{display:none}
+
+.col{flex:1;display:flex;flex-direction:column;gap:10px;align-items:center;pointer-events:none;position:relative}
+.bubble{pointer-events:auto;max-width:min(560px,100%);background:var(--card);border-radius:22px;padding:10px 12px 10px 18px;
+  display:flex;align-items:center;gap:12px;box-shadow:0 5px 0 var(--line),0 10px 24px var(--shadow)}
+.bubble .txt{min-width:0}
+.bubble .en{margin:0;font-family:var(--f-display);font-weight:800;font-size:1.25rem;line-height:1.15;text-wrap:balance}
+.bubble .vi{margin:2px 0 0;font-family:var(--f-hand);font-size:1.3rem;line-height:1.1;color:var(--marker);text-wrap:balance}
+.say{flex:none;width:46px;height:46px;border-radius:50%;background:var(--marker);color:#fff;display:grid;place-items:center}
+.say svg{width:24px;height:24px}
+
+.mix{pointer-events:auto;background:var(--card);border-radius:22px;padding:10px 18px 12px;text-align:center;
+  box-shadow:0 5px 0 var(--line),0 12px 30px var(--shadow);animation:pop .5s cubic-bezier(.3,1.6,.5,1)}
+.mix .eq{display:flex;align-items:center;justify-content:center;gap:8px;font-family:var(--f-display);font-weight:800;font-size:1.7rem}
+.mix .dot{width:42px;height:42px;border-radius:50% 50% 50% 50%/56% 56% 44% 44%;box-shadow:inset 0 -5px 0 rgba(0,0,0,.16),inset 4px 4px 0 rgba(255,255,255,.4),0 0 0 2px rgba(30,43,68,.12)}
+.mix .dot.big{width:54px;height:54px}
+.mix .en{margin:6px 0 0;font-family:var(--f-display);font-weight:800;font-size:1.2rem;line-height:1.1}
+.mix .vi{margin:0;font-family:var(--f-hand);font-size:1.3rem;color:var(--marker);line-height:1.15}
+@keyframes pop{from{transform:scale(.6);opacity:0}to{transform:scale(1);opacity:1}}
+
+.tray{align-self:center;max-width:100%;background:var(--card);border-radius:26px;padding:10px 12px;display:flex;flex-wrap:wrap;
+  justify-content:center;align-items:center;gap:10px 14px;box-shadow:0 6px 0 var(--line),0 12px 30px var(--shadow)}
+.group{display:flex;gap:6px;align-items:stretch}
+.tube{width:56px;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;gap:1px;padding:3px 0;border-radius:14px}
+.tube svg{width:26px;height:36px;transition:transform .15s}
+.tube b{font-family:var(--f-display);font-weight:800;font-size:.72rem;line-height:1}
+.tube i{font-style:normal;font-family:var(--f-hand);font-size:.85rem;line-height:1;color:var(--marker);white-space:nowrap}
+.tube:active svg{transform:scale(.88)}
+.act{min-width:72px;min-height:60px;border-radius:18px;background:var(--soft);display:flex;flex-direction:column;align-items:center;justify-content:center;
+  padding:4px 8px;box-shadow:inset 0 -4px 0 var(--line);transition:transform .15s,background .2s,opacity .2s}
+.act svg{width:26px;height:26px}
+.act b{font-family:var(--f-display);font-weight:800;font-size:.86rem;line-height:1.05;white-space:nowrap}
+.act i{font-style:normal;font-family:var(--f-hand);font-size:.92rem;line-height:1;color:var(--marker);white-space:nowrap}
+.act:active{transform:scale(.94)}
+.swatches{display:flex;align-items:center;gap:8px;min-width:0}
+.swlab{display:flex;flex-direction:column;flex:none}
+.swlab b{font-family:var(--f-display);font-weight:800;font-size:.78rem;line-height:1;white-space:nowrap}
+.swlab i{font-style:normal;font-family:var(--f-hand);font-size:.95rem;line-height:1;color:var(--marker);white-space:nowrap}
+.sws{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;min-width:0;padding:3px}
+.sws::-webkit-scrollbar{display:none}
+.sw{flex:none;width:44px;height:44px;border-radius:50% 50% 50% 50%/56% 56% 44% 44%;background:var(--c);
+  box-shadow:inset 0 -5px 0 rgba(0,0,0,.16),inset 4px 4px 0 rgba(255,255,255,.35),0 0 0 2px rgba(30,43,68,.12);transition:transform .15s}
+.sw[aria-pressed="true"]{box-shadow:inset 0 -5px 0 rgba(0,0,0,.16),inset 4px 4px 0 rgba(255,255,255,.35),0 0 0 3px #fff,0 0 0 6px var(--sun)}
+.sw:active{transform:scale(.9)}
+.sw.new{animation:pop .5s cubic-bezier(.3,1.6,.5,1)}
+.sw.empty{background:none;box-shadow:none;border:2px dashed #cbbfa9;cursor:default}
+.next{background:var(--sun)!important;animation:nudge 1.4s ease-in-out infinite}
+.tubes.next{background:none!important;animation:none}
+.tubes.next svg{animation:bob 1.4s ease-in-out infinite}
+.tubes.next .tube:nth-child(2) svg{animation-delay:.1s}.tubes.next .tube:nth-child(3) svg{animation-delay:.2s}
+.tubes.next .tube:nth-child(4) svg{animation-delay:.3s}.tubes.next .tube:nth-child(5) svg{animation-delay:.4s}
+.dim{opacity:.45}
+@keyframes nudge{0%,100%{transform:scale(1)}50%{transform:scale(1.07)}}
+@keyframes bob{0%,100%{transform:translateY(0)}50%{transform:translateY(-5px)}}
+@media (prefers-reduced-motion:reduce){.next,.tubes.next svg,.mix,.sw.new{animation:none!important}}
+
+.overlay{position:fixed;inset:0;display:grid;place-items:center;padding:16px;background:rgba(247,239,225,.8);backdrop-filter:blur(4px);z-index:5}
+.start{background:var(--card);border-radius:28px;padding:22px 26px 26px;text-align:center;max-width:420px;box-shadow:0 6px 0 var(--line),0 16px 40px var(--shadow)}
+.start h2{margin:0;font-family:var(--f-display);font-weight:800;font-size:2rem;line-height:1.05}
+.start .vi{margin:2px 0 12px;font-family:var(--f-hand);font-size:1.6rem;color:var(--marker)}
+.start p.note{margin:0 0 16px;font-size:.95rem;line-height:1.45;color:#4a5670}
+.go{background:var(--sun);border-radius:20px;padding:12px 26px;font-family:var(--f-display);font-weight:800;font-size:1.4rem;
+  box-shadow:inset 0 -5px 0 rgba(0,0,0,.12);display:inline-flex;flex-direction:column;align-items:center;line-height:1.05}
+.go i{font-style:normal;font-family:var(--f-hand);font-size:1.2rem;font-weight:400}
+.blobs{display:flex;justify-content:center;gap:8px;margin-bottom:12px}
+.blobs span{width:24px;height:22px;border-radius:50% 50% 50% 50%/60% 60% 40% 40%;background:var(--c);box-shadow:inset 0 -3px 0 rgba(0,0,0,.15)}
+
+.sheet{position:fixed;inset:0;z-index:6;display:grid;place-items:center;padding:16px;background:rgba(30,43,68,.35)}
+.sheet .box{background:var(--card);border-radius:24px;max-width:620px;width:100%;max-height:100%;overflow:auto;padding:20px 22px 22px;box-shadow:0 16px 40px var(--shadow)}
+.sheet h2{margin:0 0 4px;font-family:var(--f-display);font-weight:800;font-size:1.5rem}
+.sheet h3{margin:16px 0 4px;font-family:var(--f-display);font-weight:800;font-size:1.1rem}
+.sheet p,.sheet li{font-size:.98rem;line-height:1.5;max-width:65ch}
+.sheet p{margin:4px 0}
+.sheet .vi{color:var(--marker)}
+.sheet ul{margin:4px 0;padding-left:20px}
+.sheet .x{float:right;width:44px;height:44px;border-radius:50%;background:var(--soft);display:grid;place-items:center;font-weight:800;font-size:1.2rem}
+.err{max-width:420px;text-align:center;font-size:1rem;line-height:1.5}
+
+@media (max-width:620px){
+  .hud{gap:8px}
+  .brand{padding:4px 12px 6px;border-radius:14px;overflow:hidden;flex:0 1 auto}
+  .brand h1{font-size:1.08rem}.brand p{font-size:.95rem}
+  .brand h1,.brand p{overflow:hidden;text-overflow:ellipsis}
+  .tools{gap:6px}
+  .tool{min-width:42px;height:42px;padding:0 8px;font-size:.8rem;border-radius:12px}
+  .tool svg{width:22px;height:22px}
+  .bubble{align-self:stretch;padding:8px 8px 8px 14px;border-radius:18px;gap:8px;justify-content:space-between}
+  .bubble .en{font-size:1.02rem}.bubble .vi{font-size:1.12rem}
+  .say{width:42px;height:42px}
+  .tray{align-self:stretch;flex-direction:column;padding:8px;gap:6px;border-radius:22px}
+  .group{width:100%;justify-content:space-between;gap:4px}
+  .group > *{flex:1 1 0;min-width:0}
+  .tube{width:auto}
+  .act{min-width:0;min-height:52px;padding:3px 2px;border-radius:15px}
+  .act svg{width:22px;height:22px}
+  .act b{font-size:.78rem}.act i{font-size:.84rem}
+  .swatches{width:100%}
+  .sw{width:38px;height:38px}
+  .mix .eq{font-size:1.35rem;gap:6px}.mix .dot{width:34px;height:34px}.mix .dot.big{width:44px;height:44px}
+  .mix{padding:8px 14px 10px}.mix .en{font-size:1.05rem}.mix .vi{font-size:1.15rem}
+}
+@media (max-width:400px){ .tools #langBtn{display:none} }
+@media (max-width:360px){ .tube b{display:none} .swlab b{display:none} }
+@media (max-height:520px){
+  .brand{display:none}
+  .top{position:absolute;top:calc(env(safe-area-inset-top,0px) + 10px);right:16px}
+  .col{align-items:flex-start}
+  .bubble{max-width:calc(100% - 200px);align-self:flex-start;padding:6px 8px 6px 12px}
+  .bubble .en{font-size:.98rem}.bubble .vi{font-size:1.05rem}
+  .say{width:38px;height:38px}
+  .mix{position:absolute;left:0;top:64px;padding:6px 12px 8px}
+  .mix .eq{font-size:1.2rem}.mix .dot{width:30px;height:30px}.mix .dot.big{width:38px;height:38px}
+  .mix .en{font-size:.98rem;margin-top:2px}.mix .vi{font-size:1.05rem}
+  .tray{flex-wrap:nowrap;padding:6px 10px;gap:10px;max-width:100%}
+  .tube{width:48px}
+  .tube svg{width:22px;height:30px}
+  .act{min-height:52px;min-width:62px;padding:3px 6px}
+  .act svg{width:22px;height:22px}
+  .swatches{flex:1 1 auto}
+  .swlab{display:none}
+  .sw{width:38px;height:38px}
+}
+</style>
+</head>
+<body>
+<canvas id="c" tabindex="-1" aria-label="3D art table with a wooden paint palette, five paint tubes, a brush, a water cup and a small easel"></canvas>
+
+<div class="hud">
+  <div class="top">
+    <div class="brand">
+      <h1><span>Paint</span> <span>Mixing</span></h1>
+      <p lang="vi">Pha màu vẽ</p>
+    </div>
+    <div class="tools">
+      <button class="tool" id="langBtn" aria-label="Voice language">EN + VI</button>
+      <button class="tool" id="muteBtn" aria-pressed="true" aria-label="Sound">
+        <svg class="on" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9h4l5-4v14l-5-4H4z" fill="currentColor"/><path d="M16.5 8.5a5 5 0 0 1 0 7M19 6a8.5 8.5 0 0 1 0 12"/></svg>
+        <svg class="off" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9h4l5-4v14l-5-4H4z" fill="currentColor"/><path d="M17 9l5 6M22 9l-5 6"/></svg>
+      </button>
+      <button class="tool" id="infoBtn" aria-label="For grown-ups">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><circle cx="12" cy="12" r="9.5"/><path d="M9.3 9.3a2.8 2.8 0 1 1 3.9 2.6c-.8.4-1.2 1-1.2 1.8v.5"/><circle cx="12" cy="17.3" r=".6" fill="currentColor"/></svg>
+      </button>
+    </div>
+  </div>
+
+  <div class="col">
+    <div class="bubble" role="status" aria-live="polite">
+      <div class="txt">
+        <p class="en" id="tipEn">Tap a paint tube to squeeze some paint!</p>
+        <p class="vi" id="tipVi" lang="vi">Chạm vào một tuýp màu để bóp màu ra nhé!</p>
+      </div>
+      <button class="say" id="sayBtn" aria-label="Say it again">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9h4l5-4v14l-5-4H4z" fill="currentColor"/><path d="M16.5 8.5a5 5 0 0 1 0 7"/></svg>
+      </button>
+    </div>
+    <div class="mix" id="mix" hidden></div>
+  </div>
+
+  <nav class="tray" aria-label="Paints and tools">
+    <div class="group tubes" id="tubesUI" role="group" aria-label="Paint tubes"></div>
+    <div class="group" id="actsUI">
+      <button class="act" id="btnMix">
+        <svg viewBox="0 0 24 24" fill="none" stroke-linecap="round"><path d="M12 12m-8 0a8 8 0 1 0 16 0a8 8 0 1 0-16 0" stroke="#e3d8c6" stroke-width="2"/><path d="M12 4a8 8 0 0 1 8 8" stroke="#d9262b" stroke-width="3"/><path d="M20 12a8 8 0 0 1-8 8" stroke="#1f5fd0" stroke-width="3"/><path d="M12 20a8 8 0 0 1-8-8" stroke="#f5c400" stroke-width="3"/><path d="M12 8a4 4 0 1 1-4 4" stroke="#1e2b44" stroke-width="2.2"/></svg>
+        <b>Mix</b><i lang="vi">Trộn</i>
+      </button>
+      <button class="act" id="btnPaint">
+        <svg viewBox="0 0 24 24"><path d="M20.5 3.5L11 13" stroke="#c8872f" stroke-width="3.2" stroke-linecap="round"/><path d="M11.8 12.2l-1.6-1.6" stroke="#9aa3b2" stroke-width="4"/><path d="M9.6 11.2c-2.2-.4-4 1.2-4.2 3.4-.2 2-1.2 3.6-2.9 4.4 3.8 1.3 8.2.2 8.9-3.6.2-1.2-.4-3.3-1.8-4.2z" fill="#7b3fc4" stroke="#1e2b44" stroke-width="1.3"/></svg>
+        <b>Paint!</b><i lang="vi">Vẽ nào!</i>
+      </button>
+      <button class="act" id="btnClean">
+        <svg viewBox="0 0 24 24"><path d="M5 9h14l-1.6 12H6.6z" fill="#dff0ff" stroke="#1e2b44" stroke-width="1.7" stroke-linejoin="round"/><path d="M6 13h12l-.9 7.2H6.9z" fill="#7fbdf0"/><circle cx="8" cy="5" r="1.5" fill="#7fbdf0"/><circle cx="12" cy="3.2" r="1.3" fill="#7fbdf0"/><circle cx="16" cy="5.2" r="1.5" fill="#7fbdf0"/></svg>
+        <b>Clean</b><i lang="vi">Rửa</i>
+      </button>
+      <button class="act" id="btnPaper">
+        <svg viewBox="0 0 24 24" fill="none" stroke="#1e2b44" stroke-width="1.8" stroke-linejoin="round"><path d="M5 3h10l4 4v14H5z" fill="#fff"/><path d="M15 3v4h4"/><path d="M12 11v6M9 14h6" stroke="#2c68b2" stroke-width="2.2" stroke-linecap="round"/></svg>
+        <b>New paper</b><i lang="vi">Giấy mới</i>
+      </button>
+    </div>
+    <div class="swatches" id="swUI" role="group" aria-label="My colors">
+      <span class="swlab"><b>My colors</b><i lang="vi">Màu của bé</i></span>
+      <div class="sws" id="sws"></div>
+    </div>
+  </nav>
+</div>
+
+<div class="overlay" id="startScreen">
+  <div class="start">
+    <div class="blobs" aria-hidden="true"><span style="--c:#e31a1a"></span><span style="--c:#ffde1a"></span><span style="--c:#1f59bf"></span><span style="--c:#ff800f"></span><span style="--c:#1f9938"></span><span style="--c:#80248f"></span></div>
+    <h2>Paint Mixing!</h2>
+    <p class="vi" lang="vi">Pha màu nào!</p>
+    <p class="note" id="loadNote">Setting up the paint table…</p>
+    <button class="go" id="goBtn" disabled>Let's play! <i lang="vi">Chơi thôi!</i></button>
+  </div>
+</div>
+
+<div class="sheet" id="info" hidden>
+  <div class="box" role="dialog" aria-labelledby="infoTitle">
+    <button class="x" id="infoClose" aria-label="Close">✕</button>
+    <h2 id="infoTitle">For grown-ups</h2>
+    <p class="vi" lang="vi">Dành cho ba mẹ</p>
+
+    <h3>How to play</h3>
+    <ul>
+      <li>Tap a <b>paint tube</b> (on the table or in the tray) to squeeze a blob of paint into the round well of the palette. Up to three blobs fit.</li>
+      <li>Tap <b>Mix</b>, or stir with a finger in circles over the well. The colors swirl together into one new color.</li>
+      <li>Tap <b>Paint!</b> and then tap or drag on the paper on the easel. Every new color is saved in <b>My colors</b>, so you can paint with it again later.</li>
+      <li><b>Clean</b> washes the well and the brush. <b>New paper</b> gives a fresh sheet. Drag the table to look around.</li>
+    </ul>
+    <p class="vi" lang="vi">Chạm vào tuýp màu để bóp màu vào lòng bảng pha màu (tối đa 3 giọt). Chạm Trộn hoặc lấy ngón tay khuấy tròn. Chạm Vẽ nào! rồi vẽ lên giấy. Màu mới được lưu trong Màu của bé. Rửa để làm sạch, Giấy mới để thay giấy.</p>
+
+    <h3>Why it happens</h3>
+    <p><b>Primary colors of paint:</b> red, yellow and blue. You cannot make them by mixing other paints. <b>Secondary colors</b> are made by mixing two primaries: red + yellow = orange, yellow + blue = green, red + blue = purple. Mixing all three makes brown. Complementary pairs such as red + green also make brown.</p>
+    <p><b>Tints and shades:</b> adding white makes a lighter tint (red + white = pink, blue + white = light blue). Adding black makes a darker shade (dark red, dark blue).</p>
+    <p><b>Paint is different from light.</b> Each paint soaks up (absorbs) some colors of light and bounces back the rest. When you mix paints, together they soak up more light, so mixes get darker and duller. Colored lights work the other way: they add up, and red + green light looks yellow. That is why we mix paint on a palette differently from lights on a wall.</p>
+    <p style="font-size:.9rem;color:#5b6780">The game uses the traditional red-yellow-blue (RYB) color wheel taught in preschool. Printers use cyan, magenta and yellow for cleaner mixes, but RYB is the classic starting point for children.</p>
+    <p class="vi" lang="vi">Ba màu cơ bản của màu vẽ là đỏ, vàng, xanh dương. Trộn hai màu cơ bản được màu thứ cấp: đỏ + vàng = cam, vàng + xanh dương = xanh lá, đỏ + xanh dương = tím. Trộn cả ba được màu nâu. Thêm trắng thì màu nhạt hơn (đỏ + trắng = hồng), thêm đen thì màu sẫm hơn. Màu vẽ hút bớt ánh sáng, nên càng trộn càng tối; còn ánh sáng màu thì cộng lại, nên pha ánh sáng khác với pha màu vẽ.</p>
+
+    <h3>Questions to ask</h3>
+    <ul>
+      <li>Which two colors make green? <span class="vi" lang="vi">Hai màu nào trộn thành xanh lá?</span></li>
+      <li>What happens if we add white? And black? <span class="vi" lang="vi">Thêm màu trắng thì sao? Còn màu đen?</span></li>
+      <li>Can you make pink? How about brown? <span class="vi" lang="vi">Con pha được màu hồng không? Còn màu nâu thì sao?</span></li>
+      <li>Which color do you want to paint the sun? <span class="vi" lang="vi">Con muốn tô ông mặt trời màu gì?</span></li>
+    </ul>
+
+    <h3>Try it at home</h3>
+    <p><b>Mess-free mixing bag:</b> put two blobs of washable finger paint (for example red and yellow) at opposite ends of a zip-top bag, squeeze out the air, seal it and tape the top closed. Your child squishes the bag with their fingers and watches the colors streak and mix. Tape it to a window for a light-up version. A grown-up seals the bag and stays nearby; use non-toxic, washable paint.</p>
+    <p class="vi" lang="vi"><b>Túi trộn màu không lem:</b> cho hai giọt màu vẽ ngón tay (loại an toàn, rửa được), ví dụ đỏ và vàng, vào hai đầu một túi zip, ép hết không khí, kéo kín rồi dán băng keo. Bé bóp túi để xem hai màu hòa thành màu mới. Ba mẹ đóng túi giúp bé và ở bên cạnh khi chơi.</p>
+    <p style="font-size:.85rem;color:#5b6780">The spoken Vietnamese uses your device's Vietnamese voice. If you hear no Vietnamese, the device may not have one installed; the words are always on screen.</p>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+(function(){
+'use strict';
+const $=s=>document.querySelector(s);
+
+/* ============================================================
+   PAINT COLOR MODEL (subtractive-style RYB mixing)
+   RYB -> RGB by trilinear interpolation of the RYB cube corners
+   (after Gossett & Chen, "Paint Inspired Color Compositing").
+   White and black paint pull the mix lighter / darker.
+   ============================================================ */
+// corner order: [r][y][b] as index r*4+y*2+b
+const RYB_CORNERS=[
+  [1,1,1],        // 000 white paper (no pigment)
+  [0.12,0.35,0.75], // 001 blue
+  [1,0.87,0.1],   // 010 yellow
+  [0.12,0.6,0.22],  // 011 green
+  [0.89,0.1,0.1], // 100 red
+  [0.5,0.14,0.56],  // 101 purple
+  [1,0.5,0.06],   // 110 orange
+  [0.45,0.26,0.1]   // 111 brown
+];
+function ryb2rgb(r,y,b){
+  const out=[0,0,0];
+  for(let k=0;k<3;k++){
+    const c=i=>RYB_CORNERS[i][k];
+    const x00=c(0)*(1-r)+c(4)*r, x01=c(1)*(1-r)+c(5)*r, x10=c(2)*(1-r)+c(6)*r, x11=c(3)*(1-r)+c(7)*r;
+    const y0=x00*(1-y)+x10*y, y1=x01*(1-y)+x11*y;
+    out[k]=y0*(1-b)+y1*b;
+  }
+  return out;
+}
+const WHITE_P=[0.98,0.98,0.96], BLACK_P=[0.09,0.09,0.1];
+const zero=()=>({R:0,Y:0,B:0,W:0,K:0});
+function parseRec(s){ const c=zero(); for(const ch of s) c[ch]++; return c; }
+function norm(c){ let n=0; for(const k in c) n+=c[k]; const o=zero(); for(const k in c) o[k]=n>0?c[k]/n:0; return o; }
+function mixRGB(c){
+  const chroma=c.R+c.Y+c.B, n=chroma+c.W+c.K;
+  if(n<=0) return [1,1,1];
+  let base=[0,0,0];
+  if(chroma>0){ const m=Math.max(c.R,c.Y,c.B); base=ryb2rgb(c.R/m,c.Y/m,c.B/m); }
+  const kk=c.K*1.6, out=[0,0,0], nn=chroma+c.W+kk; // black pigment is strong
+  for(let k=0;k<3;k++) out[k]=(base[k]*chroma+WHITE_P[k]*c.W+BLACK_P[k]*kk)/nn;
+  return out;
+}
+function toLab(rgb){
+  const f=v=>v<=0.04045?v/12.92:Math.pow((v+0.055)/1.055,2.4), r=f(rgb[0]),g=f(rgb[1]),b=f(rgb[2]);
+  const h=t=>t>0.008856?Math.cbrt(t):7.787*t+16/116;
+  const X=h((r*0.4124+g*0.3576+b*0.1805)/0.95047), Y=h(r*0.2126+g*0.7152+b*0.0722), Z=h((r*0.0193+g*0.1192+b*0.9505)/1.08883);
+  return [116*Y-16,500*(X-Y),200*(Y-Z)];
+}
+// bilingual named colors; each is anchored at one or more paint recipes
+const NAMES=[
+  {en:'Red',vi:'Đỏ',rec:['R']},
+  {en:'Orange',vi:'Cam',rec:['RY']},
+  {en:'Yellow',vi:'Vàng',rec:['Y']},
+  {en:'Green',vi:'Xanh lá',rec:['YB']},
+  {en:'Blue',vi:'Xanh dương',rec:['B']},
+  {en:'Purple',vi:'Tím',rec:['RB']},
+  {en:'Brown',vi:'Nâu',rec:['RYB','RYK','RYYB','RRYB']},
+  {en:'Pink',vi:'Hồng',rec:['RW','RWW']},
+  {en:'Red orange',vi:'Đỏ cam',rec:['RRY']},
+  {en:'Yellow green',vi:'Xanh nõn chuối',rec:['YYB']},
+  {en:'Teal',vi:'Xanh ngọc',rec:['YBB']},
+  {en:'Indigo',vi:'Chàm',rec:['RBB']},
+  {en:'Red purple',vi:'Đỏ tía',rec:['RRB']},
+  {en:'Light orange',vi:'Cam nhạt',rec:['RYW']},
+  {en:'Light yellow',vi:'Vàng nhạt',rec:['YW','YWW']},
+  {en:'Light green',vi:'Xanh lá nhạt',rec:['YBW']},
+  {en:'Light blue',vi:'Xanh da trời',rec:['BW','BWW']},
+  {en:'Light purple',vi:'Tím nhạt',rec:['RBW']},
+  {en:'Light brown',vi:'Nâu nhạt',rec:['RYBW']},
+  {en:'Dark red',vi:'Đỏ sẫm',rec:['RK']},
+  {en:'Dark yellow',vi:'Vàng sẫm',rec:['YK']},
+  {en:'Dark green',vi:'Xanh lá sẫm',rec:['YBK']},
+  {en:'Dark blue',vi:'Xanh dương sẫm',rec:['BK']},
+  {en:'Dark purple',vi:'Tím sẫm',rec:['RBK']},
+  {en:'Gray',vi:'Xám',rec:['WK']},
+  {en:'White',vi:'Trắng',rec:['W']},
+  {en:'Black',vi:'Đen',rec:['K']},
+];
+const REFS=[];
+NAMES.forEach(n=>{ n.vil=n.vi.toLowerCase(); n.enl=n.en.toLowerCase(); n.rec.forEach(r=>REFS.push({n,lab:toLab(mixRGB(parseRec(r)))})); });
+function nameOf(rgb){ const L=toLab(rgb); let best=null,bd=1e9; REFS.forEach(r=>{ const d=(L[0]-r.lab[0])**2+(L[1]-r.lab[1])**2+(L[2]-r.lab[2])**2; if(d<bd){bd=d;best=r.n;} }); return best; }
+const hex2=v=>('0'+Math.round(Math.max(0,Math.min(1,v))*255).toString(16)).slice(-2);
+const rgbHex=c=>'#'+hex2(c[0])+hex2(c[1])+hex2(c[2]);
+const rgbCss=(c,a)=>'rgba('+Math.round(c[0]*255)+','+Math.round(c[1]*255)+','+Math.round(c[2]*255)+','+(a==null?1:a)+')';
+const shade=(c,k)=>c.map(v=>Math.max(0,Math.min(1,v*k)));
+const lighten=(c,k)=>c.map(v=>v+(1-v)*k);
+
+const TUBES=['R','Y','B','W','K'].map(id=>{ const n=NAMES.find(x=>x.rec[0]===id&&x.rec.length<=2&&(id!=='R'||x.en==='Red')); const rgb=mixRGB(parseRec(id)); return {id,name:n,rgb,hex:rgbHex(rgb)}; });
+
+/* ---------- UI: tube buttons ---------- */
+const tubesUI=$('#tubesUI');
+function tubeSVG(hex,outline){
+  return '<svg viewBox="0 0 26 36" aria-hidden="true"><rect x="4" y="1.5" width="18" height="4" rx="1.2" fill="#c9ced6" stroke="#1e2b44" stroke-width="1.3"/>'+
+    '<path d="M5 5.5h16l-1.4 20.5H6.4z" fill="'+hex+'" stroke="#1e2b44" stroke-width="1.5" stroke-linejoin="round"/>'+
+    '<rect x="6.6" y="11" width="12.8" height="7" rx="1.5" fill="#fff" opacity="'+(outline?0.95:0.9)+'"/><circle cx="13" cy="14.5" r="2.4" fill="'+hex+'" stroke="'+(outline?'#9aa3b2':'none')+'"/>'+
+    '<path d="M9.5 26h7l-.8 3h-5.4z" fill="#c9ced6" stroke="#1e2b44" stroke-width="1.2"/><rect x="9" y="29" width="8" height="5.5" rx="1.4" fill="'+hex+'" stroke="#1e2b44" stroke-width="1.3"/></svg>';
+}
+TUBES.forEach((t,i)=>{
+  const b=document.createElement('button'); b.className='tube';
+  b.setAttribute('aria-label',t.name.en+' paint / Màu '+t.name.vil);
+  b.innerHTML=tubeSVG(t.hex,t.id==='W')+'<b>'+t.name.en+'</b><i lang="vi">'+t.name.vi+'</i>';
+  b.addEventListener('click',()=>{unlock();squeeze(i);});
+  tubesUI.appendChild(b);
+});
+
+/* ---------- speech + sound ---------- */
+let soundOn=true, voiceMode='both';
+try{ const v=localStorage.getItem('pml-voice'); if(v) voiceMode=v; if(localStorage.getItem('pml-mute')==='1') soundOn=false; }catch(e){}
+const langBtn=$('#langBtn'), muteBtn=$('#muteBtn');
+const LANG_LABEL={both:'EN + VI',en:'EN',vi:'VI'};
+function syncTools(){ langBtn.textContent=LANG_LABEL[voiceMode]; muteBtn.setAttribute('aria-pressed',String(soundOn)); }
+syncTools();
+langBtn.onclick=()=>{ voiceMode=voiceMode==='both'?'en':voiceMode==='en'?'vi':'both'; try{localStorage.setItem('pml-voice',voiceMode)}catch(e){} syncTools(); sayTip(); };
+muteBtn.onclick=()=>{ soundOn=!soundOn; try{localStorage.setItem('pml-mute',soundOn?'0':'1')}catch(e){} syncTools(); if(!soundOn){try{speechSynthesis.cancel()}catch(e){}} };
+let voices=[];
+function loadVoices(){ try{ voices=window.speechSynthesis?speechSynthesis.getVoices():[]; }catch(e){} }
+try{ if(window.speechSynthesis){ loadVoices(); speechSynthesis.onvoiceschanged=loadVoices; } }catch(e){}
+const pickVoice=l=>voices.find(v=>v.lang&&v.lang.toLowerCase().replace('_','-').startsWith(l));
+function say(en,vi){
+  if(!soundOn) return;
+  try{
+    const ss=window.speechSynthesis; if(!ss) return;
+    const busyNow=ss.speaking||ss.pending; ss.cancel();
+    const q=[];
+    if(voiceMode!=='vi') q.push({t:en,l:'en-US',v:pickVoice('en-us')||pickVoice('en')});
+    if(voiceMode!=='en') q.push({t:vi,l:'vi-VN',v:pickVoice('vi')});
+    const go=()=>q.forEach(o=>{ const u=new SpeechSynthesisUtterance(o.t); u.lang=o.l; if(o.v) u.voice=o.v; u.rate=o.l==='vi-VN'?0.95:0.92; u.pitch=1.15; ss.speak(u); });
+    if(busyNow) setTimeout(go,80); else go();
+  }catch(e){}
+}
+let ac=null;
+function unlock(){ if(!ac){ try{ ac=new (window.AudioContext||window.webkitAudioContext)(); }catch(e){} } if(ac&&ac.state==='suspended') ac.resume(); }
+function tone(f0,f1,dur,vol,type){
+  if(!soundOn||!ac) return;
+  const t=ac.currentTime,o=ac.createOscillator(),g=ac.createGain();
+  o.type=type||'sine'; o.frequency.setValueAtTime(f0,t); o.frequency.exponentialRampToValueAtTime(f1,t+dur);
+  g.gain.setValueAtTime(vol,t); g.gain.exponentialRampToValueAtTime(0.0001,t+dur);
+  o.connect(g).connect(ac.destination); o.start(t); o.stop(t+dur+0.02);
+}
+function noise(dur,freq,vol,q){
+  if(!soundOn||!ac) return;
+  const len=Math.max(1,Math.floor(ac.sampleRate*dur)), buf=ac.createBuffer(1,len,ac.sampleRate), d=buf.getChannelData(0);
+  for(let i=0;i<len;i++) d[i]=(Math.random()*2-1);
+  const s=ac.createBufferSource(); s.buffer=buf;
+  const f=ac.createBiquadFilter(); f.type='bandpass'; f.frequency.value=freq; f.Q.value=q||0.9;
+  const g=ac.createGain(), t=ac.currentTime;
+  g.gain.setValueAtTime(0.0001,t); g.gain.linearRampToValueAtTime(vol,t+Math.min(0.08,dur/3)); g.gain.linearRampToValueAtTime(0.0001,t+dur);
+  s.connect(f).connect(g).connect(ac.destination); s.start(t);
+}
+const buzz=ms=>{ try{ if(soundOn&&navigator.vibrate) navigator.vibrate(ms); }catch(e){} };
+const click=()=>{ tone(1200,700,0.05,0.1,'square'); buzz(10); };
+const squelch=()=>{ buzz(20); tone(260,110,0.28,0.22); noise(0.3,500,0.12,1.5); setTimeout(()=>tone(180,420,0.1,0.08),230); };
+const swish=()=>noise(0.28,900,0.07,0.8);
+const chime=()=>{ tone(660,660,0.25,0.14,'triangle'); setTimeout(()=>tone(880,880,0.25,0.14,'triangle'),140); setTimeout(()=>tone(1175,1175,0.45,0.14,'triangle'),280); };
+const splash=()=>{ buzz(25); noise(0.5,1800,0.2,0.7); tone(500,140,0.2,0.14); setTimeout(()=>tone(900,300,0.12,0.08),120); };
+const whoosh=()=>noise(0.35,1300,0.1,0.6);
+const dab=()=>tone(520+Math.random()*200,260,0.07,0.06);
+
+/* ---------- tips ---------- */
+let tip={en:'',vi:''}, tipId=0;
+function setTip(en,vi,speak){ tip={en,vi}; tipId++; if(typeof refitSoon==='function') refitSoon(); $('#tipEn').textContent=en; $('#tipVi').textContent=vi; if(speak!==false) say(en,vi); }
+function sayTip(){ say(tip.en,tip.vi); }
+$('#sayBtn').onclick=()=>{unlock();sayTip();};
+$('#infoBtn').onclick=()=>{ $('#info').hidden=false; };
+$('#infoClose').onclick=()=>{ $('#info').hidden=true; };
+$('#info').addEventListener('click',e=>{ if(e.target.id==='info') $('#info').hidden=true; });
+
+/* ---------- my colors (swatches) ---------- */
+let swatches=[], swSel=-1, swNew=-1;
+try{ const s=JSON.parse(localStorage.getItem('pml-swatches')||'[]'); if(Array.isArray(s)) swatches=s.filter(o=>o&&Array.isArray(o.rgb)&&o.en&&o.vi).slice(0,10).map(o=>({rgb:o.rgb,en:o.en,vi:o.vi,vil:String(o.vi).toLowerCase(),enl:String(o.en).toLowerCase()})); }catch(e){}
+function saveSwatches(){ try{ localStorage.setItem('pml-swatches',JSON.stringify(swatches.map(s=>({rgb:s.rgb.map(v=>+v.toFixed(3)),en:s.en,vi:s.vi})))); }catch(e){} }
+const swsEl=$('#sws');
+function renderSwatches(){
+  swsEl.innerHTML='';
+  swatches.forEach((s,i)=>{
+    const b=document.createElement('button'); b.className='sw'+(i===swNew?' new':''); b.style.setProperty('--c',rgbHex(s.rgb));
+    b.setAttribute('aria-label',s.en+' / '+s.vi); b.setAttribute('aria-pressed',String(i===swSel));
+    b.addEventListener('click',()=>{unlock();pickSwatch(i);});
+    swsEl.appendChild(b);
+  });
+  for(let k=swatches.length;k<3;k++){ const e=document.createElement('span'); e.className='sw empty'; e.setAttribute('aria-hidden','true'); swsEl.appendChild(e); }
+  swNew=-1;
+}
+function addSwatch(rgb,name){
+  const idx=swatches.findIndex(s=>s.en===name.en&&Math.abs(s.rgb[0]-rgb[0])+Math.abs(s.rgb[1]-rgb[1])+Math.abs(s.rgb[2]-rgb[2])<0.06);
+  if(idx>=0) swatches.splice(idx,1);
+  swatches.unshift({rgb:rgb.slice(),en:name.en,vi:name.vi,vil:name.vil,enl:name.enl});
+  if(swatches.length>10) swatches.length=10;
+  swSel=0; swNew=0; saveSwatches(); renderSwatches();
+  try{ swsEl.scrollLeft=0; }catch(e){}
+}
+renderSwatches();
+
+if(typeof THREE==='undefined'){
+  $('#loadNote').className='err';
+  $('#loadNote').textContent='The 3D engine could not load. Check the internet connection and open the page again.';
+  return;
+}
+
+/* ============================================================
+   SCENE
+   ============================================================ */
+const canvas=$('#c');
+const renderer=new THREE.WebGLRenderer({canvas,antialias:true});
+renderer.setPixelRatio(Math.min(2,window.devicePixelRatio||1));
+renderer.shadowMap.enabled=true; renderer.shadowMap.type=THREE.PCFSoftShadowMap;
+renderer.setClearColor(0xf7efe1,1);
+const scene=new THREE.Scene();
+const camera=new THREE.PerspectiveCamera(40,1,0.1,100);
+scene.add(new THREE.HemisphereLight(0xffffff,0xd8c8ae,0.72));
+const sun=new THREE.DirectionalLight(0xffffff,0.62);
+sun.position.set(3,9,6); sun.castShadow=true; sun.shadow.mapSize.set(1024,1024);
+Object.assign(sun.shadow.camera,{left:-6,right:6,top:6,bottom:-6,near:1,far:25});
+sun.shadow.bias=-0.0015; sun.shadow.radius=4; scene.add(sun);
+const fill=new THREE.DirectionalLight(0xfff2e0,0.28); fill.position.set(-5,4,4); scene.add(fill);
+
+function canvasTex(w,h,draw){ const c=document.createElement('canvas'); c.width=w; c.height=h; draw(c.getContext('2d'),w,h); const t=new THREE.CanvasTexture(c); t.anisotropy=Math.min(4,renderer.capabilities.getMaxAnisotropy?renderer.capabilities.getMaxAnisotropy():1); return t; }
+const phong=o=>new THREE.MeshPhongMaterial(o), lambert=o=>new THREE.MeshLambertMaterial(o);
+const hitMat=new THREE.MeshBasicMaterial({transparent:true,opacity:0,depthWrite:false,colorWrite:false});
+function hitVol(r,h,y){ const m=new THREE.Mesh(new THREE.CylinderGeometry(r,r,h,12),hitMat); m.position.y=y; return m; }
+const V=(x,y,z)=>new THREE.Vector3(x,y,z), UP=V(0,1,0);
+function rod(a,b,r,mat){ const d=b.clone().sub(a), m=new THREE.Mesh(new THREE.CylinderGeometry(r,r,d.length(),10),mat); m.position.copy(a).addScaledVector(d,0.5); m.quaternion.setFromUnitVectors(UP,d.normalize()); m.castShadow=true; return m; }
+
+/* ---------- room: table, wall, posters ---------- */
+let wheelPoster, primPoster;
+function buildRoom(){
+  const wood=canvasTex(256,256,(x,w,h)=>{ x.fillStyle='#d2a878'; x.fillRect(0,0,w,h);
+    for(let i=0;i<8;i++){ x.fillStyle=i%2?'#cba072':'#d8b083'; x.fillRect(0,i*32,w,31); x.fillStyle='rgba(110,70,30,.22)'; x.fillRect(0,i*32+31,w,1);
+      x.strokeStyle='rgba(120,80,40,.12)'; x.lineWidth=2; x.beginPath(); x.moveTo(0,i*32+10+Math.random()*10); x.bezierCurveTo(80,i*32+Math.random()*30,170,i*32+Math.random()*30,256,i*32+14); x.stroke(); } });
+  wood.wrapS=wood.wrapT=THREE.RepeatWrapping; wood.repeat.set(4,4);
+  const top=new THREE.Mesh(new THREE.BoxGeometry(16,0.2,7.2),lambert({map:wood})); top.position.set(0,-0.1,0.2); top.receiveShadow=true; scene.add(top);
+  const edge=new THREE.Mesh(new THREE.BoxGeometry(16,0.9,0.1),lambert({color:0xb98c5c})); edge.position.set(0,-0.55,3.8); scene.add(edge);
+  const floor=new THREE.Mesh(new THREE.PlaneGeometry(40,30),lambert({color:0xd9c6a6})); floor.rotation.x=-Math.PI/2; floor.position.y=-1.5; scene.add(floor);
+  const wall=new THREE.Mesh(new THREE.PlaneGeometry(40,16),lambert({color:0xfbf5ea})); wall.position.set(0,7.8,-3.4); scene.add(wall);
+  const strip=canvasTex(512,32,(x,w,h)=>{ x.fillStyle='#f6ecd9'; x.fillRect(0,0,w,h); x.fillStyle='#e9c98f'; x.fillRect(0,0,w,3); x.fillRect(0,h-3,w,3);
+    const cols=[TUBES[0].hex,TUBES[1].hex,TUBES[2].hex,'#ff800f','#1f9938','#80248f']; for(let i=0;i<16;i++){ x.fillStyle=cols[i%6]; x.beginPath(); x.ellipse(16+i*32,16,9,7,0,0,7); x.fill(); } });
+  strip.wrapS=THREE.RepeatWrapping; strip.repeat.set(5,1);
+  const st=new THREE.Mesh(new THREE.PlaneGeometry(40,0.3),lambert({map:strip})); st.position.set(0,0.35,-3.39); scene.add(st);
+
+  // color wheel poster (red, orange, yellow, green, blue, purple)
+  const wheel=canvasTex(512,640,(x,w,h)=>{
+    x.fillStyle='#ffffff'; x.fillRect(0,0,w,h); x.strokeStyle='#e8d9bf'; x.lineWidth=10; x.strokeRect(5,5,w-10,h-10);
+    const recs=['R','RY','Y','YB','B','RB'], cx=w/2, cy=300, R=200;
+    recs.forEach((r,i)=>{ const a0=-Math.PI/2+(i-0.5)*Math.PI/3, a1=a0+Math.PI/3; x.fillStyle=rgbHex(mixRGB(parseRec(r)));
+      x.beginPath(); x.moveTo(cx,cy); x.arc(cx,cy,R,a0,a1); x.closePath(); x.fill(); x.strokeStyle='#fff'; x.lineWidth=6; x.stroke(); });
+    x.fillStyle='#fff'; x.beginPath(); x.arc(cx,cy,64,0,7); x.fill();
+    x.fillStyle=rgbHex(mixRGB(parseRec('RYB'))); x.beginPath(); x.arc(cx,cy,40,0,7); x.fill();
+    x.fillStyle='#2c68b2'; x.textAlign='center'; x.textBaseline='middle';
+    x.font='64px "Patrick Hand", "Comic Sans MS", cursive'; x.fillText('Bánh xe màu',cx,556);
+    x.fillStyle='#1e2b44'; x.font='800 40px "Baloo 2", "Nunito", sans-serif'; x.fillText('Color wheel',cx,48+8);
+  });
+  wheelPoster=new THREE.Mesh(new THREE.PlaneGeometry(1.5,1.875),lambert({map:wheel})); scene.add(wheelPoster);
+  // primary colors poster
+  const prim=canvasTex(512,420,(x,w,h)=>{
+    x.fillStyle='#ffffff'; x.fillRect(0,0,w,h); x.strokeStyle='#e8d9bf'; x.lineWidth=10; x.strokeRect(5,5,w-10,h-10);
+    x.fillStyle='#1e2b44'; x.textAlign='center'; x.textBaseline='middle'; x.font='800 42px "Baloo 2", "Nunito", sans-serif'; x.fillText('Primary colors',w/2,56);
+    x.fillStyle='#2c68b2'; x.font='54px "Patrick Hand", "Comic Sans MS", cursive'; x.fillText('Màu cơ bản',w/2,110);
+    ['R','Y','B'].forEach((r,i)=>{ const px=110+i*146, py=250; x.fillStyle=rgbHex(mixRGB(parseRec(r)));
+      x.beginPath(); x.ellipse(px,py,58,52,0,0,7); x.fill(); x.fillStyle='rgba(255,255,255,.45)'; x.beginPath(); x.ellipse(px-18,py-18,16,10,-0.5,0,7); x.fill(); });
+    x.fillStyle='#1e2b44'; x.font='800 30px "Baloo 2", "Nunito", sans-serif'; ['Red','Yellow','Blue'].forEach((t,i)=>x.fillText(t,110+i*146,338));
+    x.fillStyle='#2c68b2'; x.font='36px "Patrick Hand", "Comic Sans MS", cursive'; ['Đỏ','Vàng','Xanh dương'].forEach((t,i)=>x.fillText(t,110+i*146,378));
+  });
+  primPoster=new THREE.Mesh(new THREE.PlaneGeometry(1.6,1.3125),lambert({map:prim})); scene.add(primPoster);
+  // a few dry paint spots on the table
+  [['#ff800f',-4.2,2.6,0.16],['#1f59bf',4.6,2.2,0.12],['#1f9938',-3.6,-2.2,0.14],['#e31a1a',3.9,-1.9,0.1]].forEach(([c,x0,z0,r])=>{
+    const m=new THREE.Mesh(new THREE.CircleGeometry(r,20),new THREE.MeshBasicMaterial({color:c,transparent:true,opacity:0.55,depthWrite:false}));
+    m.rotation.x=-Math.PI/2; m.position.set(x0,0.004,z0); m.scale.y=0.8; scene.add(m); });
+}
+
+/* ---------- palette with a mixing well ---------- */
+const PT=0.11;                         // palette top height (local)
+const WELL=V(-0.35,0,0.15), WR=0.6;     // well centre (palette local), paint radius
+let palette, wellDisc, wellHit, wellField, wellCtx, wellTmp, wellTex, dabs=[];
+const FS=384, FC=FS/2;
+function buildPalette(){
+  palette=new THREE.Group(); scene.add(palette);
+  const s=new THREE.Shape();
+  s.moveTo(-1.6,0);
+  s.bezierCurveTo(-1.62,1.1,1.1,1.35,1.62,0.42);
+  s.bezierCurveTo(1.85,-0.15,1.35,-0.62,0.92,-0.46);
+  s.bezierCurveTo(0.58,-0.34,0.52,-0.95,0.1,-1.06);
+  s.bezierCurveTo(-0.85,-1.3,-1.58,-0.82,-1.6,0);
+  const hole=new THREE.Path(); hole.absarc(1.08,0.06,0.2,0,Math.PI*2,true); s.holes.push(hole);
+  const woodTex=canvasTex(256,256,(x,w,h)=>{ x.fillStyle='#c98e52'; x.fillRect(0,0,w,h);
+    for(let i=0;i<26;i++){ x.strokeStyle=i%3?'rgba(120,70,30,.18)':'rgba(255,230,190,.2)'; x.lineWidth=2+Math.random()*3; x.beginPath(); const y0=i*10+Math.random()*6; x.moveTo(0,y0); x.bezierCurveTo(80,y0+Math.random()*16-8,170,y0+Math.random()*16-8,256,y0); x.stroke(); } });
+  woodTex.wrapS=woodTex.wrapT=THREE.RepeatWrapping; woodTex.repeat.set(0.35,0.35);
+  const g=new THREE.ExtrudeGeometry(s,{depth:0.07,bevelEnabled:true,bevelThickness:0.02,bevelSize:0.03,bevelSegments:2,curveSegments:40});
+  const pm=new THREE.Mesh(g,phong({map:woodTex,shininess:30,specular:0x332211}));
+  pm.rotation.x=-Math.PI/2; pm.position.y=0.02; pm.castShadow=true; pm.receiveShadow=true; palette.add(pm);
+
+  // enamel mixing well
+  const dish=new THREE.Mesh(new THREE.CylinderGeometry(WR+0.08,WR+0.05,0.06,48),phong({color:0xfbfaf6,shininess:80}));
+  dish.position.set(WELL.x,PT+0.03,WELL.z); dish.receiveShadow=true; dish.castShadow=true; palette.add(dish);
+  const rim=new THREE.Mesh(new THREE.TorusGeometry(WR+0.06,0.035,10,56),phong({color:0xffffff,shininess:90}));
+  rim.rotation.x=Math.PI/2; rim.position.set(WELL.x,PT+0.062,WELL.z); rim.castShadow=true; palette.add(rim);
+  wellField=document.createElement('canvas'); wellField.width=wellField.height=FS; wellCtx=wellField.getContext('2d');
+  wellTmp=document.createElement('canvas'); wellTmp.width=wellTmp.height=FS;
+  wellTex=new THREE.CanvasTexture(wellField);
+  wellDisc=new THREE.Mesh(new THREE.CircleGeometry(WR,48),phong({map:wellTex,transparent:true,shininess:110,specular:0x777777,depthWrite:false}));
+  wellDisc.rotation.x=-Math.PI/2; wellDisc.position.set(WELL.x,PT+0.064,WELL.z); wellDisc.renderOrder=2; palette.add(wellDisc);
+  wellHit=hitVol(WR+0.12,0.35,PT+0.1); wellHit.position.x=WELL.x; wellHit.position.z=WELL.z; wellHit.userData.action='well'; palette.add(wellHit);
+
+  // little dabs of each paint around the rim (tap = squeeze that tube)
+  [[-1.12,0.46],[-0.78,0.86],[-0.12,0.98],[0.52,0.86],[1.05,0.56]].forEach(([sx,sy],i)=>{
+    const m=makeBlobMesh(TUBES[i].rgb,0.6); m.position.set(sx,PT,-sy); m.rotation.y=i; m.userData.action='tube:'+i; palette.add(m); dabs.push(m);
+  });
+}
+function makeBlobMesh(rgb,size){
+  const g=new THREE.Group();
+  const mat=phong({color:new THREE.Color(rgb[0],rgb[1],rgb[2]),shininess:120,specular:0xffffff});
+  const base=new THREE.Mesh(new THREE.SphereGeometry(1,24,14),mat); base.scale.set(0.2*size,0.075*size,0.19*size); base.position.y=0.01; base.castShadow=true;
+  const mid=new THREE.Mesh(new THREE.SphereGeometry(1,20,12),mat); mid.scale.set(0.13*size,0.08*size,0.12*size); mid.position.set(0.02*size,0.07*size,0); mid.castShadow=true;
+  const tipm=new THREE.Mesh(new THREE.SphereGeometry(1,14,10),mat); tipm.scale.set(0.06*size,0.07*size,0.06*size); tipm.position.set(0.03*size,0.14*size,0.01*size);
+  g.add(base,mid,tipm); g.userData.mat=mat;
+  return g;
+}
+
+/* ---------- paint tubes ---------- */
+const tubes=[];
+function tubeRest(g){ g.rotation.order='YXZ'; g.rotation.set(Math.PI/2*0.94,g.userData.rotY,0); }
+function deformTube(geo){
+  const p=geo.attributes.position;
+  for(let i=0;i<p.count;i++){ const y=p.getY(i), t=Math.max(0,Math.min(1,(y-0.72)/0.5)), e=t*t*(3-2*t);
+    p.setZ(i,p.getZ(i)*(1-0.82*e)); p.setX(i,p.getX(i)*(1+0.14*e)); }
+  geo.computeVertexNormals();
+}
+function buildTubes(){
+  const metal=phong({color:0xd3d8df,shininess:120,specular:0xffffff});
+  TUBES.forEach((t,i)=>{
+    const g=new THREE.Group(); g.userData.action='tube:'+i;
+    const col=new THREE.Color(t.hex);
+    const bodyMat=phong({color:t.id==='W'?0xf6f6f2:col,shininess:70,specular:0x888888});
+    const pts=[]; for(let k=0;k<=14;k++){ const y=0.3+0.92*k/14; pts.push(new THREE.Vector2(0.25-0.02*Math.pow(k/14,2),y)); }
+    pts.unshift(new THREE.Vector2(0.14,0.25)); pts.unshift(new THREE.Vector2(0.09,0.21));
+    const bg=new THREE.LatheGeometry(pts,32); deformTube(bg);
+    const body=new THREE.Mesh(bg,bodyMat); body.castShadow=true;
+    const labTex=canvasTex(256,128,(x,w,h)=>{ x.fillStyle=t.id==='W'?'#dfe4ea':'#ffffff'; x.fillRect(0,0,w,h);
+      x.fillStyle=t.id==='W'?'#ffffff':t.hex; x.strokeStyle='#9aa3b2'; x.lineWidth=3;
+      for(const cx of [64,192]){ x.beginPath(); x.ellipse(cx,64,30,36,0,0,7); x.fill(); if(t.id==='W') x.stroke(); } });
+    const lpts=[]; for(let k=0;k<=6;k++){ const y=0.5+0.34*k/6; lpts.push(new THREE.Vector2(0.256-0.02*Math.pow((y-0.3)/0.92,2),y)); }
+    const lg=new THREE.LatheGeometry(lpts,32); deformTube(lg);
+    const label=new THREE.Mesh(lg,lambert({map:labTex}));
+    const crimp=new THREE.Mesh(new THREE.BoxGeometry(0.6,0.1,0.075),metal); crimp.position.y=1.24; crimp.castShadow=true;
+    const neck=new THREE.Mesh(new THREE.CylinderGeometry(0.075,0.09,0.08,16),metal); neck.position.y=0.18;
+    const nozzle=new THREE.Mesh(new THREE.CylinderGeometry(0.05,0.06,0.1,14),metal); nozzle.position.y=0.1;
+    const cap=new THREE.Mesh(new THREE.CylinderGeometry(0.15,0.16,0.2,20),phong({color:t.id==='W'?0xeceae4:col,shininess:60})); cap.position.y=0.1; cap.castShadow=true;
+    g.add(body,label,crimp,neck,nozzle,cap,hitVol(0.32,1.4,0.65));
+    g.userData={action:'tube:'+i,cap,body,home:V(0,0,0),rotY:0,busy:false};
+    tubes.push(g); scene.add(g);
+  });
+}
+
+/* ---------- brush, water cup ---------- */
+let brush, bristleMat, cup, cupWater, cupWaterMat;
+function buildBrush(){
+  brush=new THREE.Group(); brush.userData.action='brush';
+  bristleMat=phong({color:0xe8d3a8,shininess:40});
+  const tipG=new THREE.ConeGeometry(0.075,0.34,16); tipG.rotateX(Math.PI); tipG.translate(0,0.17,0);
+  const bristle=new THREE.Mesh(tipG,bristleMat); bristle.castShadow=true;
+  const plump=new THREE.Mesh(new THREE.SphereGeometry(0.078,16,10),bristleMat); plump.position.y=0.3; plump.scale.y=0.9;
+  const ferrule=new THREE.Mesh(new THREE.CylinderGeometry(0.075,0.085,0.24,16),phong({color:0xc9ced6,shininess:140,specular:0xffffff})); ferrule.position.y=0.44; ferrule.castShadow=true;
+  const hpts=[new THREE.Vector2(0.085,0.56),new THREE.Vector2(0.075,0.9),new THREE.Vector2(0.05,1.7),new THREE.Vector2(0.055,1.82),new THREE.Vector2(0.001,1.86)];
+  const handle=new THREE.Mesh(new THREE.LatheGeometry(hpts,16),phong({color:0xf2b233,shininess:60})); handle.castShadow=true;
+  brush.add(bristle,plump,ferrule,handle);
+  const hv=new THREE.Mesh(new THREE.CylinderGeometry(0.2,0.2,1.8,8),hitMat); hv.position.y=0.9; brush.add(hv);
+  scene.add(brush);
+}
+function buildCup(){
+  cup=new THREE.Group(); cup.userData.action='clean';
+  const cp=[new THREE.Vector2(0.001,0),new THREE.Vector2(0.3,0),new THREE.Vector2(0.37,0.72),new THREE.Vector2(0.39,0.74),new THREE.Vector2(0.35,0.72),new THREE.Vector2(0.28,0.03),new THREE.Vector2(0.001,0.03)];
+  const glass=new THREE.Mesh(new THREE.LatheGeometry(cp,36),phong({color:0xf4fbff,transparent:true,opacity:0.3,shininess:140,specular:0xffffff,side:THREE.DoubleSide,depthWrite:false}));
+  glass.renderOrder=5;
+  cupWaterMat=phong({color:0xcfe8ff,transparent:true,opacity:0.55,shininess:100,depthWrite:false});
+  cupWater=new THREE.Mesh(new THREE.LatheGeometry([new THREE.Vector2(0.001,0.04),new THREE.Vector2(0.28,0.04),new THREE.Vector2(0.335,0.52),new THREE.Vector2(0.001,0.52)],36),cupWaterMat);
+  cupWater.renderOrder=4;
+  const shadowDisc=new THREE.Mesh(new THREE.CircleGeometry(0.4,28),new THREE.MeshBasicMaterial({color:0x5a3e1c,transparent:true,opacity:0.12,depthWrite:false}));
+  shadowDisc.rotation.x=-Math.PI/2; shadowDisc.position.y=0.004;
+  cup.add(shadowDisc,cupWater,glass,hitVol(0.45,0.9,0.4)); scene.add(cup);
+}
+
+/* ---------- easel with paper ---------- */
+let easel, board, paper, paperCv, paperCtx, paperTex;
+const PW=560, PH=406, PAPER_W=2.4, PAPER_H=1.74;
+function paperBlank(){
+  const x=paperCtx; x.fillStyle='#fffdf7'; x.fillRect(0,0,PW,PH);
+  for(let i=0;i<260;i++){ x.fillStyle='rgba(180,160,120,'+(Math.random()*0.06)+')'; x.fillRect(Math.random()*PW,Math.random()*PH,1+Math.random()*2,1+Math.random()*2); }
+  paperTex.needsUpdate=true;
+}
+function buildEasel(){
+  easel=new THREE.Group(); scene.add(easel);
+  const woodM=phong({color:0xc48a4e,shininess:25});
+  easel.add(rod(V(-0.95,0,0.3),V(-0.55,2.75,-0.02),0.045,woodM));
+  easel.add(rod(V(0.95,0,0.3),V(0.55,2.75,-0.02),0.045,woodM));
+  easel.add(rod(V(0,0,-0.95),V(0,2.6,-0.06),0.04,woodM));
+  const ledge=new THREE.Mesh(new THREE.BoxGeometry(2.6,0.07,0.26),woodM); ledge.position.set(0,0.66,0.26); ledge.castShadow=true; easel.add(ledge);
+  const lip=new THREE.Mesh(new THREE.BoxGeometry(2.6,0.1,0.04),woodM); lip.position.set(0,0.72,0.38); easel.add(lip);
+  board=new THREE.Group(); board.position.set(0,1.6,0.14); board.rotation.x=-0.12; easel.add(board);
+  const back=new THREE.Mesh(new THREE.BoxGeometry(PAPER_W+0.12,PAPER_H+0.12,0.05),phong({color:0xe9e2d4,shininess:20})); back.castShadow=true; board.add(back);
+  paperCv=document.createElement('canvas'); paperCv.width=PW; paperCv.height=PH; paperCtx=paperCv.getContext('2d');
+  paperTex=new THREE.CanvasTexture(paperCv); paperTex.anisotropy=4;
+  paper=new THREE.Mesh(new THREE.PlaneGeometry(PAPER_W,PAPER_H),lambert({map:paperTex})); paper.position.z=0.03; paper.userData.action='paper'; board.add(paper);
+  paperBlank();
+  const clip=new THREE.Mesh(new THREE.BoxGeometry(0.5,0.12,0.08),woodM); clip.position.set(0,PAPER_H/2+0.03,0.05); board.add(clip);
+}
+
+/* ---------- layout (portrait vs landscape) ---------- */
+let portrait=false;
+const brushPoses={};
+function pose(tip,dir){ return {p:tip.clone(),q:new THREE.Quaternion().setFromUnitVectors(UP,dir.clone().normalize())}; }
+function layout(){
+  portrait=innerWidth/innerHeight<0.9;
+  const P=portrait;
+  palette.position.set(P?0.1:-1.35,0,P?0.45:0.25);
+  tubes.forEach((g,i)=>{
+    g.userData.home=P?V(-1.44+i*0.72,0.24,1.72):V(-3.25+i*0.62,0.24,1.55);
+    g.userData.rotY=P?(i-2)*0.1:0.25+(i-2)*0.06;
+    if(!g.userData.busy){ g.position.copy(g.userData.home); g.rotation.set(Math.PI/2,0,g.userData.rotY,'YXZ'); tubeRest(g); }
+  });
+  cup.position.set(P?1.6:0.62,0,P?-0.65:-0.35);
+  easel.position.set(P?0:2.35,0,P?-2.05:-0.85); easel.rotation.y=P?0:-0.32;
+  scene.updateMatrixWorld(true);
+  wheelPoster.position.set(P?-2.2:-3.4,P?2.55:2.2,-3.38);
+  primPoster.position.set(P?2.3:-0.9,P?2.35:2.05,-3.38);
+  brushPoses.cup=pose(cup.position.clone().add(V(0,0.12,0)),V(0.5,1,0.3));
+  brushPoses.rest=pose(palette.localToWorld(V(0.72,PT+0.08,0.78)),V(1,0.1,0.28));
+  if(!brushBusy()) setBrush(brushAt==='rest'?brushPoses.rest:brushAt==='paper'?paperPose(lastPaperPt||paperPoint(0.5,0.4)):brushPoses.cup);
+}
+let brushAt='cup';
+function paperPoint(u,v){ return paper.localToWorld(V((u-0.5)*PAPER_W,(v-0.5)*PAPER_H,0.01)); }
+function paperPose(pt){
+  board.updateMatrixWorld();
+  const n=V(0,0,1).applyQuaternion(board.getWorldQuaternion(new THREE.Quaternion()));
+  const r=V(1,0,0).applyQuaternion(easel.quaternion);
+  return pose(pt.clone().addScaledVector(n,0.012),n.clone().multiplyScalar(0.9).add(V(0,0.8,0)).addScaledVector(r,0.35));
+}
+
+/* ---------- camera ---------- */
+let fitR=9, offX=0, offY=0, yaw=0, pitch=0;
+const target=new THREE.Vector3();
+function keyPoints(){
+  scene.updateMatrixWorld(true);
+  const pts=[];
+  [[-1.65,0.05],[1.75,0.5],[-0.3,1.05],[0.2,-1.1],[-1.6,-0.6]].forEach(([sx,sy])=>pts.push(palette.localToWorld(V(sx,0.12,-sy))));
+  tubes.forEach(g=>{ const h=g.userData.home; pts.push(V(h.x,0,h.z+1.3),V(h.x,0.5,h.z+1.3)); });
+  pts.push(cup.position.clone(), cup.position.clone().add(V(0,1.5,0)));
+  [[-1.25,-0.9],[1.25,-0.9],[-1.25,0.95],[1.25,0.95]].forEach(([x,y])=>pts.push(board.localToWorld(V(x,y,0))));
+  pts.push(easel.localToWorld(V(-0.9,0,0.35)),easel.localToWorld(V(0.9,0,0.35)));
+  return pts;
+}
+function aimCamera(R){
+  const p=(portrait?0.52:0.44)+pitch;
+  camera.position.set(target.x+R*Math.sin(yaw)*Math.cos(p),target.y+R*Math.sin(p),target.z+R*Math.cos(yaw)*Math.cos(p));
+  camera.lookAt(target);
+}
+function freeBand(){
+  const w=innerWidth,h=innerHeight; let r={top:h*0.2,bot:h*0.75,left:12,right:w-12};
+  try{ const b=$('.bubble').getBoundingClientRect(), t=$('.top').getBoundingClientRect(), tr=$('.tray').getBoundingClientRect();
+    const below={top:Math.max(t.bottom,b.bottom)+4,bot:tr.top-4,left:12,right:w-12};
+    const beside={top:t.bottom+4,bot:tr.top-4,left:b.right+8,right:w-12};
+    const score=q=>Math.min(q.right-q.left,(q.bot-q.top)*1.5);
+    r=score(beside)>score(below)*1.15?beside:below;
+    if(r.bot-r.top<h*0.25){ r={top:h*0.2,bot:h*0.75,left:12,right:w-12}; }
+  }catch(e){}
+  return r;
+}
+function fitCamera(){
+  const w=innerWidth,h=innerHeight;
+  camera.aspect=w/h; camera.fov=portrait?44:38;
+  const pts=keyPoints(), bb=new THREE.Box3().setFromPoints(pts); bb.getCenter(target); target.y=Math.min(target.y,1.0);
+  const sy=yaw, sp=pitch; yaw=0; pitch=0;
+  const band=freeBand(), allowX=(band.right-band.left)/w*0.96, allowY=(band.bot-band.top)/h*0.94, v=new THREE.Vector3();
+  let R=9, box=null; camera.clearViewOffset();
+  for(let it=0;it<7;it++){
+    aimCamera(R); camera.updateProjectionMatrix(); camera.updateMatrixWorld();
+    box={x0:1e9,x1:-1e9,y0:1e9,y1:-1e9};
+    pts.forEach(p=>{ v.copy(p).project(camera); box.x0=Math.min(box.x0,v.x); box.x1=Math.max(box.x1,v.x); box.y0=Math.min(box.y0,v.y); box.y1=Math.max(box.y1,v.y); });
+    const k=Math.max((box.x1-box.x0)/2/allowX,(box.y1-box.y0)/2/allowY);
+    R=Math.max(4.5,Math.min(30,R*Math.min(2,Math.max(0.5,k))));
+  }
+  fitR=R; offX=((box.x0+box.x1)/2+1)/2*w-(band.left+band.right)/2; offY=(1-(box.y0+box.y1)/2)/2*h-(band.top+band.bot)/2;
+  yaw=sy; pitch=sp;
+}
+function placeCamera(){
+  const w=innerWidth,h=innerHeight;
+  renderer.setSize(w,h,false);
+  aimCamera(fitR); camera.setViewOffset(w,h,offX,offY,w,h); camera.updateProjectionMatrix();
+}
+let resizeT=0;
+function onResize(){ layout(); fitCamera(); placeCamera(); }
+let refitT=0, lastBubbleH=0;
+function refitSoon(){ clearTimeout(refitT); refitT=setTimeout(()=>{ const hb=$('.bubble').offsetHeight; if(Math.abs(hb-lastBubbleH)>20){ lastBubbleH=hb; fitCamera(); placeCamera(); } },60); }
+function onResizeSoon(){ clearTimeout(resizeT); resizeT=setTimeout(onResize,120); }
+
+/* ---------- tweens ---------- */
+const tweens=[];
+function tween(dur,fn,done){ const tw={t:0,dur,fn,done}; tweens.push(tw); return tw; }
+const ease=t=>t<0.5?4*t*t*t:1-Math.pow(-2*t+2,3)/2;
+function poseTween(obj,toPos,toRot,dur,lift,done){
+  const fp=obj.position.clone(), fr=obj.rotation.clone();
+  tween(dur,p=>{ const e=ease(p); obj.position.lerpVectors(fp,toPos,e); obj.position.y+=Math.sin(Math.PI*e)*(lift||0);
+    obj.rotation.set(fr.x+(toRot.x-fr.x)*e,fr.y+(toRot.y-fr.y)*e,fr.z+(toRot.z-fr.z)*e); },done);
+}
+let brushTok=0, brushMoving=false;
+const brushBusy=()=>brushMoving;
+function setBrush(ps){ brushTok++; brushMoving=false; brush.position.copy(ps.p); brush.quaternion.copy(ps.q); }
+function brushTo(ps,dur,lift,done){
+  const tok=++brushTok, p0=brush.position.clone(), q0=brush.quaternion.clone(); brushMoving=true;
+  tween(dur,t=>{ if(tok!==brushTok) return; const e=ease(t); brush.position.lerpVectors(p0,ps.p,e); brush.position.y+=Math.sin(Math.PI*e)*(lift||0); brush.quaternion.copy(q0).slerp(ps.q,e); },
+    ()=>{ if(tok!==brushTok) return; brushMoving=false; done&&done(); });
+}
+function setBristles(rgb){ if(rgb) bristleMat.color.setRGB(rgb[0],rgb[1],rgb[2]); else bristleMat.color.setHex(0xe8d3a8); }
+
+/* ============================================================
+   THE WELL: blobs + marbling texture
+   ============================================================ */
+const SLOTS=[V(-0.27,0,0.13),V(0.27,0,0.13),V(0,0,-0.28)];
+let blobs=[];          // {comp, rgb, name, mesh, slot, mixed}
+let wellState='empty'; // empty | blobs | marbled | mixing | mixed
+let busy=false;
+const toPx=(dx,dz)=>[FC+dx/WR*FC, FC+dz/WR*FC];
+function splat(px,py,r,rgb,seed){
+  const x=wellCtx, n=14; let s=seed||Math.random()*10;
+  x.fillStyle=rgbCss(rgb); x.beginPath();
+  for(let i=0;i<=n;i++){ const a=i/n*Math.PI*2, rr=r*(0.86+0.2*Math.sin(a*3+s)+0.08*Math.sin(a*5+s*2)); const X=px+Math.cos(a)*rr, Y=py+Math.sin(a)*rr; i?x.lineTo(X,Y):x.moveTo(X,Y); }
+  x.closePath(); x.fill();
+  x.fillStyle=rgbCss(lighten(rgb,0.35),0.35); x.beginPath(); x.ellipse(px-r*0.25,py-r*0.3,r*0.35,r*0.18,-0.5,0,7); x.fill();
+  wellTex.needsUpdate=true;
+}
+function clipWell(x){ x.beginPath(); x.arc(FC,FC,FC-2,0,Math.PI*2); x.clip(); }
+function swirl(amt,bx,by){
+  // differential rotation of rings = marbling streaks
+  const t=wellTmp.getContext('2d'); t.clearRect(0,0,FS,FS); t.drawImage(wellField,0,0);
+  const x=wellCtx, N=9;
+  x.save(); clipWell(x);
+  for(let i=0;i<N;i++){
+    const r0=i/N*FC, r1=(i+1)/N*FC+1, f=0.55+0.8*Math.sin(i*1.9+0.7);
+    x.save(); x.beginPath(); x.arc(FC,FC,r1,0,Math.PI*2); x.arc(FC,FC,Math.max(0.1,r0),0,Math.PI*2,true); x.clip();
+    x.translate(FC,FC); x.rotate(amt*f); x.drawImage(wellTmp,-FC,-FC); x.restore();
+  }
+  if(bx!=null){
+    // brush smear: drag paint along the stroke
+    const tx=-(by-FC), ty=bx-FC, l=Math.hypot(tx,ty)||1, s=Math.sign(amt)||1;
+    x.save(); x.beginPath(); x.arc(bx,by,FC*0.2,0,Math.PI*2); x.clip(); x.globalAlpha=0.55;
+    x.drawImage(wellTmp,tx/l*9*s,ty/l*9*s); x.restore();
+  }
+  x.restore(); wellTex.needsUpdate=true;
+}
+function clearField(){ wellCtx.clearRect(0,0,FS,FS); wellTex.needsUpdate=true; }
+function wellLocal(v){ return V(WELL.x+v.x,PT+0.064,WELL.z+v.z); }
+
+let squeezeCount=0;
+function squeeze(i){
+  if(busy||stirring){ return; }
+  const t=TUBES[i], g=tubes[i];
+  if(g.userData.busy) return;
+  if(blobs.length>=3){ click(); setTip('The well is full! Tap Mix, or Clean.','Lòng bảng đầy rồi! Chạm Trộn, hoặc Rửa nhé.'); refreshUI(); return; }
+  busy=true; g.userData.busy=true; click();
+  const slot=blobs.length;
+  const local=wellLocal(SLOTS[slot]);
+  const world=palette.localToWorld(local.clone());
+  const nozzleY=0.36;
+  const to=world.clone().add(V(0,nozzleY,0));
+  g.userData.cap.visible=true;
+  poseTween(g,to.add(V(0,0,0)),new THREE.Euler(-0.35,0,0,'YXZ'),0.55,0.7,()=>{
+    g.userData.cap.visible=false; squelch();
+    const blob=makeBlobMesh(t.rgb,1); blob.position.copy(local); blob.scale.setScalar(0.001); blob.rotation.y=Math.random()*6; palette.add(blob);
+    const ribbon=new THREE.Mesh(new THREE.CylinderGeometry(0.05,0.05,1,12),phong({color:new THREE.Color(t.hex),shininess:110,specular:0xffffff}));
+    scene.add(ribbon);
+    const rec={comp:parseRec(t.id),rgb:t.rgb.slice(),name:t.name,mesh:blob,slot,mixed:false,tube:i};
+    blobs.push(rec);
+    let splatted=false;
+    tween(0.8,p=>{
+      const e=ease(p);
+      g.userData.body.scale.set(1-0.14*Math.sin(Math.PI*p),1-0.05*p,1+0.1*Math.sin(Math.PI*p));
+      g.position.y=to.y+0.08*e;
+      blob.scale.setScalar(Math.max(0.001,Math.min(1,p*1.25)));
+      const top=world.y+0.02+0.15*Math.min(1,p*1.25), bot=g.position.y+0.05, len=Math.max(0.01,bot-top);
+      ribbon.visible=p<0.9; ribbon.position.set(world.x,top+len/2,world.z); ribbon.scale.set(1-p*0.6,len,1-p*0.6);
+      if(!splatted&&p>0.35){ splatted=true; const [px,py]=toPx(local.x-WELL.x,local.z-WELL.z); splat(px,py,FC*0.34,t.rgb); }
+    },()=>{
+      scene.remove(ribbon); ribbon.geometry.dispose(); ribbon.material.dispose();
+      g.userData.body.scale.set(1,1,1); g.userData.cap.visible=true;
+      poseTween(g,g.userData.home.clone(),new THREE.Euler(Math.PI/2*0.94,g.userData.rotY,0,'YXZ'),0.6,0.5,()=>{ g.userData.busy=false; });
+      busy=false; squeezeCount++;
+      if(wellState==='empty') wellState='blobs';
+      else if(wellState==='mixed') wellState='blobs';
+      afterSqueeze(rec);
+      refreshUI();
+    });
+  });
+}
+function afterSqueeze(rec){
+  const n=rec.name, cnt=blobs.length;
+  if(cnt===1) setTip(n.en+'! Now add another color.',n.vi+'! Giờ thêm một màu nữa nhé.');
+  else if(cnt===2) setTip(n.en+'! Tap Mix, or stir with your finger!',n.vi+'! Chạm Trộn, hoặc lấy ngón tay khuấy nhé!');
+  else setTip(n.en+'! Three colors. Let’s mix!',n.vi+'! Ba màu rồi. Trộn thôi!');
+}
+
+/* ---------- mixing ---------- */
+let stirring=false, stirAcc=0, stirLast=null, melted=false;
+function meltBlobs(){
+  if(melted) return; melted=true;
+  blobs.forEach(b=>{ const m=b.mesh, s0=m.scale.x; tween(0.6,p=>{ const e=ease(p); m.scale.set(s0*(1+0.5*e),s0*Math.max(0.02,1-e),s0*(1+0.5*e)); },()=>{ m.visible=false; }); });
+}
+function wellRelFromBrushWorld(p){ const l=palette.worldToLocal(p.clone()); return [l.x-WELL.x,l.z-WELL.z]; }
+function stirPose(dx,dz){
+  const tip=palette.localToWorld(V(WELL.x+dx,PT+0.075,WELL.z+dz));
+  return pose(tip,V(-dx*0.5+0.15,1,-dz*0.5+0.55));
+}
+function canMix(){ return blobs.length>=2&&!busy&&wellState!=='mixing'; }
+function mixHint(){
+  if(blobs.length===0) setTip('Squeeze some paint first! Tap a tube.','Bóp màu ra trước đã! Chạm vào một tuýp màu nhé.');
+  else if(blobs.length===1) setTip('Add one more color to mix!','Thêm một màu nữa để trộn nhé!');
+}
+function startMix(){
+  if(!canMix()){ if(!busy&&!stirring) mixHint(); return; }
+  busy=true; wellState='mixing'; refreshUI(); click();
+  setTip('Swirl, swirl, swirl!','Khuấy, khuấy, khuấy!');
+  brushAt='well';
+  let a=0; const R0=0.26;
+  brushTo(stirPose(R0,0),0.55,0.6,()=>{
+    meltBlobs();
+    let lastSw=0, last=0;
+    tween(2.6,p=>{
+      const sp=Math.sin(Math.PI*Math.min(1,p*1.1));
+      const ang=p*Math.PI*2*3.2, d=ang-last; last=ang;
+      const rr=R0+0.08*Math.sin(p*17);
+      const dx=Math.cos(ang)*rr, dz=Math.sin(ang)*rr;
+      const ps=stirPose(dx,dz); brush.position.copy(ps.p); brush.quaternion.copy(ps.q); brushTok++;
+      const [bx,by]=toPx(dx,dz); swirl(d*0.45*(0.4+sp),bx,by);
+      if(ang-lastSw>1.6){ lastSw=ang; swish(); }
+    },()=>finishMix());
+  });
+}
+function beginStir(){
+  stirring=true; stirAcc=0; stirLast=null; wellState='mixing'; refreshUI();
+  meltBlobs(); brushAt='well';
+  setTip('Round and round! Keep stirring!','Xoay tròn, xoay tròn! Khuấy tiếp nào!',true);
+}
+const stirPlane=new THREE.Plane(), tmpV=new THREE.Vector3();
+function stirMove(e){
+  setRay(e);
+  const wy=palette.localToWorld(V(0,PT+0.064,0)).y; stirPlane.set(V(0,1,0),-wy);
+  if(!ray.ray.intersectPlane(stirPlane,tmpV)) return;
+  let [dx,dz]=wellRelFromBrushWorld(tmpV); const r=Math.hypot(dx,dz), lim=WR*0.8;
+  if(r>lim){ dx*=lim/r; dz*=lim/r; }
+  const ang=Math.atan2(dz,dx);
+  const ps=stirPose(dx,dz); setBrush(ps);
+  if(stirLast!=null){
+    let d=ang-stirLast; while(d>Math.PI) d-=Math.PI*2; while(d<-Math.PI) d+=Math.PI*2;
+    if(r<0.05) d=0;
+    const [bx,by]=toPx(dx,dz); swirl(d*0.55,bx,by);
+    const before=stirAcc; stirAcc+=Math.abs(d);
+    if(Math.floor(before/1.5)!==Math.floor(stirAcc/1.5)) swish();
+    if(stirAcc>Math.PI*2*1.4){ stirring=false; busy=true; finishMix(); return true; }
+  }
+  stirLast=ang;
+  return false;
+}
+function stirEnd(){
+  stirring=false;
+  if(wellState==='mixing'&&!busy){ wellState='marbled'; refreshUI();
+    brushAt='rest'; brushTo(brushPoses.rest,0.6,0.5);
+    setTip('Pretty swirls! Stir more, or tap Mix.','Vân màu đẹp quá! Khuấy tiếp, hoặc chạm Trộn nhé.'); }
+}
+function finishMix(){
+  const parts=blobs.map(b=>b.name), partsRGB=blobs.map(b=>b.rgb);
+  const sameTube=blobs.every(b=>!b.mixed&&b.tube===blobs[0].tube);
+  const comp=zero(); blobs.forEach(b=>{ const c=norm(b.comp); for(const k in comp) comp[k]+=c[k]/blobs.length; });
+  const rgb=mixRGB(comp);
+  const name=sameTube?blobs[0].name:nameOf(rgb);
+  const old=blobs.slice(); blobs=[];
+  // fade the marbling into one even color
+  tween(1.0,p=>{
+    swirl(0.12*(1-p));
+    const x=wellCtx; x.save(); clipWell(x); x.globalAlpha=0.1+0.25*p; x.fillStyle=rgbCss(rgb);
+    x.beginPath(); x.arc(FC,FC,FC*(0.72+0.1*p),0,7); x.fill(); x.restore(); wellTex.needsUpdate=true;
+  },()=>{
+    clearField(); splat(FC,FC,FC*0.72,rgb,1.3);
+    old.forEach(b=>{ palette.remove(b.mesh); });
+    const m=makeBlobMesh(rgb,1.25); m.position.copy(wellLocal(V(0,0,0))); m.scale.setScalar(0.001); palette.add(m);
+    tween(0.5,p=>{ const s=Math.max(0.001,Math.sin(p*Math.PI*0.5)*(1+0.15*Math.sin(p*Math.PI))); m.scale.set(s,s*0.7,s); });
+    blobs=[{comp,rgb,name,mesh:m,slot:-1,mixed:true}];
+    melted=false; wellState='mixed'; busy=false;
+    brushColor={rgb,name}; setBristles(rgb);
+    brushAt='rest'; brushTo(brushPoses.rest,0.6,0.5);
+    addSwatch(rgb,name); showCard(parts,partsRGB,rgb,name,comp);
+    refreshUI();
+  });
+}
+let mixTimer=0, cardTok=0;
+function showCard(parts,partsRGB,rgb,name,comp){
+  const m=$('#mix');
+  const dots=parts.map((p,i)=>'<span class="dot" style="background:'+rgbHex(partsRGB[i])+'"></span>');
+  m.innerHTML='<div class="eq">'+dots.join('+')+'=<span class="dot big" style="background:'+rgbHex(rgb)+'"></span></div>'+
+    '<p class="en">'+parts.map(p=>p.en).join(' + ')+' = '+name.en+'!</p><p class="vi" lang="vi">'+parts.map(p=>p.vi).join(' + ')+' = '+name.vi+'!</p>';
+  m.hidden=false; chime(); buzz(30);
+  const listEn=parts.map((p,i)=>i===0?p.en:p.enl), listVi=parts.map((p,i)=>i===0?p.vi:p.vil);
+  const joinEn=listEn.length===2?listEn.join(' and '):listEn.slice(0,-1).join(', ')+' and '+listEn[listEn.length-1];
+  const joinVi=listVi.length===2?listVi.join(' và '):listVi.slice(0,-1).join(', ')+' và '+listVi[listVi.length-1];
+  let en=joinEn+' make '+name.enl+'!', vi=joinVi+' thành màu '+name.vil+'!';
+  const chroma=comp.R+comp.Y+comp.B;
+  if(comp.W>0.01&&chroma>0.01&&comp.K<0.01){ en+=' White makes it lighter.'; vi+=' Màu trắng làm màu nhạt hơn.'; }
+  else if(comp.K>0.01&&chroma>0.01&&comp.W<0.01){ en+=' Black makes it darker.'; vi+=' Màu đen làm màu sẫm hơn.'; }
+  else if(comp.R>0.01&&comp.Y>0.01&&comp.B>0.01&&name.en.indexOf('Brown')>=0){ en+=' All three make brown!'; vi+=' Cả ba màu thành màu nâu!'; }
+  setTip(en,vi);
+  const tok=++cardTok, tid=tipId;
+  clearTimeout(mixTimer); mixTimer=setTimeout(()=>{ if(tok===cardTok) m.hidden=true; },6500);
+  setTimeout(()=>{ if(tid===tipId&&!busy) setTip('Tap Paint! and paint on the paper.','Chạm Vẽ nào! rồi vẽ lên giấy nhé.'); },6800);
+}
+
+/* ---------- painting ---------- */
+let brushColor=null, painting=false, lastPx=null, lastPaperPt=null, paintedAny=false, strokeLen=0;
+function goPaint(){
+  if(busy||stirring) return;
+  if(blobs.length===1){
+    const b=blobs[0]; busy=true; click();
+    brushTo(stirPose(0.05,0.05),0.5,0.5,()=>{
+      brushColor={rgb:b.rgb,name:b.name}; setBristles(b.rgb); dab();
+      swSel=swatches.findIndex(s=>s.en===b.name.en&&Math.abs(s.rgb[0]-b.rgb[0])+Math.abs(s.rgb[1]-b.rgb[1])+Math.abs(s.rgb[2]-b.rgb[2])<0.06); renderSwatches();
+      brushAt='paper'; brushTo(paperPose(paperPoint(0.5,0.4)),0.7,0.6,()=>{ busy=false; refreshUI(); });
+      setTip(b.name.en+'! Tap or drag on the paper to paint.',b.name.vi+'! Chạm hoặc kéo trên giấy để vẽ nhé.');
+    });
+    return;
+  }
+  if(blobs.length>=2){ click(); setTip('Mix the colors first! Tap Mix.','Trộn màu trước đã! Chạm Trộn nhé.'); return; }
+  if(brushColor){ click(); brushAt='paper'; brushTo(paperPose(paperPoint(0.5,0.4)),0.7,0.6);
+    setTip('Tap or drag on the paper to paint!','Chạm hoặc kéo trên giấy để vẽ nhé!'); return; }
+  click(); setTip('Squeeze some paint and mix a color first!','Bóp màu và trộn một màu trước nhé!');
+}
+function pickSwatch(i){
+  if(busy||stirring) return;
+  const s=swatches[i]; if(!s) return;
+  swSel=i; renderSwatches(); click();
+  brushColor={rgb:s.rgb,name:s}; setBristles(s.rgb);
+  brushAt='paper'; brushTo(paperPose(paperPoint(0.5,0.4)),0.6,0.5);
+  setTip(s.en+'! Paint with it on the paper.',s.vi+'! Vẽ màu này lên giấy nhé.');
+  refreshUI();
+}
+function uvToPx(uv){ return [uv.x*PW,(1-uv.y)*PH]; }
+function paintDot(x,y){
+  const c=paperCtx, rgb=brushColor.rgb;
+  c.fillStyle=rgbCss(rgb); c.beginPath();
+  for(let i=0;i<=10;i++){ const a=i/10*Math.PI*2, r=15*(0.9+0.15*Math.sin(a*3+x)); const X=x+Math.cos(a)*r, Y=y+Math.sin(a)*r; i?c.lineTo(X,Y):c.moveTo(X,Y); } c.closePath(); c.fill();
+  c.fillStyle=rgbCss(lighten(rgb,0.35),0.4); c.beginPath(); c.ellipse(x-4,y-5,5,3,-0.5,0,7); c.fill();
+}
+function paintLine(x0,y0,x1,y1){
+  const c=paperCtx, rgb=brushColor.rgb; c.lineCap='round'; c.lineJoin='round';
+  c.strokeStyle=rgbCss(rgb); c.lineWidth=24; c.beginPath(); c.moveTo(x0,y0); c.lineTo(x1,y1); c.stroke();
+  const dx=x1-x0, dy=y1-y0, l=Math.hypot(dx,dy)||1, nx=-dy/l, ny=dx/l;
+  [[-8,shade(rgb,0.82)],[-2,lighten(rgb,0.25)],[6,shade(rgb,0.88)]].forEach(([o,col])=>{ c.strokeStyle=rgbCss(col,0.35); c.lineWidth=2.5; c.beginPath(); c.moveTo(x0+nx*o,y0+ny*o); c.lineTo(x1+nx*o,y1+ny*o); c.stroke(); });
+}
+function paintStart(hit){
+  if(busy||stirring) return false;
+  if(!brushColor){
+    if(blobs.length===1&&!busy&&!stirring){ const b=blobs[0]; brushColor={rgb:b.rgb,name:b.name}; setBristles(b.rgb); }
+    else{ if(swatches.length) setTip('Pick a color from My colors, or mix a new one!','Chọn một màu trong Màu của bé, hoặc pha màu mới nhé!');
+      else setTip('Squeeze some paint and mix a color first!','Bóp màu và trộn một màu trước nhé!'); return false; }
+  }
+  painting=true; brushAt='paper'; strokeLen=0;
+  const [x,y]=uvToPx(hit.uv); paintDot(x,y); lastPx=[x,y]; paperTex.needsUpdate=true; dab();
+  lastPaperPt=hit.point.clone(); setBrush(paperPose(hit.point));
+  if(!paintedAny){ paintedAny=true; setTip('Beautiful! Keep painting!','Đẹp quá! Vẽ tiếp nào!'); refreshUI(); }
+  return true;
+}
+function paintMove(e){
+  setRay(e); const h=ray.intersectObject(paper,false)[0]; if(!h) return;
+  const [x,y]=uvToPx(h.uv); const d=Math.hypot(x-lastPx[0],y-lastPx[1]);
+  if(d<2) return;
+  paintLine(lastPx[0],lastPx[1],x,y); lastPx=[x,y]; paperTex.needsUpdate=true;
+  strokeLen+=d; if(strokeLen>70){ strokeLen=0; tone(300+Math.random()*120,200,0.05,0.03,'triangle'); }
+  lastPaperPt=h.point.clone(); setBrush(paperPose(h.point));
+}
+function newPaper(){
+  if(paperFlip) return;
+  click(); whoosh(); paperFlip=true;
+  tween(0.28,p=>{ board.scale.y=Math.max(0.02,1-ease(p)); },()=>{ paperBlank(); paintedAny=false;
+    tween(0.3,p=>{ board.scale.y=Math.max(0.02,ease(p)); },()=>{ board.scale.y=1; paperFlip=false; }); });
+  setTip('New paper! Paint something new.','Giấy mới! Vẽ gì mới nào.');
+  refreshUI();
+}
+let paperFlip=false;
+
+/* ---------- cleaning ---------- */
+const drops=[];
+const cupTint=new THREE.Color(0xcfe8ff), CLEAR=new THREE.Color(0xcfe8ff);
+function clean(){
+  if(busy||stirring) return;
+  busy=true; click(); refreshUI();
+  const hadPaint=blobs.length>0||brushColor;
+  const col=blobs.length?blobs[blobs.length-1].rgb:(brushColor?brushColor.rgb:null);
+  setTip('Swish, swish! Washing up.','Rửa, rửa nào!');
+  brushAt='cup';
+  brushTo(pose(cup.position.clone().add(V(0,0.55,0)),V(0.2,1,0.15)),0.55,0.6,()=>{
+    brushTo(brushPoses.cup,0.25,0,()=>{
+      splash(); spawnSplash(col);
+      if(col) cupTint.lerp(new THREE.Color(col[0],col[1],col[2]),0.45);
+      setBristles(null); brushColor=null; swSel=-1; renderSwatches();
+    });
+  });
+  // wash the well
+  const olds=blobs.slice(); blobs=[]; melted=false;
+  tween(0.9,p=>{
+    wellDisc.material.opacity=1-ease(p);
+    olds.forEach(b=>{ b.mesh.scale.setScalar(Math.max(0.001,(1-ease(p))*(b.mixed?1:1))); });
+  },()=>{
+    olds.forEach(b=>palette.remove(b.mesh)); clearField(); wellDisc.material.opacity=1;
+    wellState='empty';
+    setTimeout(()=>{ busy=false; refreshUI();
+      setTip(hadPaint?'All clean! Pick a paint tube.':'It’s already clean! Pick a paint tube.',hadPaint?'Sạch rồi! Chọn một tuýp màu nhé.':'Sạch sẵn rồi! Chọn một tuýp màu nhé.'); },250);
+  });
+}
+function spawnSplash(col){
+  const base=cup.position.clone().add(V(0,0.55,0));
+  for(let i=0;i<14;i++){
+    const c=col&&i%2?new THREE.Color(col[0],col[1],col[2]).lerp(CLEAR,0.4):new THREE.Color(0xbfe0ff);
+    const m=new THREE.Mesh(new THREE.SphereGeometry(0.035+Math.random()*0.03,8,6),phong({color:c,transparent:true,opacity:0.85,shininess:120}));
+    const a=Math.random()*Math.PI*2, s=0.6+Math.random()*0.9;
+    m.position.copy(base); scene.add(m);
+    drops.push({m,v:V(Math.cos(a)*s,2.2+Math.random()*1.6,Math.sin(a)*s),t:0});
+  }
+}
+
+/* ---------- UI state ---------- */
+function refreshUI(){
+  const unmixed=blobs.length>=2;
+  tubesUI.classList.toggle('next',blobs.length<2&&wellState!=='mixed'&&!busy);
+  $('#btnMix').classList.toggle('next',unmixed&&wellState!=='mixing'&&!busy&&!stirring);
+  $('#btnMix').classList.toggle('dim',blobs.length<2&&wellState!=='marbled');
+  const canPaint=blobs.length===1||!!brushColor;
+  $('#btnPaint').classList.toggle('dim',!canPaint);
+  $('#btnPaint').classList.toggle('next',wellState==='mixed'&&!paintedAny&&!busy);
+  $('#btnClean').classList.toggle('dim',blobs.length===0&&!brushColor);
+  $('#btnPaper').classList.toggle('dim',!paintedAny);
+  tubesUI.classList.toggle('dim',blobs.length>=3);
+}
+$('#btnMix').onclick=()=>{unlock(); if(!canMix()){ click(); if(!busy&&!stirring) mixHint(); return; } startMix();};
+$('#btnPaint').onclick=()=>{unlock();goPaint();};
+$('#btnClean').onclick=()=>{unlock();clean();};
+$('#btnPaper').onclick=()=>{unlock();newPaper();};
+
+function doAction(a){
+  unlock(); if(!a) return;
+  if(a.startsWith('tube:')) squeeze(+a.split(':')[1]);
+  else if(a==='well'){ if(canMix()) startMix(); else if(blobs.length===1&&!busy){ goPaint(); } else if(!busy&&!stirring){ click(); mixHint(); } }
+  else if(a==='brush'){ if(canMix()) startMix(); else goPaint(); }
+  else if(a==='clean') clean();
+}
+
+/* ---------- pointer: paint on paper, stir the well, drag to turn, tap to use ---------- */
+const ray=new THREE.Raycaster(), ndc=new THREE.Vector2();
+function setRay(e){ const r=canvas.getBoundingClientRect(); ndc.set(((e.clientX-r.left)/r.width)*2-1,-((e.clientY-r.top)/r.height)*2+1); ray.setFromCamera(ndc,camera); }
+function hitAt(e){
+  setRay(e);
+  const ph=ray.intersectObject(paper,false)[0]; if(ph) return {action:'paper',uv:ph.uv,point:ph.point};
+  const hits=ray.intersectObjects([wellHit,brush,cup,...tubes,...dabs],true);
+  for(const h of hits){ let o=h.object; while(o){ if(o.userData&&o.userData.action) return {action:o.userData.action,uv:h.uv,point:h.point}; o=o.parent; } }
+  return null;
+}
+let down=null;
+canvas.addEventListener('pointerdown',e=>{
+  unlock();
+  const hit=hitAt(e);
+  down={x:e.clientX,y:e.clientY,yaw,pitch,drag:false,kind:'turn',hit};
+  if(hit&&hit.action==='paper'){ down.kind=paperFlip?'none':(paintStart(hit)?'paint':'none'); }
+  else if(hit&&hit.action==='well'&&!busy&&blobs.length>=2) down.kind='stir';
+  try{ canvas.setPointerCapture(e.pointerId); }catch(err){}
+});
+canvas.addEventListener('pointermove',e=>{
+  if(down){
+    const dx=e.clientX-down.x, dy=e.clientY-down.y;
+    if(down.kind==='paint'){ paintMove(e); return; }
+    if(down.kind==='none') return;
+    if(!down.drag&&Math.hypot(dx,dy)>9){ down.drag=true; if(down.kind==='stir'){ if(canMix()) beginStir(); else down.kind='none'; } }
+    if(down.drag&&down.kind==='stir'){ if(stirMove(e)) down.kind='none'; return; }
+    if(down.drag&&down.kind==='turn'){ yaw=Math.max(-0.7,Math.min(0.7,down.yaw-dx*0.006)); pitch=Math.max(-0.25,Math.min(0.3,down.pitch+dy*0.004)); placeCamera(); }
+  } else if(e.pointerType==='mouse'){ const h=hitAt(e); canvas.style.cursor=h?(h.action==='paper'?'crosshair':'pointer'):'grab'; }
+});
+function endPointer(e,cancel){
+  if(!down) return;
+  if(down.kind==='paint'){ painting=false; refreshUI(); }
+  else if(down.kind==='stir'&&down.drag){ stirEnd(); }
+  else if(!cancel&&!down.drag&&(down.kind==='turn'||down.kind==='stir')&&down.hit) doAction(down.hit.action);
+  down=null;
+}
+canvas.addEventListener('pointerup',e=>endPointer(e,false));
+canvas.addEventListener('pointercancel',e=>endPointer(e,true));
+
+/* ---------- main loop ---------- */
+let simT=0; const clock=new THREE.Clock();
+function frame(){
+  const dt=Math.min(0.1,clock.getDelta()); simT+=dt;
+  for(let i=tweens.length-1;i>=0;i--){ const tw=tweens[i]; tw.t+=dt; const p=Math.min(1,tw.t/tw.dur); tw.fn(p); if(p>=1){ tweens.splice(i,1); tw.done&&tw.done(); } }
+  for(let i=drops.length-1;i>=0;i--){ const d=drops[i]; d.t+=dt; d.v.y-=9*dt; d.m.position.addScaledVector(d.v,dt); d.m.material.opacity=0.85*(1-d.t/0.9);
+    if(d.t>0.9||d.m.position.y<0.02){ scene.remove(d.m); d.m.geometry.dispose(); d.m.material.dispose(); drops.splice(i,1); } }
+  cupTint.lerp(CLEAR,Math.min(1,dt*0.12)); cupWaterMat.color.copy(cupTint);
+  // idle wobble of blobs so they look soft and glossy
+  blobs.forEach((b,k)=>{ if(b.mesh.visible&&!melted&&wellState!=='mixing'){ b.mesh.rotation.y+=dt*0.15*(k%2?1:-1); } });
+  renderer.render(scene,camera);
+  requestAnimationFrame(frame);
+}
+
+/* ---------- boot ---------- */
+async function keepAwake(){ try{ if(navigator.wakeLock) await navigator.wakeLock.request('screen'); }catch(e){} }
+async function boot(){
+  try{ await Promise.race([Promise.all([document.fonts.load('40px "Patrick Hand"','Bánh xe màu'),document.fonts.load('800 40px "Baloo 2"','Color wheel')]),new Promise(r=>setTimeout(r,2500))]); }catch(e){}
+  buildRoom(); buildPalette(); buildTubes(); buildBrush(); buildCup(); buildEasel();
+  onResize();
+  addEventListener('resize',onResizeSoon); addEventListener('orientationchange',onResizeSoon);
+  try{ if(window.visualViewport) visualViewport.addEventListener('resize',onResizeSoon); }catch(e){}
+  refreshUI();
+  requestAnimationFrame(frame);
+  $('#loadNote').textContent='Red, yellow, blue, white and black paint are ready on the table. Squeeze, mix and paint!';
+  $('#goBtn').disabled=false;
+}
+$('#goBtn').onclick=()=>{
+  unlock(); $('#startScreen').hidden=true; keepAwake();
+  document.addEventListener('visibilitychange',()=>{ if(document.visibilityState==='visible') keepAwake(); });
+  onResize();
+  setTip('Tap a paint tube to squeeze some paint!','Chạm vào một tuýp màu để bóp màu ra nhé!');
+};
+boot();
+})();
+</script>
+</body>
+</html>

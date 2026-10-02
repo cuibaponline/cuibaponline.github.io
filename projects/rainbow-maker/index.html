@@ -250,6 +250,13 @@ input[type=range]::-moz-range-thumb {
 }
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
 </style>
+<meta name="theme-color" content="#9fcbf2">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Rainbow">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icons/icon-180.png">
+<script>if('serviceWorker' in navigator)addEventListener('load',()=>navigator.serviceWorker.register('sw.js'));</script>
 </head>
 <body>
 <div id="app">

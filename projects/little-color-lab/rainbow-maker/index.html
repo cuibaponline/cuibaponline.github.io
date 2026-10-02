@@ -139,6 +139,9 @@ button:focus-visible{outline:3px solid var(--sun);outline-offset:3px}
   .sw .dot{width:22px;height:22px}
 }
 </style>
+<link rel="manifest" href="../manifest.webmanifest">
+<link rel="apple-touch-icon" href="../icons/icon-180.png">
+<script>if('serviceWorker' in navigator)addEventListener('load',()=>navigator.serviceWorker.register('../sw.js'));</script>
 </head>
 <body>
 <canvas id="c" tabindex="-1" aria-label="3D darkened classroom with a flashlight, a glass prism and a white screen that can show a rainbow"></canvas>

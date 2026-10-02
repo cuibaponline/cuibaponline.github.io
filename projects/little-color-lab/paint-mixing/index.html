@@ -175,6 +175,9 @@ button:focus-visible{outline:3px solid var(--marker);outline-offset:3px}
   .sw{width:38px;height:38px}
 }
 </style>
+<link rel="manifest" href="../manifest.webmanifest">
+<link rel="apple-touch-icon" href="../icons/icon-180.png">
+<script>if('serviceWorker' in navigator)addEventListener('load',()=>navigator.serviceWorker.register('../sw.js'));</script>
 </head>
 <body>
 <canvas id="c" tabindex="-1" aria-label="3D art table with a wooden paint palette, five paint tubes, a brush, a water cup and a small easel"></canvas>

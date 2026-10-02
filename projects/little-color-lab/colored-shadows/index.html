@@ -160,6 +160,9 @@ button:focus-visible{outline:3px solid var(--sun);outline-offset:3px}
   .act{min-height:50px;min-width:64px}
 }
 </style>
+<link rel="manifest" href="../manifest.webmanifest">
+<link rel="apple-touch-icon" href="../icons/icon-180.png">
+<script>if('serviceWorker' in navigator)addEventListener('load',()=>navigator.serviceWorker.register('../sw.js'));</script>
 </head>
 <body>
 <canvas id="c" tabindex="-1" aria-label="3D dark room: a red, a green and a blue lamp shine on a white wall behind a wooden toy rocket, making colored shadows"></canvas>

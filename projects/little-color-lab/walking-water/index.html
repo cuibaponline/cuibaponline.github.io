@@ -149,6 +149,9 @@ button:focus-visible{outline:3px solid var(--marker);outline-offset:3px}
   .pick{padding:2px 0}
 }
 </style>
+<link rel="manifest" href="../manifest.webmanifest">
+<link rel="apple-touch-icon" href="../icons/icon-180.png">
+<script>if('serviceWorker' in navigator)addEventListener('load',()=>navigator.serviceWorker.register('../sw.js'));</script>
 </head>
 <body>
 <canvas id="c" tabindex="-1" aria-label="3D classroom table with five clear cups of colored water and paper towel bridges"></canvas>

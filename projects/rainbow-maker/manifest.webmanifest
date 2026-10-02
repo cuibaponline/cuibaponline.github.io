@@ -1,0 +1,17 @@
+{
+  "name": "Rainbow Maker",
+  "short_name": "Rainbow",
+  "description": "Make a rainbow with Elephant! A 3D science toy for kids about sunlight, raindrops and colors.",
+  "id": "./",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "theme_color": "#9fcbf2",
+  "background_color": "#9fcbf2",
+  "icons": [
+    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}

@@ -1,4 +1,4 @@
-import { Component, computed, inject, output, signal } from '@angular/core';
+import { Component, computed, inject, output, signal, ChangeDetectionStrategy } from '@angular/core';
 import { NgOptimizedImage } from '@angular/common';
 import { AnimalService, AudioService } from '@shared/lib';
 
@@ -7,6 +7,7 @@ import { AnimalService, AudioService } from '@shared/lib';
   standalone: true,
   imports: [NgOptimizedImage],
   templateUrl: './animal-card.component.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrl: './animal-card.component.css'
 })
 export class AnimalCardComponent {

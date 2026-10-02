@@ -1,4 +1,4 @@
-import { Component, inject, signal } from '@angular/core';
+import { Component, inject, signal, ChangeDetectionStrategy } from '@angular/core';
 import { AnimalCardComponent } from './components/animal-card/animal-card.component';
 import { LevelSelectComponent, AnimalService, DifficultyLevel } from '@shared/lib';
 
@@ -6,6 +6,7 @@ import { LevelSelectComponent, AnimalService, DifficultyLevel } from '@shared/li
   selector: 'app-root',
   imports: [AnimalCardComponent, LevelSelectComponent],
   templateUrl: './app.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrl: './app.css'
 })
 export class App {

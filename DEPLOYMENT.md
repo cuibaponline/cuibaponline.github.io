@@ -74,7 +74,7 @@ cuibaponline.github.io/
 
 ### How It Works
 
-1. **Trigger**: Push to `main` branch
+1. **Trigger**: Push to `master` branch
 2. **Build**: GitHub Actions runs build commands
 3. **Test**: Verify build succeeded
 4. **Deploy**: Upload artifacts to `gh-pages` branch
@@ -90,7 +90,7 @@ name: Build and Deploy
 on:
   push:
     branches:
-      - main
+      - master
 
 jobs:
   build-and-deploy:
@@ -326,10 +326,10 @@ git commit -m "Deploy: $(date)"
 git push origin gh-pages -f
 ```
 
-### Step 4: Return to Main Branch
+### Step 4: Return to the master Branch
 
 ```bash
-git checkout main
+git checkout master
 ```
 
 ### Alternative: Using GitHub CLI
@@ -435,7 +435,7 @@ webpack-bundle-analyzer dist/animal-learning-game/stats.json
 # Push a commit to trigger the workflow
 git add .
 git commit -m "Trigger deployment"
-git push origin main
+git push origin master
 ```
 
 #### Issue: Build failed in GitHub Actions
@@ -625,7 +625,7 @@ git clone --mirror https://github.com/cuibaponline/cuibaponline.github.io.git
 ```bash
 # Revert to previous commit
 git revert <commit-hash>
-git push origin main
+git push origin master
 
 # GitHub Actions will automatically redeploy
 ```
@@ -669,7 +669,7 @@ Only deploy on certain conditions:
 
 ```yaml
 - name: Deploy
-  if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+  if: github.event_name == 'push' && github.ref == 'refs/heads/master'
   run: |
     npm run build:all
     # Deploy logic
@@ -691,7 +691,7 @@ cd dist && python3 -m http.server 8000
 # Deployment
 git add .
 git commit -m "Deploy: description"
-git push origin main
+git push origin master
 
 # Check deployment
 # Visit: https://cuibaponline.github.io

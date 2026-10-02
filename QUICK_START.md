@@ -51,11 +51,7 @@ git commit -m "Initial commit: Animal Learning Game monorepo setup"
 git push -u origin master
 ```
 
-**Note:** GitHub might use `main` as default branch. If so:
-```bash
-git branch -M main
-git push -u origin main
-```
+**Note:** This repo uses a single branch, `master`. Everything is committed and pushed there.
 
 ### Step 3: Enable GitHub Pages
 
@@ -139,7 +135,7 @@ Visit: http://localhost:8080/animal-learning/
 
 ## 📊 What Happens When You Push?
 
-1. **You push** to GitHub main branch
+1. **You push** to GitHub `master` branch
 2. **GitHub Actions** automatically triggers
 3. **Build** runs: `npm ci && npm run build:all`
 4. **Deploy** copies files to `gh-pages` branch:

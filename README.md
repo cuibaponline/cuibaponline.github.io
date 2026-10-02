@@ -184,7 +184,7 @@ This project uses **GitHub Actions** for automatic deployment.
 
 ### What Happens Automatically
 
-1. Push changes to `main` branch
+1. Push changes to `master` branch
 2. GitHub Actions triggers the workflow
 3. Dependencies are installed
 4. Apps are built for production
@@ -200,7 +200,7 @@ npm run build:all
 # Push to GitHub
 git add .
 git commit -m "Deploy: update"
-git push origin main
+git push origin master
 ```
 
 ### Testing Before Deploy

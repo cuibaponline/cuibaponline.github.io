@@ -8,7 +8,8 @@
     "build:all": "npm run build -- animal-learning",
     "build:animal-learning": "ng build animal-learning --configuration production",
     "watch": "ng build --watch --configuration development",
-    "test": "ng test"
+    "test": "ng test",
+    "test:lab": "node --test tests/little-color-lab/lab-kit.test.cjs"
   },
   "prettier": {
     "printWidth": 100,

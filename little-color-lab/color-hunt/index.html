@@ -101,6 +101,7 @@ button:focus-visible{outline:3px solid var(--marker);outline-offset:3px}
 .start{background:var(--card);border-radius:28px;padding:22px 26px 26px;text-align:center;max-width:420px;box-shadow:0 6px 0 var(--line),0 16px 40px var(--shadow)}
 .start h2{margin:0;font-family:var(--f-display);font-weight:800;font-size:2rem;line-height:1.05}
 .start .vi{margin:2px 0 12px;font-family:var(--f-hand);font-size:1.6rem;color:var(--marker)}
+.start .lk-install{margin-top:10px}
 .start p.note{margin:0 0 16px;font-size:.95rem;line-height:1.45;color:#4a5670}
 .go{background:var(--sun);border-radius:20px;padding:12px 26px;font-family:var(--f-display);font-weight:800;font-size:1.4rem;
   box-shadow:inset 0 -5px 0 rgba(0,0,0,.12);display:inline-flex;flex-direction:column;align-items:center;line-height:1.05}
@@ -157,6 +158,8 @@ button:focus-visible{outline:3px solid var(--marker);outline-offset:3px}
 <link rel="manifest" href="../manifest.webmanifest">
 <link rel="apple-touch-icon" href="../icons/icon-180.png">
 <script>if('serviceWorker' in navigator)addEventListener('load',()=>navigator.serviceWorker.register('../sw.js'));</script>
+<link rel="stylesheet" href="../lab-kit.css">
+<script src="../lab-kit.js"></script>
 </head>
 <body>
 <canvas id="c" tabindex="-1" aria-label="3D playroom corner with a shelf, a small table, a rug and a window, full of colorful toys and fruit"></canvas>
@@ -172,10 +175,7 @@ button:focus-visible{outline:3px solid var(--marker);outline-offset:3px}
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg>
       </a>
       <button class="tool" id="langBtn" aria-label="Voice language">EN + VI</button>
-      <button class="tool" id="muteBtn" aria-pressed="true" aria-label="Sound">
-        <svg class="on" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9h4l5-4v14l-5-4H4z" fill="currentColor"/><path d="M16.5 8.5a5 5 0 0 1 0 7M19 6a8.5 8.5 0 0 1 0 12"/></svg>
-        <svg class="off" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9h4l5-4v14l-5-4H4z" fill="currentColor"/><path d="M17 9l5 6M22 9l-5 6"/></svg>
-      </button>
+      <button class="tool" id="muteBtn" aria-label="Sound"></button>
       <button class="tool" id="infoBtn" aria-label="For grown-ups">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><circle cx="12" cy="12" r="9.5"/><path d="M9.3 9.3a2.8 2.8 0 1 1 3.9 2.6c-.8.4-1.2 1-1.2 1.8v.5"/><circle cx="12" cy="17.3" r=".6" fill="currentColor"/></svg>
       </button>
@@ -212,6 +212,7 @@ button:focus-visible{outline:3px solid var(--marker);outline-offset:3px}
     <p class="vi" lang="vi">Đi tìm màu</p>
     <p class="note" id="loadNote">Tidying up the playroom…</p>
     <button class="go" id="goBtn" disabled>Let's play! <i lang="vi">Chơi thôi!</i></button>
+    <button class="lk-install" type="button" data-lk-install hidden>Install app <i lang="vi">Cài ứng dụng</i></button>
   </div>
 </div>
 
@@ -220,6 +221,7 @@ button:focus-visible{outline:3px solid var(--marker);outline-offset:3px}
     <button class="x" id="infoClose" aria-label="Close">✕</button>
     <h2 id="infoTitle">For grown-ups</h2>
     <p class="vi" lang="vi">Dành cho ba mẹ</p>
+    <p><button class="lk-install" type="button" data-lk-install hidden>Install app <i lang="vi">Cài ứng dụng</i></button></p>
 
     <h3>How to play</h3>
     <ul>
@@ -313,26 +315,19 @@ const STAR='<svg viewBox="0 0 24 24"><path d="M12 2.2l2.9 6 6.6.8-4.9 4.5 1.3 6.
 starsEl.innerHTML=STAR+STAR+STAR;
 
 /* ---------- speech + sound ---------- */
-let soundOn=true, voiceMode='both';
-try{ const v=localStorage.getItem('chunt-voice'); if(v) voiceMode=v; if(localStorage.getItem('chunt-mute')==='1') soundOn=false; }catch(e){}
-const langBtn=$('#langBtn'), muteBtn=$('#muteBtn');
-const LANG_LABEL={both:'EN + VI',en:'EN',vi:'VI'};
-function syncTools(){ langBtn.textContent=LANG_LABEL[voiceMode]; muteBtn.setAttribute('aria-pressed',String(soundOn)); }
-syncTools();
-langBtn.onclick=()=>{ voiceMode=voiceMode==='both'?'en':voiceMode==='en'?'vi':'both'; try{localStorage.setItem('chunt-voice',voiceMode)}catch(e){} syncTools(); sayTip(); };
-muteBtn.onclick=()=>{ soundOn=!soundOn; try{localStorage.setItem('chunt-mute',soundOn?'0':'1')}catch(e){} syncTools(); if(!soundOn){try{speechSynthesis.cancel()}catch(e){}} };
+LabKit.init({ legacy:'chunt', onLang:()=>sayTip(), onPanels:()=>{ fitCamera(); placeCamera(); lastBubbleH=$('.bubble').offsetHeight; } });
 let voices=[];
 function loadVoices(){ try{ voices=window.speechSynthesis?speechSynthesis.getVoices():[]; }catch(e){} }
 try{ if(window.speechSynthesis){ loadVoices(); speechSynthesis.onvoiceschanged=loadVoices; } }catch(e){}
 const pickVoice=l=>voices.find(v=>v.lang&&v.lang.toLowerCase().replace('_','-').startsWith(l));
-function say(en,vi){
-  if(!soundOn) return;
+function say(en,vi,force){
+  if(!(LabKit.voiceOn||(force&&LabKit.sfxOn))) return;
   try{
     const ss=window.speechSynthesis; if(!ss) return;
     const busyNow=ss.speaking||ss.pending; ss.cancel();
     const q=[];
-    if(voiceMode!=='vi') q.push({t:en,l:'en-US',v:pickVoice('en-us')||pickVoice('en')});
-    if(voiceMode!=='en') q.push({t:vi,l:'vi-VN',v:pickVoice('vi')});
+    if(LabKit.lang!=='vi') q.push({t:en,l:'en-US',v:pickVoice('en-us')||pickVoice('en')});
+    if(LabKit.lang!=='en') q.push({t:vi,l:'vi-VN',v:pickVoice('vi')});
     const go=()=>q.forEach(o=>{ const u=new SpeechSynthesisUtterance(o.t); u.lang=o.l; if(o.v) u.voice=o.v; u.rate=o.l==='vi-VN'?0.95:0.92; u.pitch=1.15; ss.speak(u); });
     if(busyNow) setTimeout(go,80); else go();
   }catch(e){}
@@ -340,13 +335,13 @@ function say(en,vi){
 let ac=null;
 function unlock(){ if(!ac){ try{ ac=new (window.AudioContext||window.webkitAudioContext)(); }catch(e){} } if(ac&&ac.state==='suspended') ac.resume(); }
 function tone(f0,f1,dur,vol,type){
-  if(!soundOn||!ac) return;
+  if(!LabKit.sfxOn||!ac) return;
   const t=ac.currentTime,o=ac.createOscillator(),g=ac.createGain();
   o.type=type||'sine'; o.frequency.setValueAtTime(f0,t); o.frequency.exponentialRampToValueAtTime(f1,t+dur);
   g.gain.setValueAtTime(vol,t); g.gain.exponentialRampToValueAtTime(0.0001,t+dur);
   o.connect(g).connect(ac.destination); o.start(t); o.stop(t+dur+0.02);
 }
-const buzz=ms=>{ try{ if(soundOn&&navigator.vibrate) navigator.vibrate(ms); }catch(e){} };
+const buzz=ms=>LabKit.vibrate(ms);
 const click=()=>{ tone(1200,700,0.05,0.12,'square'); buzz(12); };
 const boing=()=>{ tone(320,760,0.18,0.18,'triangle'); buzz(20); };
 const sparkle=()=>{ [880,1175,1568].forEach((f,i)=>setTimeout(()=>tone(f,f,0.22,0.1,'triangle'),i*90)); };
@@ -355,9 +350,9 @@ const fanfare=()=>{ [523,659,784,1047].forEach((f,i)=>setTimeout(()=>tone(f,f,i=
 const switchSnd=()=>{ tone(900,500,0.06,0.14,'square'); setTimeout(()=>tone(200,140,0.25,0.08,'sine'),60); };
 
 let tip={en:'',vi:''};
-function setTip(en,vi,speak){ tip={en,vi}; $('#tipEn').textContent=en; $('#tipVi').textContent=vi; if(typeof refitSoon==='function') refitSoon(); if(speak!==false) say(en,vi); }
-function sayTip(){ say(tip.en,tip.vi); }
-$('#sayBtn').onclick=()=>{unlock();sayTip();};
+function setTip(en,vi,speak,force){ tip={en,vi}; $('#tipEn').textContent=en; $('#tipVi').textContent=vi; if(typeof refitSoon==='function') refitSoon(); if(speak!==false) say(en,vi,force); LabKit.notifyTip(); }
+function sayTip(force){ say(tip.en,tip.vi,force); }
+$('#sayBtn').onclick=()=>{unlock();sayTip(true);};
 $('#infoBtn').onclick=()=>{ $('#info').hidden=false; };
 $('#infoClose').onclick=()=>{ $('#info').hidden=true; };
 $('#info').addEventListener('click',e=>{ if(e.target.id==='info') $('#info').hidden=true; });
@@ -750,14 +745,14 @@ function syncStars(){
   starsEl.setAttribute('aria-label',found.length+' of '+need+' found');
 }
 function syncColorBtns(){ [...colorsEl.children].forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.c===cur))); }
-function startRound(c,speak){
+function startRound(c,speak,force){
   cur=c; need=needFor(c); found=[]; celebrating=false; huntIdx=HUNT.indexOf(c);
   toys.forEach(g=>{ g.userData.glow.material.opacity=0; });
   const sw=$('#swatch'); sw.style.setProperty('--c',COLORS[c].hex); sw.classList.remove('pop'); void sw.offsetWidth; sw.classList.add('pop');
   syncStars(); syncColorBtns(); starsEl.classList.remove('party');
-  const [en,vi]=promptText(); setTip(en,vi,speak);
+  const [en,vi]=promptText(); setTip(en,vi,speak,force);
 }
-function pickColor(c){ clearLater(); click(); twistRound=false; startRound(c,true); }
+function pickColor(c){ clearLater(); click(); twistRound=false; startRound(c,true,true); }
 
 // what a color looks like when only red light shines on it
 const UNDER_RED={red:['red','đỏ'],yellow:['red','đỏ'],orange:['red','đỏ'],pink:['red','đỏ'],white:['red','đỏ'],blue:['dark','tối đen'],green:['dark','tối đen'],purple:['dark red','đỏ sẫm']};
@@ -774,21 +769,21 @@ function peekAt(g){
 function tapToy(i){
   const g=toys[i], o=OBJ[i];
   const top=g.position.clone(); top.y+=g.userData.h*0.6;
-  if(celebrating){ boing(); hop(g); setTip(cap(nameEn(o))+'!',cap(nameVi(o))+'!'); return; }
+  if(celebrating){ boing(); hop(g); setTip(cap(nameEn(o))+'!',cap(nameVi(o))+'!',true,true); return; }
   if(o.c===cur){
     if(found.includes(i)){ boing(); hop(g);
-      setTip('You found the '+COLORS[o.c].en+' '+o.en+' already! Find another '+COLORS[cur].en+' thing.','Bé tìm thấy '+nameVi(o)+' rồi! Tìm đồ vật màu '+COLORS[cur].vi+' khác nhé.'); return; }
+      setTip('You found the '+COLORS[o.c].en+' '+o.en+' already! Find another '+COLORS[cur].en+' thing.','Bé tìm thấy '+nameVi(o)+' rồi! Tìm đồ vật màu '+COLORS[cur].vi+' khác nhé.',true,true); return; }
     found.push(i); const n=found.length;
     boing(); sparkle(); hop(g); burst(top,COLORS[o.c].hex,18); peekAt(g);
     g.userData.glow.material.opacity=0.55; syncStars();
-    if(red) setTip(cap(nameEn(o))+'! '+looksEn(o),cap(nameVi(o))+'! '+looksVi(o));
-    else setTip(cap(nameEn(o))+'! '+NUM_EN[n-1]+'!',cap(nameVi(o))+'! '+NUM_VI[n-1]+'!');
+    if(red) setTip(cap(nameEn(o))+'! '+looksEn(o),cap(nameVi(o))+'! '+looksVi(o),true,true);
+    else setTip(cap(nameEn(o))+'! '+NUM_EN[n-1]+'!',cap(nameVi(o))+'! '+NUM_VI[n-1]+'!',true,true);
     if(n>=need){ celebrating=true; later(celebrate,red?3200:2300); }
   } else {
     wobble(); wiggle(g); peekAt(g);
     const c=COLORS[cur], lead=o.plural?'Those are ':"That's ";
-    if(red) setTip(lead+nameEn(o)+'.'+looksEnWrong(o)+' Let\'s find '+c.en+'!','Đó là '+nameVi(o)+'.'+looksViWrong(o)+' Mình tìm màu '+c.vi+' nhé!');
-    else setTip(lead+nameEn(o)+". Let's find "+c.en+'!','Đó là '+nameVi(o)+'. Mình tìm màu '+c.vi+' nhé!');
+    if(red) setTip(lead+nameEn(o)+'.'+looksEnWrong(o)+' Let\'s find '+c.en+'!','Đó là '+nameVi(o)+'.'+looksViWrong(o)+' Mình tìm màu '+c.vi+' nhé!',true,true);
+    else setTip(lead+nameEn(o)+". Let's find "+c.en+'!','Đó là '+nameVi(o)+'. Mình tìm màu '+c.vi+' nhé!',true,true);
   }
 }
 function celebrate(){

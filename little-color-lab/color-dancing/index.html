@@ -54,7 +54,7 @@ button:focus-visible{outline:3px solid var(--marker);outline-offset:3px}
 .tool svg{width:24px;height:24px}
 .tool[aria-pressed="false"] .on{display:none}.tool[aria-pressed="true"] .off{display:none}
 
-.bubble{align-self:center;max-width:min(560px,100%);background:var(--card);border-radius:22px;padding:10px 14px 10px 18px;
+.bubble{pointer-events:auto;align-self:center;max-width:min(560px,100%);background:var(--card);border-radius:22px;padding:10px 14px 10px 18px;
   display:flex;align-items:center;gap:12px;box-shadow:0 5px 0 var(--line),0 10px 24px var(--shadow);margin-top:-2px}
 .bubble .txt{min-width:0}
 .bubble .en{margin:0;font-family:var(--f-display);font-weight:800;font-size:1.3rem;line-height:1.15;text-wrap:balance}
@@ -102,6 +102,7 @@ button:focus-visible{outline:3px solid var(--marker);outline-offset:3px}
 .start{background:var(--card);border-radius:28px;padding:22px 26px 26px;text-align:center;max-width:420px;box-shadow:0 6px 0 var(--line),0 16px 40px var(--shadow)}
 .start h2{margin:0;font-family:var(--f-display);font-weight:800;font-size:2rem;line-height:1.05}
 .start .vi{margin:2px 0 12px;font-family:var(--f-hand);font-size:1.6rem;color:var(--marker)}
+.start .lk-install{margin-top:10px}
 .start p.note{margin:0 0 16px;font-size:.95rem;line-height:1.45;color:#4a5670}
 .go{background:var(--sun);border-radius:20px;padding:12px 26px;font-family:var(--f-display);font-weight:800;font-size:1.4rem;
   box-shadow:inset 0 -5px 0 rgba(0,0,0,.12);display:inline-flex;flex-direction:column;align-items:center;line-height:1.05}
@@ -143,6 +144,7 @@ button:focus-visible{outline:3px solid var(--marker);outline-offset:3px}
   .mix .eq{font-size:1.4rem}.mix .dot{width:36px;height:36px}
 }
 @media (max-width:360px){ .cbtn .blob{width:38px;height:38px} .cbtn b{display:none} }
+@media (max-width:400px){ .brand{padding:4px 8px 6px} .brand h1{font-size:.84rem} .brand p{font-size:.85rem} }
 @media (max-height:520px){
   .brand{display:none}
   .top{position:absolute;top:calc(env(safe-area-inset-top,0px) + 10px);right:16px}
@@ -158,6 +160,8 @@ body{-webkit-touch-callout:none;touch-action:manipulation}
 <link rel="manifest" href="../manifest.webmanifest">
 <link rel="apple-touch-icon" href="../icons/icon-180.png">
 <script>if('serviceWorker' in navigator)addEventListener('load',()=>navigator.serviceWorker.register('../sw.js'));</script>
+<link rel="stylesheet" href="../lab-kit.css">
+<script src="../lab-kit.js"></script>
 </head>
 <body>
 <canvas id="c" tabindex="-1" aria-label="3D science table with a glass of water, dish soap and food coloring"></canvas>
@@ -173,10 +177,7 @@ body{-webkit-touch-callout:none;touch-action:manipulation}
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg>
       </a>
       <button class="tool" id="langBtn" aria-label="Voice language">EN + VI</button>
-      <button class="tool" id="muteBtn" aria-pressed="true" aria-label="Sound">
-        <svg class="on" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9h4l5-4v14l-5-4H4z" fill="currentColor"/><path d="M16.5 8.5a5 5 0 0 1 0 7M19 6a8.5 8.5 0 0 1 0 12"/></svg>
-        <svg class="off" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9h4l5-4v14l-5-4H4z" fill="currentColor"/><path d="M17 9l5 6M22 9l-5 6"/></svg>
-      </button>
+      <button class="tool" id="muteBtn" aria-label="Sound"></button>
       <button class="tool" id="infoBtn" aria-label="For grown-ups">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><circle cx="12" cy="12" r="9.5"/><path d="M9.3 9.3a2.8 2.8 0 1 1 3.9 2.6c-.8.4-1.2 1-1.2 1.8v.5"/><circle cx="12" cy="17.3" r=".6" fill="currentColor"/></svg>
       </button>
@@ -228,6 +229,7 @@ body{-webkit-touch-callout:none;touch-action:manipulation}
     <p class="vi" lang="vi">Màu sắc nhảy múa!</p>
     <p class="note" id="loadNote">Getting the science table ready…</p>
     <button class="go" id="goBtn" disabled>Let's play! <i lang="vi">Chơi thôi!</i></button>
+    <button class="lk-install" type="button" data-lk-install hidden>Install app <i lang="vi">Cài ứng dụng</i></button>
   </div>
 </div>
 
@@ -236,6 +238,7 @@ body{-webkit-touch-callout:none;touch-action:manipulation}
     <button class="x" id="infoClose" aria-label="Close">✕</button>
     <h2 id="infoTitle">For grown-ups</h2>
     <p class="vi" lang="vi">Dành cho ba mẹ</p>
+    <p><button class="lk-install" type="button" data-lk-install hidden>Install app <i lang="vi">Cài ứng dụng</i></button></p>
 
     <h3>How to play</h3>
     <ul>
@@ -311,28 +314,21 @@ COLORS.forEach((c,i)=>{
 });
 
 /* ---------- speech + sound ---------- */
-let soundOn=true, voiceMode='both';
-try{ const v=localStorage.getItem('cdl-voice'); if(v) voiceMode=v; if(localStorage.getItem('cdl-mute')==='1') soundOn=false; }catch(e){}
-const langBtn=$('#langBtn'), muteBtn=$('#muteBtn');
-const LANG_LABEL={both:'EN + VI',en:'EN',vi:'VI'};
-function syncTools(){ langBtn.textContent=LANG_LABEL[voiceMode]; muteBtn.setAttribute('aria-pressed',String(soundOn)); }
-syncTools();
-langBtn.onclick=()=>{ voiceMode = voiceMode==='both'?'en':voiceMode==='en'?'vi':'both'; try{localStorage.setItem('cdl-voice',voiceMode)}catch(e){} syncTools(); sayTip(); };
-muteBtn.onclick=()=>{ soundOn=!soundOn; try{localStorage.setItem('cdl-mute',soundOn?'0':'1')}catch(e){} syncTools(); if(!soundOn){try{speechSynthesis.cancel()}catch(e){}} };
+LabKit.init({ legacy:'cdl', onLang:()=>sayTip(), onPanels:()=>{ fitCamera(); placeCamera(); } });
 
 let voices=[];
 function loadVoices(){ try{ voices=window.speechSynthesis?speechSynthesis.getVoices():[]; }catch(e){} }
 try{ if(window.speechSynthesis){ loadVoices(); speechSynthesis.onvoiceschanged=loadVoices; } }catch(e){}
 const pickVoice = l => voices.find(v=>v.lang && v.lang.toLowerCase().replace('_','-').startsWith(l));
-function say(en,vi){
-  if(!soundOn) return;
+function say(en,vi,force){
+  if(!(LabKit.voiceOn||(force&&LabKit.sfxOn))) return;
   try{
     const ss=window.speechSynthesis; if(!ss) return;
     const busyNow=ss.speaking||ss.pending;
     ss.cancel();
     const q=[];
-    if(voiceMode!=='vi') q.push({t:en,l:'en-US',v:pickVoice('en-us')||pickVoice('en')});
-    if(voiceMode!=='en') q.push({t:vi,l:'vi-VN',v:pickVoice('vi')});
+    if(LabKit.lang!=='vi') q.push({t:en,l:'en-US',v:pickVoice('en-us')||pickVoice('en')});
+    if(LabKit.lang!=='en') q.push({t:vi,l:'vi-VN',v:pickVoice('vi')});
     const go=()=>q.forEach(o=>{ const u=new SpeechSynthesisUtterance(o.t); u.lang=o.l; if(o.v) u.voice=o.v; u.rate=o.l==='vi-VN'?0.95:0.92; u.pitch=1.15; ss.speak(u); });
     if(busyNow) setTimeout(go,80); else go();
   }catch(e){}
@@ -341,18 +337,18 @@ function say(en,vi){
 let ac=null;
 function unlock(){ if(!ac){ try{ ac=new (window.AudioContext||window.webkitAudioContext)(); }catch(e){} } if(ac&&ac.state==='suspended') ac.resume(); }
 function tone(f0,f1,dur,vol,type){
-  if(!soundOn||!ac) return;
+  if(!LabKit.sfxOn||!ac) return;
   const t=ac.currentTime, o=ac.createOscillator(), g=ac.createGain();
   o.type=type||'sine'; o.frequency.setValueAtTime(f0,t); o.frequency.exponentialRampToValueAtTime(f1,t+dur);
   g.gain.setValueAtTime(vol,t); g.gain.exponentialRampToValueAtTime(0.0001,t+dur);
   o.connect(g).connect(ac.destination); o.start(t); o.stop(t+dur+0.02);
 }
-const buzz=ms=>{ try{ if(soundOn&&navigator.vibrate) navigator.vibrate(ms); }catch(e){} };
+const buzz=ms=>LabKit.vibrate(ms);
 const plop=()=>{ buzz(18); tone(700,160,0.14,0.28); setTimeout(()=>tone(420,900,0.08,0.08),60); };
 const bubbles=()=>{ for(let i=0;i<6;i++) setTimeout(()=>tone(700+Math.random()*900,1400+Math.random()*600,0.06,0.06),i*90+Math.random()*60); };
 const chime=()=>{ tone(660,660,0.25,0.15,'triangle'); setTimeout(()=>tone(880,880,0.25,0.15,'triangle'),140); setTimeout(()=>tone(1175,1175,0.4,0.15,'triangle'),280); };
 function pourNoise(dur,freq){
-  if(!soundOn||!ac) return;
+  if(!LabKit.sfxOn||!ac) return;
   const len=Math.floor(ac.sampleRate*dur), buf=ac.createBuffer(1,len,ac.sampleRate), d=buf.getChannelData(0);
   for(let i=0;i<len;i++) d[i]=(Math.random()*2-1);
   const s=ac.createBufferSource(); s.buffer=buf;
@@ -364,9 +360,9 @@ function pourNoise(dur,freq){
 
 /* ---------- tips ---------- */
 let tip={en:'',vi:''};
-function setTip(en,vi,speak){ tip={en,vi}; $('#tipEn').textContent=en; $('#tipVi').textContent=vi; if(speak!==false) say(en,vi); }
-function sayTip(){ say(tip.en,tip.vi); }
-$('#sayBtn').onclick=()=>{unlock();sayTip();};
+function setTip(en,vi,speak){ tip={en,vi}; $('#tipEn').textContent=en; $('#tipVi').textContent=vi; if(speak!==false) say(en,vi); LabKit.notifyTip(); }
+function sayTip(force){ say(tip.en,tip.vi,force); }
+$('#sayBtn').onclick=()=>{unlock();sayTip(true);};
 
 $('#infoBtn').onclick=()=>{ $('#info').hidden=false; };
 $('#infoClose').onclick=()=>{ $('#info').hidden=true; };

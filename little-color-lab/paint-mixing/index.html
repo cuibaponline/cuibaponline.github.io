@@ -112,6 +112,7 @@ button:focus-visible{outline:3px solid var(--marker);outline-offset:3px}
 .start{background:var(--card);border-radius:28px;padding:22px 26px 26px;text-align:center;max-width:420px;box-shadow:0 6px 0 var(--line),0 16px 40px var(--shadow)}
 .start h2{margin:0;font-family:var(--f-display);font-weight:800;font-size:2rem;line-height:1.05}
 .start .vi{margin:2px 0 12px;font-family:var(--f-hand);font-size:1.6rem;color:var(--marker)}
+.start .lk-install{margin-top:10px}
 .start p.note{margin:0 0 16px;font-size:.95rem;line-height:1.45;color:#4a5670}
 .go{background:var(--sun);border-radius:20px;padding:12px 26px;font-family:var(--f-display);font-weight:800;font-size:1.4rem;
   box-shadow:inset 0 -5px 0 rgba(0,0,0,.12);display:inline-flex;flex-direction:column;align-items:center;line-height:1.05}
@@ -153,8 +154,8 @@ button:focus-visible{outline:3px solid var(--marker);outline-offset:3px}
   .mix .eq{font-size:1.35rem;gap:6px}.mix .dot{width:34px;height:34px}.mix .dot.big{width:44px;height:44px}
   .mix{padding:8px 14px 10px}.mix .en{font-size:1.05rem}.mix .vi{font-size:1.15rem}
 }
-@media (max-width:400px){ .tools #langBtn{display:none} }
 @media (max-width:360px){ .tube b{display:none} .swlab b{display:none} }
+@media (max-width:400px){ .brand{padding:4px 8px 6px} .brand h1{font-size:.84rem} .brand p{font-size:.85rem} }
 @media (max-height:520px){
   .brand{display:none}
   .top{position:absolute;top:calc(env(safe-area-inset-top,0px) + 10px);right:16px}
@@ -178,6 +179,8 @@ button:focus-visible{outline:3px solid var(--marker);outline-offset:3px}
 <link rel="manifest" href="../manifest.webmanifest">
 <link rel="apple-touch-icon" href="../icons/icon-180.png">
 <script>if('serviceWorker' in navigator)addEventListener('load',()=>navigator.serviceWorker.register('../sw.js'));</script>
+<link rel="stylesheet" href="../lab-kit.css">
+<script src="../lab-kit.js"></script>
 </head>
 <body>
 <canvas id="c" tabindex="-1" aria-label="3D art table with a wooden paint palette, five paint tubes, a brush, a water cup and a small easel"></canvas>
@@ -193,10 +196,7 @@ button:focus-visible{outline:3px solid var(--marker);outline-offset:3px}
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg>
       </a>
       <button class="tool" id="langBtn" aria-label="Voice language">EN + VI</button>
-      <button class="tool" id="muteBtn" aria-pressed="true" aria-label="Sound">
-        <svg class="on" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9h4l5-4v14l-5-4H4z" fill="currentColor"/><path d="M16.5 8.5a5 5 0 0 1 0 7M19 6a8.5 8.5 0 0 1 0 12"/></svg>
-        <svg class="off" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9h4l5-4v14l-5-4H4z" fill="currentColor"/><path d="M17 9l5 6M22 9l-5 6"/></svg>
-      </button>
+      <button class="tool" id="muteBtn" aria-label="Sound"></button>
       <button class="tool" id="infoBtn" aria-label="For grown-ups">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><circle cx="12" cy="12" r="9.5"/><path d="M9.3 9.3a2.8 2.8 0 1 1 3.9 2.6c-.8.4-1.2 1-1.2 1.8v.5"/><circle cx="12" cy="17.3" r=".6" fill="currentColor"/></svg>
       </button>
@@ -250,6 +250,7 @@ button:focus-visible{outline:3px solid var(--marker);outline-offset:3px}
     <p class="vi" lang="vi">Pha màu nào!</p>
     <p class="note" id="loadNote">Setting up the paint table…</p>
     <button class="go" id="goBtn" disabled>Let's play! <i lang="vi">Chơi thôi!</i></button>
+    <button class="lk-install" type="button" data-lk-install hidden>Install app <i lang="vi">Cài ứng dụng</i></button>
   </div>
 </div>
 
@@ -258,6 +259,7 @@ button:focus-visible{outline:3px solid var(--marker);outline-offset:3px}
     <button class="x" id="infoClose" aria-label="Close">✕</button>
     <h2 id="infoTitle">For grown-ups</h2>
     <p class="vi" lang="vi">Dành cho ba mẹ</p>
+    <p><button class="lk-install" type="button" data-lk-install hidden>Install app <i lang="vi">Cài ứng dụng</i></button></p>
 
     <h3>How to play</h3>
     <ul>
@@ -400,26 +402,19 @@ TUBES.forEach((t,i)=>{
 });
 
 /* ---------- speech + sound ---------- */
-let soundOn=true, voiceMode='both';
-try{ const v=localStorage.getItem('pml-voice'); if(v) voiceMode=v; if(localStorage.getItem('pml-mute')==='1') soundOn=false; }catch(e){}
-const langBtn=$('#langBtn'), muteBtn=$('#muteBtn');
-const LANG_LABEL={both:'EN + VI',en:'EN',vi:'VI'};
-function syncTools(){ langBtn.textContent=LANG_LABEL[voiceMode]; muteBtn.setAttribute('aria-pressed',String(soundOn)); }
-syncTools();
-langBtn.onclick=()=>{ voiceMode=voiceMode==='both'?'en':voiceMode==='en'?'vi':'both'; try{localStorage.setItem('pml-voice',voiceMode)}catch(e){} syncTools(); sayTip(); };
-muteBtn.onclick=()=>{ soundOn=!soundOn; try{localStorage.setItem('pml-mute',soundOn?'0':'1')}catch(e){} syncTools(); if(!soundOn){try{speechSynthesis.cancel()}catch(e){}} };
+LabKit.init({ legacy:'pml', onLang:()=>sayTip(), onPanels:()=>{ fitCamera(); placeCamera(); lastBubbleH=$('.bubble').offsetHeight; } });
 let voices=[];
 function loadVoices(){ try{ voices=window.speechSynthesis?speechSynthesis.getVoices():[]; }catch(e){} }
 try{ if(window.speechSynthesis){ loadVoices(); speechSynthesis.onvoiceschanged=loadVoices; } }catch(e){}
 const pickVoice=l=>voices.find(v=>v.lang&&v.lang.toLowerCase().replace('_','-').startsWith(l));
-function say(en,vi){
-  if(!soundOn) return;
+function say(en,vi,force){
+  if(!(LabKit.voiceOn||(force&&LabKit.sfxOn))) return;
   try{
     const ss=window.speechSynthesis; if(!ss) return;
     const busyNow=ss.speaking||ss.pending; ss.cancel();
     const q=[];
-    if(voiceMode!=='vi') q.push({t:en,l:'en-US',v:pickVoice('en-us')||pickVoice('en')});
-    if(voiceMode!=='en') q.push({t:vi,l:'vi-VN',v:pickVoice('vi')});
+    if(LabKit.lang!=='vi') q.push({t:en,l:'en-US',v:pickVoice('en-us')||pickVoice('en')});
+    if(LabKit.lang!=='en') q.push({t:vi,l:'vi-VN',v:pickVoice('vi')});
     const go=()=>q.forEach(o=>{ const u=new SpeechSynthesisUtterance(o.t); u.lang=o.l; if(o.v) u.voice=o.v; u.rate=o.l==='vi-VN'?0.95:0.92; u.pitch=1.15; ss.speak(u); });
     if(busyNow) setTimeout(go,80); else go();
   }catch(e){}
@@ -427,14 +422,14 @@ function say(en,vi){
 let ac=null;
 function unlock(){ if(!ac){ try{ ac=new (window.AudioContext||window.webkitAudioContext)(); }catch(e){} } if(ac&&ac.state==='suspended') ac.resume(); }
 function tone(f0,f1,dur,vol,type){
-  if(!soundOn||!ac) return;
+  if(!LabKit.sfxOn||!ac) return;
   const t=ac.currentTime,o=ac.createOscillator(),g=ac.createGain();
   o.type=type||'sine'; o.frequency.setValueAtTime(f0,t); o.frequency.exponentialRampToValueAtTime(f1,t+dur);
   g.gain.setValueAtTime(vol,t); g.gain.exponentialRampToValueAtTime(0.0001,t+dur);
   o.connect(g).connect(ac.destination); o.start(t); o.stop(t+dur+0.02);
 }
 function noise(dur,freq,vol,q){
-  if(!soundOn||!ac) return;
+  if(!LabKit.sfxOn||!ac) return;
   const len=Math.max(1,Math.floor(ac.sampleRate*dur)), buf=ac.createBuffer(1,len,ac.sampleRate), d=buf.getChannelData(0);
   for(let i=0;i<len;i++) d[i]=(Math.random()*2-1);
   const s=ac.createBufferSource(); s.buffer=buf;
@@ -443,7 +438,7 @@ function noise(dur,freq,vol,q){
   g.gain.setValueAtTime(0.0001,t); g.gain.linearRampToValueAtTime(vol,t+Math.min(0.08,dur/3)); g.gain.linearRampToValueAtTime(0.0001,t+dur);
   s.connect(f).connect(g).connect(ac.destination); s.start(t);
 }
-const buzz=ms=>{ try{ if(soundOn&&navigator.vibrate) navigator.vibrate(ms); }catch(e){} };
+const buzz=ms=>LabKit.vibrate(ms);
 const click=()=>{ tone(1200,700,0.05,0.1,'square'); buzz(10); };
 const squelch=()=>{ buzz(20); tone(260,110,0.28,0.22); noise(0.3,500,0.12,1.5); setTimeout(()=>tone(180,420,0.1,0.08),230); };
 const swish=()=>noise(0.28,900,0.07,0.8);
@@ -454,9 +449,9 @@ const dab=()=>tone(520+Math.random()*200,260,0.07,0.06);
 
 /* ---------- tips ---------- */
 let tip={en:'',vi:''}, tipId=0;
-function setTip(en,vi,speak){ tip={en,vi}; tipId++; if(typeof refitSoon==='function') refitSoon(); $('#tipEn').textContent=en; $('#tipVi').textContent=vi; if(speak!==false) say(en,vi); }
-function sayTip(){ say(tip.en,tip.vi); }
-$('#sayBtn').onclick=()=>{unlock();sayTip();};
+function setTip(en,vi,speak,force){ tip={en,vi}; tipId++; if(typeof refitSoon==='function') refitSoon(); $('#tipEn').textContent=en; $('#tipVi').textContent=vi; if(speak!==false) say(en,vi,force); LabKit.notifyTip(); }
+function sayTip(force){ say(tip.en,tip.vi,force); }
+$('#sayBtn').onclick=()=>{unlock();sayTip(true);};
 $('#infoBtn').onclick=()=>{ $('#info').hidden=false; };
 $('#infoClose').onclick=()=>{ $('#info').hidden=true; };
 $('#info').addEventListener('click',e=>{ if(e.target.id==='info') $('#info').hidden=true; });
@@ -1030,7 +1025,7 @@ function pickSwatch(i){
   swSel=i; renderSwatches(); click();
   brushColor={rgb:s.rgb,name:s}; setBristles(s.rgb);
   brushAt='paper'; brushTo(paperPose(paperPoint(0.5,0.4)),0.6,0.5);
-  setTip(s.en+'! Paint with it on the paper.',s.vi+'! Vẽ màu này lên giấy nhé.');
+  setTip(s.en+'! Paint with it on the paper.',s.vi+'! Vẽ màu này lên giấy nhé.',true,true);
   refreshUI();
 }
 function uvToPx(uv){ return [uv.x*PW,(1-uv.y)*PH]; }

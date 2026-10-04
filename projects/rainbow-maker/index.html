@@ -97,7 +97,7 @@ button:focus-visible, input:focus-visible { outline: 0.2rem solid var(--rain); o
 .msg { margin: 0; font-family: var(--display); font-weight: 800; font-size: 1.3rem; line-height: 1.2; text-wrap: balance; }
 .msg-row { display: flex; gap: 0.6rem; align-items: center; }
 .msg-row .msg { flex: 1; min-width: 0; }
-.msgs { flex: 1; min-width: 0; } .msgs .msg + .msg { margin-top: 0.2rem; }
+.msgs { flex: 1; min-width: 0; } .msgs .msg + .msg { margin-top: 0.2rem; } #msgEn:not([hidden]) + #msg { color: #2c68b2; font-weight: 600; }   /* both languages: Vietnamese line in blue, as in Color Lab */
 #hint.lk-collapsed > .msg-row { display: flex !important; } #hint.lk-collapsed .msgs { display: none !important; }
 #hint.lk-collapsed .hear { position: relative; z-index: 3; }   /* above the fold button's enlarged tap area */
 .hear { border: 0; background: var(--sun); width: 3.25rem; height: 3.25rem; border-radius: 50%; font-size: 1.5rem; flex-shrink: 0; box-shadow: 0 0.12rem 0 var(--sun-deep); }

@@ -1,0 +1,69 @@
+/* Little Color Lab kit styles. Uses the page's --card/--ink/--marker/--sun/--line tokens when present. */
+html[data-lk-lang="en"] #tipVi, html[data-lk-lang="vi"] #tipEn { display: none !important; }
+html.lk-standalone [data-lk-leaves-app] { display: none !important; }
+
+/* top-bar button for pages without their own .tool style (home page) */
+.lk-tool { min-width: 48px; height: 48px; border: 0; border-radius: 14px; padding: 0 12px; display: inline-grid; place-items: center; cursor: pointer;
+  background: var(--card, #fff); color: var(--ink, #1e2b44); box-shadow: 0 4px 0 var(--line, #d5ddca); font: 800 .95rem var(--f-display, system-ui, sans-serif); }
+.lk-tool svg { width: 24px; height: 24px; }
+.lk-tool:focus-visible, .lk-fold:focus-visible, .lk-install:focus-visible { outline: 3px solid var(--marker, #2c68b2); outline-offset: 2px; }
+
+/* toast */
+.lk-toast { position: fixed; left: 50%; top: calc(env(safe-area-inset-top, 0px) + 72px); z-index: 40; max-width: calc(100vw - 32px);
+  transform: translate(-50%, -8px); opacity: 0; pointer-events: none; transition: opacity .2s, transform .2s;
+  background: var(--card, #fff); color: var(--ink, #1e2b44); border-radius: 16px; padding: 8px 16px; text-align: center; box-shadow: 0 8px 24px rgba(10, 14, 24, .25); }
+.lk-toast.show { opacity: 1; transform: translate(-50%, 0); }
+.lk-toast b { display: block; font: 800 1rem var(--f-display, system-ui, sans-serif); }
+.lk-toast i { display: block; font-style: normal; color: var(--marker, #2c68b2); }
+
+/* fold buttons: a small tab while open, a chip / pill while folded */
+.lk-foldable { position: relative; }
+.lk-fold { position: absolute; z-index: 2; display: grid; place-items: center; border: 0; padding: 0; cursor: pointer; pointer-events: auto; font: inherit;
+  background: var(--card, #fff); color: var(--ink, #1e2b44); box-shadow: 0 2px 8px rgba(10, 14, 24, .25); }
+.lk-fold::before { content: ''; position: absolute; inset: -8px; }   /* tap target >= 44px */
+.lk-fold svg { width: 18px; height: 18px; }
+.lk-fold .lk-ic-chat, .lk-fold .lk-fold-t { display: none; }
+.lk-fold-bubble { left: 50%; bottom: -14px; transform: translateX(-50%); width: 48px; height: 26px; border-radius: 13px; }   /* bottom-centre: clear of the say button */
+.lk-fold-tray { top: -14px; left: 50%; transform: translateX(-50%); width: 48px; height: 26px; border-radius: 13px; }
+.lk-fold-tray .lk-ic-chev { transform: rotate(180deg); }
+
+.lk-collapsed[data-lk-fold]:not([hidden]) { display: flex !important; flex-direction: row !important; align-items: center !important; gap: 6px !important;
+  align-self: auto !important; width: auto !important; min-width: 0 !important; max-width: none !important; padding: 6px !important; }
+.lk-collapsed[data-lk-fold="tray"]:not([hidden]) { align-self: center !important; }   /* .hud stretches children; keep the pill small */
+.lk-collapsed[data-lk-fold] > :not(.lk-fold):not(.say) { display: none !important; }
+.lk-collapsed .lk-fold { position: static; transform: none; box-shadow: none; }
+.lk-collapsed .lk-fold-bubble { width: 44px; height: 44px; background: var(--sun, #ffcd34); }
+.lk-collapsed .lk-fold-bubble .lk-ic-chev { display: none; }
+.lk-collapsed .lk-fold-bubble .lk-ic-chat { display: block; width: 24px; height: 24px; }
+.lk-collapsed .lk-fold-tray { width: auto; height: 44px; padding: 0 14px; border-radius: 14px; display: flex; gap: 8px; align-items: center; }
+.lk-collapsed .lk-fold-tray .lk-ic-chev { transform: none; }
+.lk-collapsed .lk-fold-tray .lk-fold-t { display: flex; gap: 6px; align-items: baseline; }
+.lk-fold-t b { font: 800 1rem var(--f-display, system-ui, sans-serif); }
+.lk-fold-t i { font-style: normal; color: var(--marker, #2c68b2); }
+.lk-pulse { animation: lk-pulse 1.1s ease-out 1; }
+@keyframes lk-pulse { from { box-shadow: 0 0 0 0 rgba(255, 205, 52, .9); } to { box-shadow: 0 0 0 16px rgba(255, 205, 52, 0); } }
+
+/* install button, banner and help sheet */
+.lk-install { display: inline-flex; align-items: baseline; gap: 6px; min-height: 44px; padding: 10px 16px; border: 0; border-radius: 14px; cursor: pointer;
+  background: var(--sun, #ffcd34); color: var(--ink, #1e2b44); font: 800 1rem var(--f-display, system-ui, sans-serif); }
+.lk-install i { font-style: normal; font-weight: 600; }
+.lk-install[hidden], .lk-banner[hidden] { display: none !important; }
+.lk-banner { display: flex; align-items: center; gap: 12px; padding: 12px; border-radius: 20px; background: var(--card, #fff); color: var(--ink, #1e2b44);
+  box-shadow: 0 5px 0 var(--line, #d5ddca), 0 12px 26px rgba(30, 43, 68, .12); }
+.lk-banner img { width: 48px; height: 48px; border-radius: 12px; flex: none; }
+.lk-banner .lk-bt { flex: 1; min-width: 0; line-height: 1.25; }
+.lk-banner .lk-bt b { display: block; font: 800 1.05rem var(--f-display, system-ui, sans-serif); }
+.lk-banner .lk-bt span { display: block; font-size: .9rem; color: #4a5670; }
+.lk-banner .lk-x, .lk-sheet .lk-x { flex: none; width: 44px; height: 44px; border: 0; border-radius: 50%; background: #eef1f6; color: var(--ink, #1e2b44); font-weight: 800; font-size: 1.1rem; cursor: pointer; }
+@media (max-width: 420px) { .lk-banner { flex-wrap: wrap; } .lk-banner .lk-bt { flex-basis: calc(100% - 116px); } .lk-banner .lk-install { order: 3; flex: 1; justify-content: center; } }
+.lk-sheet { position: fixed; inset: 0; z-index: 50; display: grid; place-items: center; padding: 16px; background: rgba(10, 14, 24, .55); }
+.lk-sheet .lk-box { width: 100%; max-width: 440px; max-height: 100%; overflow: auto; background: var(--card, #fff); color: var(--ink, #1e2b44); border-radius: 24px; padding: 20px 22px 22px; }
+.lk-sheet .lk-x { float: right; }
+.lk-sheet h2 { margin: 0; font: 800 1.5rem var(--f-display, system-ui, sans-serif); }
+.lk-sheet .lk-vi { margin: 0 0 8px; color: var(--marker, #2c68b2); }
+.lk-sheet ol { margin: 8px 0; padding-left: 22px; line-height: 1.45; }
+.lk-sheet li { margin: 8px 0; font-weight: 700; }
+.lk-sheet i { font-style: normal; font-weight: 600; color: var(--marker, #2c68b2); }
+.lk-sheet .lk-url { display: block; width: 100%; margin: 8px 0 12px; padding: 10px; border: 2px solid #d8dde6; border-radius: 12px; font: inherit; }
+
+@media (prefers-reduced-motion: reduce) { .lk-pulse { animation: none; outline: 3px solid var(--sun, #ffcd34); } .lk-toast { transition: none; } }

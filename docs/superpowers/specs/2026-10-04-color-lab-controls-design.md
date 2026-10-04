@@ -121,13 +121,23 @@ Applies to the Color Lab manifest and the standalone `/rainbow-maker` manifest.
     sheets below stays.
   - Each game's start screen (and standalone's): a secondary button under "Let's play!".
   - Each game's "For grown-ups" sheet (standalone: its grown-ups sheet).
-  - Chrome / Edge / Samsung Internet on Android (and desktop): capture `beforeinstallprompt`, show the
-    button, call `prompt()` on tap; hide on `appinstalled`.
-  - iOS / iPadOS, any browser (all are WebKit; Safari, and Chrome/Edge on iOS 16.4+, can Add to Home
-    Screen from the share menu): the button opens a short hint with icons:
-    "Tap ⋯ or Share ⬆, then Add to Home Screen / Bấm ⋯ hoặc Chia sẻ ⬆, rồi chọn Thêm vào MH chính".
+  The button picks its behavior from the browser (checked in this order):
+  - **In-app browsers** (Zalo, Facebook/Messenger, Instagram, TikTok; UA contains `Zalo`, `FBAN`, `FBAV`,
+    `FB_IAB`, `Instagram`, `musical_ly`/`BytedanceWebview`): cannot install. The button opens a hint
+    "Open this page in Chrome or Safari to install / Mở trang này bằng Chrome hoặc Safari để cài" with a
+    Copy link button (`navigator.clipboard`, falling back to a selectable URL field). Very common in
+    Vietnam, where links are shared over Zalo.
+  - **`beforeinstallprompt` received** (Chrome / Edge on Android and desktop; Samsung Internet if it
+    fires it): call `prompt()` on tap; hide on `appinstalled`.
+  - **iOS / iPadOS** (all browsers are WebKit; Add to Home Screen works in Safari, and in Chrome/Edge on
+    iOS 16.4+): a short hint with icons, worded per browser:
+    - Safari: "Tap ⋯ (or Share ⬆), then Add to Home Screen / Bấm ⋯ (hoặc Chia sẻ ⬆), rồi Thêm vào MH chính".
+    - Chrome (`CriOS`) / Edge (`EdgiOS`): "Tap Share ⬆ in the address bar, then Add to Home Screen /
+      Bấm Chia sẻ ⬆ trên thanh địa chỉ, rồi Thêm vào MH chính".
     Detect iPadOS reporting as Mac via `navigator.maxTouchPoints > 1`.
-  - Other browsers with neither: button hidden.
+  - **Samsung Internet without the event** (`SamsungBrowser` in UA): hint "Tap ☰ menu, then Add page to →
+    Home screen / Bấm menu ☰, rồi Thêm trang vào → Màn hình chờ".
+  - Anything else: button hidden.
   - Hidden when already installed (`matchMedia('(display-mode: standalone)')` or `navigator.standalone`).
 - **Installed mode:** hide links that leave the app scope (Color Lab home's "Back" to `/`; standalone's
   back link to `/`), since they would open outside the app.
@@ -149,8 +159,11 @@ No test framework covers these static pages; verification is manual in a browser
 - Language: bubble text and speech follow the setting; the setting carries over between games, the home
   page and the standalone app.
 - DevTools → Application → Manifest: no installability errors, maskable icon preview looks right.
-- Real-device check by the user on iPhone (Add to Home Screen hint) and Android Chrome (banner and
-  start-screen Install button open the native install dialog in one tap).
+- DevTools device emulation with spoofed user agents for each hint branch (iOS Safari, iOS Chrome,
+  Samsung Internet, Zalo in-app).
+- Real-device check by the user: iPhone Safari and iPhone Chrome (hint, then Add to Home Screen opens
+  full-screen), Android Chrome and Samsung Internet (one-tap install), a link opened from Zalo
+  (open-in-browser hint).
 
 ## Out of scope
 

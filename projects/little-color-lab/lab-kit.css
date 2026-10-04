@@ -9,7 +9,7 @@ html.lk-standalone [data-lk-leaves-app] { display: none !important; }
 .lk-tool:focus-visible, .lk-fold:focus-visible, .lk-install:focus-visible { outline: 3px solid var(--marker, #2c68b2); outline-offset: 2px; }
 
 /* toast */
-.lk-toast { position: fixed; left: 50%; top: calc(env(safe-area-inset-top, 0px) + 72px); z-index: 40; max-width: calc(100vw - 32px);
+.lk-toast { position: fixed; left: 50%; width: max-content; top: calc(env(safe-area-inset-top, 0px) + 72px); z-index: 40; max-width: calc(100vw - 32px);
   transform: translate(-50%, -8px); opacity: 0; pointer-events: none; transition: opacity .2s, transform .2s;
   background: var(--card, #fff); color: var(--ink, #1e2b44); border-radius: 16px; padding: 8px 16px; text-align: center; box-shadow: 0 8px 24px rgba(10, 14, 24, .25); }
 .lk-toast.show { opacity: 1; transform: translate(-50%, 0); }

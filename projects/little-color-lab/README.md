@@ -22,5 +22,11 @@ Light and color
 3. In the repository: Settings > Pages > Source: deploy from your branch.
 4. Open `https://<your-name>.github.io/<repo>/little-color-lab/`.
 
-Each game is a single `index.html` with no build step. three.js (r128) and the fonts load from public CDNs,
-so the games need an internet connection.
+Each game is a single `index.html` with no build step. They share `lab-kit.js` and `lab-kit.css`
+(also used by the standalone `/rainbow-maker`): one saved setting for sound (sounds only, voice + sounds,
+silent) and language (EN + VI, EN, VI), the foldable tip bubble and control tray, and the "Install app"
+help for Android, iPhone, Samsung Internet and in-app browsers like Zalo. Settings live in
+`localStorage['cuibap-prefs']`. three.js (r128) and the fonts load from public CDNs; after the first
+visit the service worker keeps everything available offline.
+
+Tests for the kit's logic: `mise exec node@24.21.0 -- npm run test:lab`.

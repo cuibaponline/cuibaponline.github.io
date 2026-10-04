@@ -48,23 +48,36 @@ a.game p.d{margin:6px 0 0;font-size:.95rem;line-height:1.4;color:#4a5670}
 h3.sec{margin:8px 0 0;font-family:var(--f-display);font-weight:800;font-size:1.15rem}
 h3.sec span{font-family:var(--f-hand);font-weight:400;color:var(--marker);font-size:1.2rem}
 .t3{background:#fff4d6}.t4{background:#15171e}.t5{background:#fdf1e0}.t6{background:#f3ecff}.t7{background:#e7f3ff}.t8{background:#fde8ef}
+/* top row */
+.hubtop{display:flex;align-items:center;gap:8px}.hubtools{margin-left:auto;display:flex;gap:8px}
 footer{font-size:.85rem;color:#5b6780;line-height:1.5}
 </style>
 <meta name="apple-mobile-web-app-title" content="Color Lab">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="icons/icon-180.png">
 <script>if('serviceWorker' in navigator)addEventListener('load',()=>navigator.serviceWorker.register('sw.js'));</script>
+<link rel="stylesheet" href="lab-kit.css">
+<script src="lab-kit.js"></script>
 </head>
 <body>
 <main>
-  <a href="/" style="display:inline-flex;align-items:center;gap:6px;text-decoration:none;color:var(--marker);font-family:var(--f-display);font-weight:800;font-size:1rem;background:var(--card);border-radius:14px;padding:8px 14px;box-shadow:0 4px 0 var(--line);align-self:flex-start" aria-label="Back to all games">
+  <div class="hubtop">
+  <a href="/" data-lk-leaves-app style="display:inline-flex;align-items:center;gap:6px;text-decoration:none;color:var(--marker);font-family:var(--f-display);font-weight:800;font-size:1rem;background:var(--card);border-radius:14px;padding:8px 14px;box-shadow:0 4px 0 var(--line)" aria-label="Back to all games">
     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg>
     Back
   </a>
+  <span class="hubtools"><button class="lk-tool" id="langBtn"></button><button class="lk-tool" id="muteBtn" aria-label="Sound"></button></span>
+  </div>
   <div class="drops" aria-hidden="true"><i style="--c:#e5322d"></i><i style="--c:#ffc81a"></i><i style="--c:#1f6fe0"></i><i style="--c:#1fa347"></i><i style="--c:#ff4fa3"></i><i style="--c:#7b3fc4"></i></div>
   <div>
     <h1><span>Little</span> <span>Color</span> <span>Lab</span></h1>
     <p class="sub" lang="vi">Phòng thí nghiệm màu sắc</p>
+  </div>
+  <div class="lk-banner" data-lk-install-banner hidden>
+    <img src="icons/icon-192.png" alt="">
+    <div class="lk-bt"><b>Install Color Lab</b><span>Play from your home screen, even offline. · Chơi ngay từ màn hình chính, cả khi không có mạng.</span></div>
+    <button class="lk-install" type="button" data-lk-install>Install <i lang="vi">Cài</i></button>
+    <button class="lk-x" type="button" data-lk-banner-close aria-label="Not now">✕</button>
   </div>
 
   <h3 class="sec">Colors in water <span lang="vi">· Màu trong nước</span></h3>
@@ -147,7 +160,8 @@ footer{font-size:.85rem;color:#5b6780;line-height:1.5}
     </div>
   </a>
   </div>
-  <footer>English and Vietnamese. Works best on a phone with the sound on. Each game has a <b>?</b> button with notes for grown-ups.</footer>
+  <footer>English and Vietnamese. Works best on a phone with the sound on. The speaker button switches between sounds only, voice + sounds, and silent. Each game has a <b>?</b> button with notes for grown-ups.</footer>
 </main>
+<script>LabKit.init({ fold: [] });</script>
 </body>
 </html>

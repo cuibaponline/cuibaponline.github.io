@@ -25,8 +25,9 @@ Scope: the 8 games in `projects/little-color-lab/*/`, the Color Lab home page
 A shared, no-build `projects/little-color-lab/lab-kit.js` + `lab-kit.css`, loaded by each Color Lab game
 and the home page. It owns preferences, the sound and language buttons, panel collapsing and the install
 entry point. Each game keeps its scene logic and its own `say()`/`tone()`, which read flags from the kit.
-The standalone `/rainbow-maker` has a different UI architecture, so it gets the same behavior inline,
-sharing the same preferences key and the same states, icons and wording.
+The standalone `/rainbow-maker` also loads the kit (`../little-color-lab/lab-kit.js`) for preferences,
+panel folding, toasts and install help, but wires its own differently-styled sound and language buttons
+through the kit's lower-level API (`setSound`, `cycleLang`, `soundIcon`, ...).
 
 ### Kit interface
 
@@ -106,8 +107,8 @@ The two floating panels in every game get a small chevron button (≥ 44px tap t
 - After a collapse/expand the kit fires `onPanels()` once the transition ends, and the game refits its
   camera (see Kit interface). `freeBand()`-style measurements then see the smaller panels.
 - Collapse state is remembered per panel kind in `cuibap-prefs.collapsed`, shared across games.
-- Standalone `/rainbow-maker`: same chevrons on its `.hint` section and `.controls` tray, refitting its
-  camera the same way; keeps its existing `cleanBtn` "Hide panels" toggle.
+- Standalone `/rainbow-maker`: same chevrons on its `.hint` section and `.controls` tray (its canvas
+  already fills the screen under the overlays, so no camera refit); keeps its existing `cleanBtn` "Hide panels" toggle.
 
 ## 5. Mobile PWA install
 
@@ -119,7 +120,8 @@ Applies to the Color Lab manifest and the standalone `/rainbow-maker` manifest.
   - Color Lab home page: a dismissible banner card above the games ("Play offline from your home screen").
     Dismissing it hides the banner for 14 days (`cuibap-prefs.installDismissedAt`); the button in the
     sheets below stays.
-  - Each game's start screen (and standalone's): a secondary button under "Let's play!".
+  - Each game's start screen: a secondary button under "Let's play!". Standalone has no start screen; it
+    gets the same dismissible banner, floating under its top bar.
   - Each game's "For grown-ups" sheet (standalone: its grown-ups sheet).
   The button picks its behavior from the browser (checked in this order):
   - **In-app browsers** (Zalo, Facebook/Messenger, Instagram, TikTok; UA contains `Zalo`, `FBAN`, `FBAV`,
@@ -141,12 +143,12 @@ Applies to the Color Lab manifest and the standalone `/rainbow-maker` manifest.
   - Hidden when already installed (`matchMedia('(display-mode: standalone)')` or `navigator.standalone`).
 - **Installed mode:** hide links that leave the app scope (Color Lab home's "Back" to `/`; standalone's
   back link to `/`), since they would open outside the app.
-- **Manifest fixes:** a real maskable icon (`icons/icon-maskable-512.png`, artwork inside the 80% safe
-  zone on the theme background, `purpose: "maskable"`); `screenshots`: one portrait with
+- **Manifest fixes:** maskable icon: checked, both apps' artwork already sits inside the maskable safe
+  circle (radius 40%) on a full-bleed background, so the existing `maskable` entry stays; `screenshots`: one portrait with
   `form_factor: "narrow"` and one landscape with `form_factor: "wide"`, each with `sizes` and `type`.
 - **Service workers** (both apps): same-origin `.js`/`.css` become network-first like pages, so an updated
-  `lab-kit.*` is never served stale; Color Lab precaches `lab-kit.js`, `lab-kit.css` and the new icons;
-  standalone precaches its new icons only; bump `VERSION` to `v2` in both.
+  `lab-kit.*` is never served stale; both precache `lab-kit.js` and `lab-kit.css`; bump `VERSION` to
+  `v2` in both.
 
 ## Testing
 

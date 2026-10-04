@@ -72,6 +72,8 @@ button:focus-visible, input:focus-visible { outline: 0.2rem solid var(--rain); o
 }
 .chip-btn[aria-pressed="true"] { background: var(--ink); color: #fff; }
 .chip-btn .lbl { display: none; }
+.chip-btn .ic svg { width: 20px; height: 20px; display: block; }
+.lk-banner-float { pointer-events: auto; margin: 0 auto 0.5rem; max-width: 30rem; }
 .lang-long { display: none; }
 #fsBtn, #cleanBtn { display: none; }
 
@@ -95,6 +97,9 @@ button:focus-visible, input:focus-visible { outline: 0.2rem solid var(--rain); o
 .msg { margin: 0; font-family: var(--display); font-weight: 800; font-size: 1.3rem; line-height: 1.2; text-wrap: balance; }
 .msg-row { display: flex; gap: 0.6rem; align-items: center; }
 .msg-row .msg { flex: 1; min-width: 0; }
+.msgs { flex: 1; min-width: 0; } .msgs .msg + .msg { margin-top: 0.2rem; }
+#hint.lk-collapsed > .msg-row { display: flex !important; } #hint.lk-collapsed .msgs { display: none !important; }
+#hint.lk-collapsed .hear { position: relative; z-index: 3; }   /* above the fold button's enlarged tap area */
 .hear { border: 0; background: var(--sun); width: 3.25rem; height: 3.25rem; border-radius: 50%; font-size: 1.5rem; flex-shrink: 0; box-shadow: 0 0.12rem 0 var(--sun-deep); }
 .hear:active { transform: translateY(0.12rem); box-shadow: none; }
 .voice-note { margin: 0; font-size: 0.85rem; color: var(--muted); }
@@ -165,7 +170,9 @@ input[type=range]::-moz-range-thumb {
 @media (max-width: 480px) {
   .brand h1 { font-size: clamp(1.15rem, 6vw, 1.5rem); }
   .brand p { font-size: 0.82rem; }
-  .top-actions { gap: 0.35rem; }
+  .top-actions { gap: 0.35rem; margin-left: auto; }
+  .top { flex-wrap: wrap; row-gap: 0.4rem; }   /* the buttons move under the title when it would not fit beside them */
+  .brand { flex: 1 1 10rem; }
   .tray { padding: 0.6rem; }
   .toggles { gap: 0.3rem; }
   .tog { font-size: 0.68rem; min-height: 4.2rem; border-radius: 0.9rem; }
@@ -214,7 +221,7 @@ input[type=range]::-moz-range-thumb {
   .drag-tip { display: none; }
 }
 /* Teacher's clean view: only the scene, title and top buttons */
-#app.clean .hint, #app.clean .controls { display: none; }
+#app.clean .hint, #app.clean .controls { display: none !important; }
 
 /* Sheets */
 .sheet {
@@ -257,6 +264,8 @@ input[type=range]::-moz-range-thumb {
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="icons/icon-180.png">
 <script>if('serviceWorker' in navigator)addEventListener('load',()=>navigator.serviceWorker.register('sw.js'));</script>
+<link rel="stylesheet" href="../little-color-lab/lab-kit.css">
+<script src="../little-color-lab/lab-kit.js"></script>
 </head>
 <body>
 <div id="app">
@@ -269,18 +278,24 @@ input[type=range]::-moz-range-thumb {
       <p data-i="tagline"></p>
     </div>
     <div class="top-actions">
-      <a class="chip-btn" href="/" aria-label="Back to all games" style="text-decoration:none;color:inherit"><span aria-hidden="true">⬅️</span></a>
-      <button class="chip-btn" id="speakBtn" aria-pressed="true"><span aria-hidden="true">🗣️</span><span class="lbl" data-i="readAloud"></span></button>
+      <a class="chip-btn" href="/" data-lk-leaves-app aria-label="Back to all games" style="text-decoration:none;color:inherit"><span aria-hidden="true">⬅️</span></a>
+      <button class="chip-btn" id="speakBtn"><span class="ic" aria-hidden="true"></span><span class="lbl"></span></button>
       <button class="chip-btn" id="langBtn"><span class="lang-long" id="langLong"></span><span class="lang-short" id="langShort"></span></button>
       <button class="chip-btn" id="cleanBtn" aria-pressed="false"><span aria-hidden="true">👁️</span><span class="lbl" id="cleanLbl"></span></button>
       <button class="chip-btn" id="fsBtn"><span aria-hidden="true">⛶</span><span class="lbl" id="fsLbl"></span></button>
       <button class="chip-btn" id="grownBtn" aria-label="For grown-ups"><span aria-hidden="true">?</span><span class="lbl" data-i="grownTitle"></span></button>
     </div>
   </header>
+  <div class="lk-banner lk-banner-float" data-lk-install-banner hidden>
+    <img src="icons/icon-192.png" alt="">
+    <div class="lk-bt"><b>Install Rainbow Maker</b><span>Play from your home screen, even offline. · Chơi ngay từ màn hình chính, cả khi không có mạng.</span></div>
+    <button class="lk-install" type="button" data-lk-install>Install <i lang="vi">Cài</i></button>
+    <button class="lk-x" type="button" data-lk-banner-close aria-label="Not now">✕</button>
+  </div>
 
   <section class="hint" id="hint" aria-live="polite">
     <div class="checks" id="checks"></div>
-    <div class="msg-row"><p class="msg" id="msg"></p><button class="hear" id="hearBtn" aria-label="Hear it"><span aria-hidden="true">🔊</span></button></div>
+    <div class="msg-row"><div class="msgs"><p class="msg" id="msgEn" lang="en" hidden></p><p class="msg" id="msg"></p></div><button class="hear" id="hearBtn" aria-label="Hear it"><span aria-hidden="true">🔊</span></button></div>
     <p class="voice-note" id="voiceNote" hidden></p>
     <div class="legend" id="legend" hidden></div>
   </section>
@@ -320,6 +335,7 @@ input[type=range]::-moz-range-thumb {
   <div class="sheet" id="grownView" hidden>
     <div class="card grown" role="dialog" aria-modal="true" aria-labelledby="grownH">
       <div class="card-head"><h2 id="grownH" data-i="grownTitle"></h2><button class="icon-btn" id="grownClose" aria-label="Close">✕</button></div>
+      <p><button class="lk-install" type="button" data-lk-install hidden>Install app <i lang="vi">Cài ứng dụng</i></button></p>
       <div class="fact" id="grownBody"></div>
     </div>
   </div>
@@ -335,7 +351,7 @@ const T = {
     title: 'Rainbow Maker', tagline: 'Elephant Class, can you make a rainbow?', elephant: 'Elephant',
     sun: 'Sun', rain: 'Rain', rainLv: ['none', 'a little', 'lots'], turn: 'Turn', drop: 'Raindrop',
     sunLow: 'Low', sunHigh: 'High', sunHeight: 'Sun height', drag: 'Drag the sky to look around',
-    readAloud: 'Talk: on', readAloudOff: 'Talk: off', noSpeech: 'This browser cannot read aloud. Try Chrome or Safari.', noVoice: 'No English voice found on this device.', muteTip: 'No sound? Turn up the volume. On iPhone and iPad, also flip the silent switch off.', langBtn: 'Tiếng Việt', langShort: 'VI', hide: 'Hide panels', show: 'Show panels', fs: 'Full screen', fsExit: 'Exit full screen', grownTitle: 'For grown-ups',
+    noSpeech: 'This browser cannot read aloud. Try Chrome or Safari.', noVoice: 'No English voice found on this device.', muteTip: 'No sound? Turn up the volume. On iPhone and iPad, also flip the silent switch off.', hide: 'Hide panels', show: 'Show panels', fs: 'Full screen', fsExit: 'Exit full screen', grownTitle: 'For grown-ups',
     chk: ['Sunshine', 'Rain in front', 'Sun is low', 'Sun behind you'],
     hintSun: 'The sun is hiding behind a cloud. Tap Sun!',
     hintRain: 'We need water drops! Tap Rain, or ask Elephant to spray water.',
@@ -375,7 +391,7 @@ const T = {
     title: 'Làm Cầu Vồng', tagline: 'Lớp Elephant ơi, mình làm cầu vồng nhé!', elephant: 'Voi',
     sun: 'Nắng', rain: 'Mưa', rainLv: ['không', 'ít', 'nhiều'], turn: 'Quay', drop: 'Giọt mưa',
     sunLow: 'Thấp', sunHigh: 'Cao', sunHeight: 'Mặt trời cao', drag: 'Kéo bầu trời để nhìn xung quanh',
-    readAloud: 'Nói: bật', readAloudOff: 'Nói: tắt', noSpeech: 'Trình duyệt này không đọc to được. Hãy thử Chrome hoặc Safari.', noVoice: 'Thiết bị chưa có giọng đọc tiếng Việt. Có thể thêm trong Cài đặt → Ngôn ngữ/Giọng nói.', muteTip: 'Không nghe thấy? Hãy tăng âm lượng. Trên iPhone và iPad, tắt cả nút im lặng.', langBtn: 'English', langShort: 'EN', hide: 'Ẩn bảng', show: 'Hiện bảng', fs: 'Toàn màn hình', fsExit: 'Thoát toàn màn hình', grownTitle: 'Dành cho bố mẹ',
+    noSpeech: 'Trình duyệt này không đọc to được. Hãy thử Chrome hoặc Safari.', noVoice: 'Thiết bị chưa có giọng đọc tiếng Việt. Có thể thêm trong Cài đặt → Ngôn ngữ/Giọng nói.', muteTip: 'Không nghe thấy? Hãy tăng âm lượng. Trên iPhone và iPad, tắt cả nút im lặng.', hide: 'Ẩn bảng', show: 'Hiện bảng', fs: 'Toàn màn hình', fsExit: 'Thoát toàn màn hình', grownTitle: 'Dành cho bố mẹ',
     chk: ['Có nắng', 'Mưa phía trước', 'Mặt trời thấp', 'Nắng sau lưng'],
     hintSun: 'Mặt trời đang trốn sau mây. Bấm nút Nắng nhé!',
     hintRain: 'Cần có giọt nước! Bấm nút Mưa, hoặc nhờ bạn Voi phun nước.',
@@ -413,7 +429,8 @@ const T = {
   }
 };
 
-const state = { lang: 'vi', sunOut: true, rain: true, rainLv: 2, facing: false, el: 14, speak: true, spraying: false };
+const state = { lang: LabKit.lang, sunOut: true, rain: true, rainLv: 2, facing: false, el: 14, spraying: false };
+const ui = () => (state.lang === 'en' ? 'en' : 'vi');   // 'both' shows the Vietnamese UI with both hint lines
 const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
 const $ = (id) => document.getElementById(id);
 
@@ -421,6 +438,7 @@ const $ = (id) => document.getElementById(id);
 let actx = null;
 function audio() { try { if (!actx) actx = new (window.AudioContext || window.webkitAudioContext)(); if (actx.state === 'suspended') actx.resume(); } catch (e) {} return actx; }
 function chime() {
+  if (!LabKit.sfxOn) return;
   const a = audio(); if (!a) return;
   [523.25, 659.25, 783.99, 1046.5, 1318.5].forEach((f, i) => {
     const o = a.createOscillator(), g = a.createGain(), t = a.currentTime + i * 0.11;
@@ -433,13 +451,14 @@ let voices = [], unlocked = false;
 const hasSpeech = 'speechSynthesis' in window && 'SpeechSynthesisUtterance' in window;
 function loadVoices() { try { voices = speechSynthesis.getVoices() || []; } catch (e) {} }
 if (hasSpeech) { loadVoices(); try { speechSynthesis.addEventListener('voiceschanged', loadVoices); } catch (e) {} }
-function pickVoice() {
-  const want = state.lang === 'vi' ? 'vi' : 'en';
+function pickVoice(lang) {
+  const want = lang === 'vi' ? 'vi' : 'en';
   const list = voices.filter(v => (v.lang || '').toLowerCase().replace('_', '-').startsWith(want));
   return list.find(v => /natural|google|premium|enhanced|siri/i.test(v.name)) || list.find(v => v.localService) || list[0] || null;
 }
-function note(key) { const el = $('voiceNote'); if (!key) { el.hidden = true; return; } el.textContent = T[state.lang][key]; el.hidden = false; }
+function note(key) { const el = $('voiceNote'); if (!key) { el.hidden = true; return; } el.textContent = T[ui()][key]; el.hidden = false; }
 function trumpet() {
+  if (!LabKit.sfxOn) return;
   const a = audio(); if (!a) return;
   const t = a.currentTime, o = a.createOscillator(), o2 = a.createOscillator(), g = a.createGain(), lp = a.createBiquadFilter();
   o.type = 'sawtooth'; o2.type = 'square';
@@ -449,19 +468,27 @@ function trumpet() {
   o.connect(lp); o2.connect(lp); lp.connect(g).connect(a.destination);
   o.start(t); o2.start(t); o.stop(t + 0.95); o2.stop(t + 0.95);
 }
-function say(text, force) {
-  if (!state.speak && !force) return;
+// items: [[text, 'en'|'vi'], ...]; plays in order. force = a tap on a "hear it" button.
+function speak(items, force) {
+  if (!(LabKit.voiceOn || (force && LabKit.sfxOn))) return;
   if (!hasSpeech) { note('noSpeech'); return; }
   try {
     loadVoices();
-    const u = new SpeechSynthesisUtterance(text);
-    u.lang = state.lang === 'vi' ? 'vi-VN' : 'en-US'; u.rate = 0.88; u.pitch = 1.1; u.volume = 1;
-    const v = pickVoice();
-    if (v) { u.voice = v; note(null); } else note(voices.length ? 'noVoice' : 'noSpeech');
-    const go = () => { try { speechSynthesis.resume(); speechSynthesis.speak(u); } catch (e) {} };
+    const us = items.filter((it) => it[0]).map(([text, lang]) => {
+      const u = new SpeechSynthesisUtterance(text);
+      u.lang = lang === 'vi' ? 'vi-VN' : 'en-US'; u.rate = 0.88; u.pitch = 1.1; u.volume = 1;
+      const v = pickVoice(lang);
+      if (v) { u.voice = v; note(null); } else note(voices.length ? 'noVoice' : 'noSpeech');
+      return u;
+    });
+    const go = () => { try { speechSynthesis.resume(); us.forEach((u) => speechSynthesis.speak(u)); } catch (e) {} };
     if (speechSynthesis.speaking || speechSynthesis.pending) { speechSynthesis.cancel(); setTimeout(go, 80); } else go();
   } catch (e) {}
 }
+const say = (text, force) => speak([[text, ui()]], force);
+// get(L) picks a string from one T dictionary; in 'both' it is spoken in English, then Vietnamese
+const sayKey = (get, force) => speak(state.lang === 'both' ? [[get(T.en), 'en'], [get(T.vi), 'vi']] : [[get(T[ui()]), ui()]], force);
+function sayMsg(force) { speak(state.lang === 'both' ? [[$('msgEn').textContent, 'en'], [$('msg').textContent, 'vi']] : [[$('msg').textContent, ui()]], force); }
 // iPhone/iPad only allow speech that starts inside a tap, so unlock it on the first tap anywhere
 function unlockSpeech() {
   if (unlocked || !hasSpeech) return; unlocked = true;
@@ -472,15 +499,15 @@ addEventListener('keydown', unlockSpeech, { capture: true });
 
 /* ---------- UI text ---------- */
 function applyLang() {
-  const L = T[state.lang];
-  document.documentElement.lang = state.lang;
+  const L = T[ui()];
+  document.documentElement.lang = ui();
   $('title').innerHTML = [...L.title].map(ch => ch === ' ' ? ' ' : `<span>${ch}</span>`).join('');
   document.querySelectorAll('[data-i]').forEach(el => { el.textContent = L[el.dataset.i]; });
-  $('langLong').textContent = L.langBtn; $('langShort').textContent = L.langShort; $('langBtn').setAttribute('aria-label', L.langBtn);
+  $('langLong').textContent = LabKit.LANG_TEXT[state.lang][ui() === 'en' ? 0 : 1]; $('langShort').textContent = LabKit.LANG_LABEL[state.lang]; $('langBtn').setAttribute('aria-label', 'Language: ' + LabKit.LANG_TEXT[state.lang][0]);
   labelClean(); labelFs();
   $('grownBody').innerHTML = L.grown;
   $('legend').innerHTML = L.colors.map((c, i) => `<button style="background:${COLORS[i]}" data-c="${i}">${c}</button>`).join('');
-  labelSpeak(); note(null);
+  paintSpeak(); note(null);
   lastMsg = ''; updateHint();
   if (!$('dropView').hidden) $('dropCaption').textContent = L.d[dropStep];
 }
@@ -490,7 +517,7 @@ function conditions() {
   return { sun: state.sunOut, rain: state.rain || state.spraying, low: state.el < 42, back: !state.facing };
 }
 function updateHint() {
-  const L = T[state.lang], c = conditions();
+  const L = T[ui()], c = conditions();
   const keys = ['sun', 'rain', 'low', 'back'], icons = ['☀️', '🌧️', '🌅', '🙌'];
   $('checks').innerHTML = keys.map((k, i) =>
     `<span class="check ${c[k] ? 'ok' : ''}" aria-label="${L.chk[i]}: ${c[k] ? '✓' : '✗'}"><span class="dot">${c[k] ? '✓' : ''}</span><span aria-hidden="true">${icons[i]}</span><span class="t">${L.chk[i]}</span></span>`).join('');
@@ -499,9 +526,12 @@ function updateHint() {
   $('rainSub').textContent = L.rainLv[state.rainLv];
   const msgText = key === 'success' ? `${L[key]} ${L.doubleBow}` : L[key];
   $('msg').textContent = msgText;
+  const enText = state.lang === 'both' ? (key === 'success' ? `${T.en[key]} ${T.en.doubleBow}` : T.en[key]) : '';
+  $('msgEn').textContent = enText; $('msgEn').hidden = !enText;
   $('legend').hidden = !win;
   $('hint').classList.toggle('win', win);
-  if (msgText !== lastMsg) { if (lastMsg) say(msgText); lastMsg = msgText; }
+  const said = enText + '|' + msgText;
+  if (said !== lastMsg) { if (lastMsg) { sayMsg(); LabKit.notifyTip(); } lastMsg = said; }
   if (win && wasWin === false) chime();
   wasWin = win;
 }
@@ -513,26 +543,35 @@ $('rainBtn').onclick = () => { audio(); state.rainLv = (state.rainLv + 1) % 3; s
 $('eleBtn').onclick = () => { audio(); startSpray(); };
 $('turnBtn').onclick = () => { audio(); state.facing = !state.facing; userYaw = 0; setPressed('turnBtn', state.facing); updateHint(); };
 $('sunRange').oninput = (e) => { audio(); state.el = +e.target.value; $('deg').textContent = state.el + '°'; updateHint(); };
-$('langBtn').onclick = () => { state.lang = state.lang === 'en' ? 'vi' : 'en'; applyLang(); };
-$('speakBtn').onclick = () => {
-  state.speak = !state.speak; setPressed('speakBtn', state.speak); labelSpeak();
-  if (state.speak) say($('msg').textContent); else { try { speechSynthesis.cancel(); } catch (e) {} note(null); }
-};
-function labelSpeak() { $('speakBtn').querySelector('.lbl').textContent = T[state.lang][state.speak ? 'readAloud' : 'readAloudOff']; $('speakBtn').setAttribute('aria-label', T[state.lang][state.speak ? 'readAloud' : 'readAloudOff']); }
-$('hearBtn').onclick = () => { say($('msg').textContent, true); if (!hasSpeech) return; setTimeout(() => { try { if (!speechSynthesis.speaking && !speechSynthesis.pending && $('voiceNote').hidden) note('muteTip'); } catch (e) {} }, 1500); };
-$('legend').onclick = (e) => { const b = e.target.closest('button'); if (b) say(b.textContent, true); };
+$('langBtn').onclick = () => LabKit.cycleLang();
+$('speakBtn').onclick = () => { audio(); LabKit.cycleSound(); };
+function paintSpeak() {
+  const t = LabKit.SOUND_TEXT[LabKit.sound];
+  $('speakBtn').querySelector('.ic').innerHTML = LabKit.soundIcon();
+  $('speakBtn').querySelector('.lbl').textContent = t[ui() === 'en' ? 0 : 1];
+  $('speakBtn').setAttribute('aria-label', t[0] + ' / ' + t[1]);
+}
+LabKit.init({
+  soundBtn: false, langBtn: false,
+  fold: [['#hint', 'bubble'], ['.controls .tray', 'tray']],
+  onLang: (l) => { state.lang = l; applyLang(); if (LabKit.voiceOn) sayMsg(); },   // applyLang resets lastMsg, so speak here
+  onSound: () => { paintSpeak(); if (!LabKit.voiceOn) note(null); },
+  onSync: () => { state.lang = LabKit.lang; applyLang(); paintSpeak(); },
+});
+$('hearBtn').onclick = () => { sayMsg(true); if (!hasSpeech) return; if (LabKit.sfxOn) { setTimeout(() => { try { if (!speechSynthesis.speaking && !speechSynthesis.pending && $('voiceNote').hidden) note('muteTip'); } catch (e) {} }, 1500); } };
+$('legend').onclick = (e) => { const b = e.target.closest('button'); if (b) sayKey((L) => L.colors[+b.dataset.c], true); };
 $('grownBtn').onclick = () => { $('grownView').hidden = false; };
 $('grownClose').onclick = () => { $('grownView').hidden = true; };
 $('grownView').onclick = (e) => { if (e.target.id === 'grownView') $('grownView').hidden = true; };
 
 /* ---------- classroom helpers ---------- */
-function labelClean() { const on = $('app').classList.contains('clean'); $('cleanLbl').textContent = T[state.lang][on ? 'show' : 'hide']; $('cleanBtn').setAttribute('aria-pressed', String(on)); $('cleanBtn').setAttribute('aria-label', T[state.lang][on ? 'show' : 'hide']); }
+function labelClean() { const on = $('app').classList.contains('clean'); $('cleanLbl').textContent = T[ui()][on ? 'show' : 'hide']; $('cleanBtn').setAttribute('aria-pressed', String(on)); $('cleanBtn').setAttribute('aria-label', T[ui()][on ? 'show' : 'hide']); }
 function toggleClean() { $('app').classList.toggle('clean'); labelClean(); }
 $('cleanBtn').onclick = toggleClean;
 const fsOK = !!(document.fullscreenEnabled || document.webkitFullscreenEnabled);
 if (!fsOK) $('fsBtn').remove();
 function isFs() { return !!(document.fullscreenElement || document.webkitFullscreenElement); }
-function labelFs() { if (!fsOK) return; $('fsLbl').textContent = T[state.lang][isFs() ? 'fsExit' : 'fs']; $('fsBtn').setAttribute('aria-label', T[state.lang][isFs() ? 'fsExit' : 'fs']); }
+function labelFs() { if (!fsOK) return; $('fsLbl').textContent = T[ui()][isFs() ? 'fsExit' : 'fs']; $('fsBtn').setAttribute('aria-label', T[ui()][isFs() ? 'fsExit' : 'fs']); }
 function toggleFs() {
   if (!fsOK) return;
   try {
@@ -959,7 +998,7 @@ function drawDrop(t) {
   const { w, h } = sizeDrop.cache;
   const ctx = dctx, R = Math.min(w, h) * 0.25, cx = w * 0.6, cy = h * 0.4;
   const X = (p) => [cx + p[0], cy - p[1]];
-  const L = T[state.lang];
+  const L = T[ui()];
   ctx.clearRect(0, 0, w, h);
   const bg = ctx.createLinearGradient(0, 0, 0, h); bg.addColorStop(0, '#1d3270'); bg.addColorStop(1, '#0f1a3d');
   ctx.fillStyle = bg; ctx.fillRect(0, 0, w, h);
@@ -1017,7 +1056,7 @@ function drawDrop(t) {
   }
 }
 function showStep() {
-  $('dropCaption').textContent = T[state.lang].d[dropStep];
+  $('dropCaption').textContent = T[ui()].d[dropStep];
   [...$('steps').children].forEach((el, i) => el.classList.toggle('on', i <= dropStep));
 }
 function playDrop() {
@@ -1029,13 +1068,13 @@ function playDrop() {
   const tick = (now) => {
     const t = reduce ? total : (now - dropStart) / 1000;
     drawDrop(Math.min(t, total));
-    if (dropStep !== shown) { if (shown !== -1) say(T[state.lang].d[dropStep]); shown = dropStep; showStep(); }
+    if (dropStep !== shown) { if (shown !== -1) sayKey((L) => L.d[dropStep]); shown = dropStep; showStep(); }
     if (t < total && !$('dropView').hidden) dropRaf = requestAnimationFrame(tick);
   };
   dropRaf = requestAnimationFrame(tick);
 }
-$('dropBtn').onclick = () => { audio(); $('dropView').hidden = false; say(T[state.lang].d[0]); requestAnimationFrame(playDrop); };
-$('dropReplay').onclick = () => { say(T[state.lang].d[0]); playDrop(); };
+$('dropBtn').onclick = () => { audio(); $('dropView').hidden = false; sayKey((L) => L.d[0]); requestAnimationFrame(playDrop); };
+$('dropReplay').onclick = () => { sayKey((L) => L.d[0]); playDrop(); };
 $('dropClose').onclick = () => { $('dropView').hidden = true; cancelAnimationFrame(dropRaf); try { speechSynthesis.cancel(); } catch (e) {} };
 $('dropView').onclick = (e) => { if (e.target.id === 'dropView') $('dropClose').onclick(); };
 addEventListener('resize', () => { if (!$('dropView').hidden) { sizeDrop.cache = sizeDrop(); drawDrop(99); } });

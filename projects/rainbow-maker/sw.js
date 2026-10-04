@@ -1,11 +1,13 @@
-// Offline support: pages are network-first (so updates show up), everything else
+// Offline support: pages and same-origin JS/CSS are network-first (so updates show up), everything else
 // (three.js, fonts, icons) is cache-first. Bump VERSION to drop old caches.
-const VERSION = 'v1';
+const VERSION = 'v2';
 const CACHE = 'rainbow-maker-' + VERSION;
 const PRECACHE = [
   './',
   './manifest.webmanifest',
   './icons/icon-192.png',
+  '../little-color-lab/lab-kit.js',
+  '../little-color-lab/lab-kit.css',
   'https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js',
 ];
 
@@ -29,7 +31,9 @@ self.addEventListener('fetch', (event) => {
   const req = event.request;
   if (req.method !== 'GET') return;
 
-  if (req.mode === 'navigate') {
+  const url = new URL(req.url);
+  const fresh = req.mode === 'navigate' || (url.origin === self.location.origin && /\.(js|css)$/.test(url.pathname));
+  if (fresh) {
     event.respondWith(
       fetch(req)
         .then((res) => {
@@ -37,7 +41,8 @@ self.addEventListener('fetch', (event) => {
           caches.open(CACHE).then((cache) => cache.put(req, copy));
           return res;
         })
-        .catch(() => caches.match(req, { ignoreSearch: true }).then((hit) => hit || caches.match('./')))
+        .catch(() => caches.match(req, { ignoreSearch: true })
+          .then((hit) => hit || (req.mode === 'navigate' ? caches.match('./') : Response.error())))
     );
     return;
   }

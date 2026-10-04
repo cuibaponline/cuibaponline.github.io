@@ -16,6 +16,7 @@ const UA = {
   iphoneSafari: 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_6 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.6 Mobile/15E148 Safari/604.1',
   iphoneChrome: 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_6 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) CriOS/140.0.7339.122 Mobile/15E148 Safari/604.1',
   iphoneEdge: 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_6 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.0 EdgiOS/140.0.3485.54 Mobile/15E148 Safari/605.1.15',
+  iphoneLine: 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_6 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148 Safari Line/14.10.0',
   iphoneFacebook: 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_6 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148 [FBAN/FBIOS;FBAV/480.0.0.0;FBBV/1]',
   ipadAsMac: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.6 Safari/605.1.15',
   linuxChrome: 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/129.0.0.0 Safari/537.36',
@@ -88,6 +89,7 @@ test('installMode picks the right help per browser', () => {
   assert.equal(m(UA.androidChrome, 5, true, true), 'installed');
   assert.equal(m(UA.zalo, 5, false, false), 'inapp');
   assert.equal(m(UA.iphoneFacebook, 5, false, false), 'inapp');
+  assert.equal(m(UA.iphoneLine, 5, false, false), 'inapp');
   assert.equal(m(UA.iphoneSafari, 5, false, false), 'ios-safari');
   assert.equal(m(UA.iphoneChrome, 5, false, false), 'ios-chrome');
   assert.equal(m(UA.iphoneEdge, 5, false, false), 'ios-chrome');

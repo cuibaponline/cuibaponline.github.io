@@ -222,6 +222,7 @@ input[type=range]::-moz-range-thumb {
 }
 /* Teacher's clean view: only the scene, title and top buttons */
 #app.clean .hint, #app.clean .controls { display: none !important; }
+#app.clean .lk-banner-float { display: none !important; }
 
 /* Sheets */
 .sheet {
@@ -556,7 +557,7 @@ LabKit.init({
   fold: [['#hint', 'bubble'], ['.controls .tray', 'tray']],
   onLang: (l) => { state.lang = l; applyLang(); if (LabKit.voiceOn) sayMsg(); },   // applyLang resets lastMsg, so speak here
   onSound: () => { paintSpeak(); if (!LabKit.voiceOn) note(null); },
-  onSync: () => { state.lang = LabKit.lang; applyLang(); paintSpeak(); },
+  onSync: () => { state.lang = LabKit.lang; applyLang(); paintSpeak(); if (!LabKit.voiceOn) note(null); },
 });
 $('hearBtn').onclick = () => { sayMsg(true); if (!hasSpeech) return; if (LabKit.sfxOn) { setTimeout(() => { try { if (!speechSynthesis.speaking && !speechSynthesis.pending && $('voiceNote').hidden) note('muteTip'); } catch (e) {} }, 1500); } };
 $('legend').onclick = (e) => { const b = e.target.closest('button'); if (b) sayKey((L) => L.colors[+b.dataset.c], true); };
@@ -1068,13 +1069,14 @@ function playDrop() {
   const tick = (now) => {
     const t = reduce ? total : (now - dropStart) / 1000;
     drawDrop(Math.min(t, total));
-    if (dropStep !== shown) { if (shown !== -1) sayKey((L) => L.d[dropStep]); shown = dropStep; showStep(); }
+    if (dropStep !== shown) { if (shown !== -1) say(T[ui()].d[dropStep]); shown = dropStep; showStep(); }
     if (t < total && !$('dropView').hidden) dropRaf = requestAnimationFrame(tick);
   };
   dropRaf = requestAnimationFrame(tick);
 }
-$('dropBtn').onclick = () => { audio(); $('dropView').hidden = false; sayKey((L) => L.d[0]); requestAnimationFrame(playDrop); };
-$('dropReplay').onclick = () => { sayKey((L) => L.d[0]); playDrop(); };
+// one language only: steps are too quick for EN then VI
+$('dropBtn').onclick = () => { audio(); $('dropView').hidden = false; say(T[ui()].d[0]); requestAnimationFrame(playDrop); };
+$('dropReplay').onclick = () => { say(T[ui()].d[0]); playDrop(); };
 $('dropClose').onclick = () => { $('dropView').hidden = true; cancelAnimationFrame(dropRaf); try { speechSynthesis.cancel(); } catch (e) {} };
 $('dropView').onclick = (e) => { if (e.target.id === 'dropView') $('dropClose').onclick(); };
 addEventListener('resize', () => { if (!$('dropView').hidden) { sizeDrop.cache = sizeDrop(); drawDrop(99); } });

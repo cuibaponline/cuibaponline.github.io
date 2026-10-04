@@ -7,7 +7,7 @@
   const SOUNDS = ['sfx', 'all', 'off'];          // tap order; first is the default
   const LANGS = ['both', 'en', 'vi'];
   const SNOOZE_MS = 14 * 24 * 3600 * 1000;       // install banner stays hidden this long after "not now"
-  const IN_APP = /Zalo|FBAN|FBAV|FB_IAB|Instagram|musical_ly|BytedanceWebview/i;
+  const IN_APP = /Zalo|FBAN|FBAV|FB_IAB|Instagram|musical_ly|BytedanceWebview|Line\/|Telegram|MessengerLite/i;
 
   const nextIn = (list, v) => list[(list.indexOf(v) + 1) % list.length];
   function normalize(raw) {
@@ -160,6 +160,7 @@
   function install() {
     const m = installModeNow();
     if (m === 'prompt' && deferred) {
+      // after the native prompt is used, Chrome must fire beforeinstallprompt again before the button reappears
       const d = deferred; deferred = null;
       try { Promise.resolve(d.prompt()).catch(() => {}); d.userChoice.then((c) => { if (c && c.outcome === 'accepted') justInstalled = true; refreshInstall(); }, () => {}); } catch (e) {}
       refreshInstall(); return;

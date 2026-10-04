@@ -1,6 +1,6 @@
 # Little Color Lab
 
-Eight bilingual (English + Vietnamese) color science games for young kids, built with three.js.
+Nine bilingual (English + Vietnamese) color science games for young kids, built with three.js.
 Open `index.html` for the home page.
 
 Colors in water
@@ -8,6 +8,7 @@ Colors in water
 - `walking-water/` : paper towels carry colored water between cups
 - `rainbow-milk/` : food coloring on milk, burst with dish soap
 - `paint-mixing/` : mix red, yellow, blue, white and black paint, then paint
+- `paint-mixing-2/` : the same paints, mixed in a six-cup tray, then painted on a big easel sheet (made for phones)
 
 Light and color
 - `light-and-color/` : glowing bottles, white light, colored flashlights on fruit

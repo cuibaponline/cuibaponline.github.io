@@ -340,7 +340,7 @@ const whoosh=()=>tone(300,900,0.25,0.08,'triangle');
 const sparkle=()=>{ [880,1175,1568].forEach((f,i)=>setTimeout(()=>tone(f,f,0.22,0.1,'triangle'),i*90)); };
 
 let tip={en:'',vi:''};
-function setTip(en,vi,speak){ tip={en,vi}; if(typeof refitSoon==='function') refitSoon(); $('#tipEn').textContent=en; $('#tipVi').textContent=vi; if(speak!==false) say(en,vi); LabKit.notifyTip(); }
+function setTip(en,vi,speak,force){ tip={en,vi}; if(typeof refitSoon==='function') refitSoon(); $('#tipEn').textContent=en; $('#tipVi').textContent=vi; if(speak!==false) say(en,vi,force); LabKit.notifyTip(); }
 function sayTip(force){ say(tip.en,tip.vi,force); }
 $('#sayBtn').onclick=()=>{unlock();sayTip(true);};
 $('#infoBtn').onclick=()=>{ $('#info').hidden=false; };
@@ -597,10 +597,10 @@ function tapFruit(i){
   const f=FRUITS[i], L=LIGHTS[lightIdx], look=f.looks[L.id];
   click(); bounce(fruitGroups[i]);
   const isEn=f.plural?'are':'is', lookEn=f.plural?'look':'looks';
-  if(L.id==='white') setTip('In white light, the '+f.en+' '+isEn+' '+look[0]+'.','Dưới ánh sáng trắng, '+f.vi+' màu '+look[1]+'.');
+  if(L.id==='white') setTip('In white light, the '+f.en+' '+isEn+' '+look[0]+'.','Dưới ánh sáng trắng, '+f.vi+' màu '+look[1]+'.',true,true);
   else if(look[0]==='dark') setTip('Under '+L.en.toLowerCase()+' light, the '+f.en+' '+lookEn+' dark! '+(f.plural?'They have':'It has')+' no '+L.en.toLowerCase()+' to bounce back.',
-    'Dưới đèn '+L.vil+', '+f.vi+' trông tối đen! Vì không có màu '+L.vil+' để phản chiếu lại.');
-  else setTip('Under '+L.en.toLowerCase()+' light, the '+f.en+' '+lookEn+' '+look[0]+'!','Dưới đèn '+L.vil+', '+f.vi+' trông màu '+look[1]+'!');
+    'Dưới đèn '+L.vil+', '+f.vi+' trông tối đen! Vì không có màu '+L.vil+' để phản chiếu lại.',true,true);
+  else setTip('Under '+L.en.toLowerCase()+' light, the '+f.en+' '+lookEn+' '+look[0]+'!','Dưới đèn '+L.vil+', '+f.vi+' trông màu '+look[1]+'!',true,true);
 }
 function bounce(g){ const y0=g.position.y; tween(0.4,p=>{ g.position.y=y0+Math.sin(Math.PI*p)*0.25; },()=>{ g.position.y=y0; }); }
 

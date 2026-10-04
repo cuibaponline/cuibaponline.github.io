@@ -449,7 +449,7 @@ const dab=()=>tone(520+Math.random()*200,260,0.07,0.06);
 
 /* ---------- tips ---------- */
 let tip={en:'',vi:''}, tipId=0;
-function setTip(en,vi,speak){ tip={en,vi}; tipId++; if(typeof refitSoon==='function') refitSoon(); $('#tipEn').textContent=en; $('#tipVi').textContent=vi; if(speak!==false) say(en,vi); LabKit.notifyTip(); }
+function setTip(en,vi,speak,force){ tip={en,vi}; tipId++; if(typeof refitSoon==='function') refitSoon(); $('#tipEn').textContent=en; $('#tipVi').textContent=vi; if(speak!==false) say(en,vi,force); LabKit.notifyTip(); }
 function sayTip(force){ say(tip.en,tip.vi,force); }
 $('#sayBtn').onclick=()=>{unlock();sayTip(true);};
 $('#infoBtn').onclick=()=>{ $('#info').hidden=false; };
@@ -1025,7 +1025,7 @@ function pickSwatch(i){
   swSel=i; renderSwatches(); click();
   brushColor={rgb:s.rgb,name:s}; setBristles(s.rgb);
   brushAt='paper'; brushTo(paperPose(paperPoint(0.5,0.4)),0.6,0.5);
-  setTip(s.en+'! Paint with it on the paper.',s.vi+'! Vẽ màu này lên giấy nhé.');
+  setTip(s.en+'! Paint with it on the paper.',s.vi+'! Vẽ màu này lên giấy nhé.',true,true);
   refreshUI();
 }
 function uvToPx(uv){ return [uv.x*PW,(1-uv.y)*PH]; }

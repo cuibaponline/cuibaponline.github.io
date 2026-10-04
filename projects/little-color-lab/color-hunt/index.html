@@ -350,7 +350,7 @@ const fanfare=()=>{ [523,659,784,1047].forEach((f,i)=>setTimeout(()=>tone(f,f,i=
 const switchSnd=()=>{ tone(900,500,0.06,0.14,'square'); setTimeout(()=>tone(200,140,0.25,0.08,'sine'),60); };
 
 let tip={en:'',vi:''};
-function setTip(en,vi,speak){ tip={en,vi}; $('#tipEn').textContent=en; $('#tipVi').textContent=vi; if(typeof refitSoon==='function') refitSoon(); if(speak!==false) say(en,vi); LabKit.notifyTip(); }
+function setTip(en,vi,speak,force){ tip={en,vi}; $('#tipEn').textContent=en; $('#tipVi').textContent=vi; if(typeof refitSoon==='function') refitSoon(); if(speak!==false) say(en,vi,force); LabKit.notifyTip(); }
 function sayTip(force){ say(tip.en,tip.vi,force); }
 $('#sayBtn').onclick=()=>{unlock();sayTip(true);};
 $('#infoBtn').onclick=()=>{ $('#info').hidden=false; };
@@ -745,14 +745,14 @@ function syncStars(){
   starsEl.setAttribute('aria-label',found.length+' of '+need+' found');
 }
 function syncColorBtns(){ [...colorsEl.children].forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.c===cur))); }
-function startRound(c,speak){
+function startRound(c,speak,force){
   cur=c; need=needFor(c); found=[]; celebrating=false; huntIdx=HUNT.indexOf(c);
   toys.forEach(g=>{ g.userData.glow.material.opacity=0; });
   const sw=$('#swatch'); sw.style.setProperty('--c',COLORS[c].hex); sw.classList.remove('pop'); void sw.offsetWidth; sw.classList.add('pop');
   syncStars(); syncColorBtns(); starsEl.classList.remove('party');
-  const [en,vi]=promptText(); setTip(en,vi,speak);
+  const [en,vi]=promptText(); setTip(en,vi,speak,force);
 }
-function pickColor(c){ clearLater(); click(); twistRound=false; startRound(c,true); }
+function pickColor(c){ clearLater(); click(); twistRound=false; startRound(c,true,true); }
 
 // what a color looks like when only red light shines on it
 const UNDER_RED={red:['red','đỏ'],yellow:['red','đỏ'],orange:['red','đỏ'],pink:['red','đỏ'],white:['red','đỏ'],blue:['dark','tối đen'],green:['dark','tối đen'],purple:['dark red','đỏ sẫm']};
@@ -769,21 +769,21 @@ function peekAt(g){
 function tapToy(i){
   const g=toys[i], o=OBJ[i];
   const top=g.position.clone(); top.y+=g.userData.h*0.6;
-  if(celebrating){ boing(); hop(g); setTip(cap(nameEn(o))+'!',cap(nameVi(o))+'!'); return; }
+  if(celebrating){ boing(); hop(g); setTip(cap(nameEn(o))+'!',cap(nameVi(o))+'!',true,true); return; }
   if(o.c===cur){
     if(found.includes(i)){ boing(); hop(g);
-      setTip('You found the '+COLORS[o.c].en+' '+o.en+' already! Find another '+COLORS[cur].en+' thing.','Bé tìm thấy '+nameVi(o)+' rồi! Tìm đồ vật màu '+COLORS[cur].vi+' khác nhé.'); return; }
+      setTip('You found the '+COLORS[o.c].en+' '+o.en+' already! Find another '+COLORS[cur].en+' thing.','Bé tìm thấy '+nameVi(o)+' rồi! Tìm đồ vật màu '+COLORS[cur].vi+' khác nhé.',true,true); return; }
     found.push(i); const n=found.length;
     boing(); sparkle(); hop(g); burst(top,COLORS[o.c].hex,18); peekAt(g);
     g.userData.glow.material.opacity=0.55; syncStars();
-    if(red) setTip(cap(nameEn(o))+'! '+looksEn(o),cap(nameVi(o))+'! '+looksVi(o));
-    else setTip(cap(nameEn(o))+'! '+NUM_EN[n-1]+'!',cap(nameVi(o))+'! '+NUM_VI[n-1]+'!');
+    if(red) setTip(cap(nameEn(o))+'! '+looksEn(o),cap(nameVi(o))+'! '+looksVi(o),true,true);
+    else setTip(cap(nameEn(o))+'! '+NUM_EN[n-1]+'!',cap(nameVi(o))+'! '+NUM_VI[n-1]+'!',true,true);
     if(n>=need){ celebrating=true; later(celebrate,red?3200:2300); }
   } else {
     wobble(); wiggle(g); peekAt(g);
     const c=COLORS[cur], lead=o.plural?'Those are ':"That's ";
-    if(red) setTip(lead+nameEn(o)+'.'+looksEnWrong(o)+' Let\'s find '+c.en+'!','Đó là '+nameVi(o)+'.'+looksViWrong(o)+' Mình tìm màu '+c.vi+' nhé!');
-    else setTip(lead+nameEn(o)+". Let's find "+c.en+'!','Đó là '+nameVi(o)+'. Mình tìm màu '+c.vi+' nhé!');
+    if(red) setTip(lead+nameEn(o)+'.'+looksEnWrong(o)+' Let\'s find '+c.en+'!','Đó là '+nameVi(o)+'.'+looksViWrong(o)+' Mình tìm màu '+c.vi+' nhé!',true,true);
+    else setTip(lead+nameEn(o)+". Let's find "+c.en+'!','Đó là '+nameVi(o)+'. Mình tìm màu '+c.vi+' nhé!',true,true);
   }
 }
 function celebrate(){

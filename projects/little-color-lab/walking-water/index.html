@@ -357,7 +357,7 @@ const chime=()=>{ tone(660,660,0.25,0.15,'triangle'); setTimeout(()=>tone(880,88
 const splash=()=>{ tone(500,1100,0.12,0.1,'triangle'); setTimeout(()=>tone(700,1500,0.1,0.08,'triangle'),90); };
 
 let tip={en:'',vi:''}, holdUntil=0;
-function setTip(en,vi,speak){ tip={en,vi}; $('#tipEn').textContent=en; $('#tipVi').textContent=vi; holdUntil=performance.now()+3200; if(typeof refitSoon==='function') refitSoon(); if(speak!==false) say(en,vi); LabKit.notifyTip(); }
+function setTip(en,vi,speak,force){ tip={en,vi}; $('#tipEn').textContent=en; $('#tipVi').textContent=vi; holdUntil=performance.now()+3200; if(typeof refitSoon==='function') refitSoon(); if(speak!==false) say(en,vi,force); LabKit.notifyTip(); }
 function sayTip(force){ say(tip.en,tip.vi,force); }
 /* milestone narration waits its turn so lines do not cut each other off */
 const nq=[];
@@ -800,7 +800,7 @@ function addTowel(k,speak){
   if(k==null) k=towels.findIndex(t=>!t.placed);
   if(k<0){ setTip('All 4 bridges are ready! Tap Wait.','Đủ 4 cầu giấy rồi! Bấm Chờ nào.'); return; }
   const t=towels[k];
-  if(t.placed){ click(); setTip('This paper towel is a bridge for the water.','Tờ giấy này là cây cầu cho nước đi qua.'); return; }
+  if(t.placed){ click(); setTip('This paper towel is a bridge for the water.','Tờ giấy này là cây cầu cho nước đi qua.',true,true); return; }
   t.placed=true; t.anim=0; t.fA=0; t.fB=0; t.flow=0; t.key='';
   t.mesh.visible=true; t.ghost.visible=false; t.mesh.material.transparent=true; t.mesh.material.opacity=0;
   rustle(); idleT=0;
@@ -821,10 +821,10 @@ function tapCup(i){
   const k=SRC.indexOf(i);
   if(phase!=='setup'){
     if(k>=0) setTip('Tap New cups to change the colors.','Bấm Cốc mới để đổi màu nhé.');
-    else { const info=cupColor(i,tmpA); if(info&&cups[i].V>0.05){ const nm=info.one?[info.one.en,info.one.vil]:[info.combo.en,info.combo.vi]; setTip('This cup is '+nm[0].toLowerCase()+' now!','Cốc này giờ màu '+nm[1]+'!'); } else setTip('This cup is still empty. Wait and see!','Cốc này còn trống. Chờ xem nhé!'); }
+    else { const info=cupColor(i,tmpA); if(info&&cups[i].V>0.05){ const nm=info.one?[info.one.en,info.one.vil]:[info.combo.en,info.combo.vi]; setTip('This cup is '+nm[0].toLowerCase()+' now!','Cốc này giờ màu '+nm[1]+'!',true,true); } else setTip('This cup is still empty. Wait and see!','Cốc này còn trống. Chờ xem nhé!',true,true); }
     return;
   }
-  if(k<0){ setTip('This cup is empty. The water will walk in here!','Cốc này trống. Nước sẽ đi vào đây!'); return; }
+  if(k<0){ setTip('This cup is empty. The water will walk in here!','Cốc này trống. Nước sẽ đi vào đây!',true,true); return; }
   srcColor[k]=(srcColor[k]+1)%COLORS.length;
   try{ localStorage.setItem('ww-colors',JSON.stringify(srcColor)); }catch(e){}
   const c=COLORS[srcColor[k]];
@@ -833,7 +833,7 @@ function tapCup(i){
   const nb=[k-1,k+1].filter(j=>j>=0&&j<3).map(j=>COLORS[srcColor[j]]);
   let en='Now this cup is '+c.en.toLowerCase()+'!', vi='Bây giờ cốc này màu '+c.vil+'!';
   if(nb.length){ const o=nb[0]; if(o.id!==c.id){ const m=findCombo(c.id,o.id); en+=' With '+o.en.toLowerCase()+' it may make '+m.en.toLowerCase()+'.'; vi+=' Với màu '+o.vil+' có thể thành màu '+m.vi+'.'; } }
-  setTip(en,vi);
+  setTip(en,vi,true,true);
 }
 function bounceCup(i){ const g=cupG[i]; tween(0.35,p=>{ g.position.y=Math.sin(Math.PI*p)*0.12; },()=>{ g.position.y=0; }); }
 function pressWait(){

@@ -326,7 +326,7 @@ const chime=()=>{ tone(660,660,0.25,0.13,'triangle'); setTimeout(()=>tone(880,88
 
 /* ---------- tips ---------- */
 let tip={en:'',vi:''};
-function setTip(en,vi,speak){ tip={en,vi}; $('#tipEn').textContent=en; $('#tipVi').textContent=vi; if(typeof refitSoon==='function') refitSoon(); if(speak!==false) say(en,vi); LabKit.notifyTip(); }
+function setTip(en,vi,speak,force){ tip={en,vi}; $('#tipEn').textContent=en; $('#tipVi').textContent=vi; if(typeof refitSoon==='function') refitSoon(); if(speak!==false) say(en,vi,force); LabKit.notifyTip(); }
 function sayTip(force){ say(tip.en,tip.vi,force); }
 $('#sayBtn').onclick=()=>{unlock();sayTip(true);};
 $('#infoBtn').onclick=()=>{ $('#info').hidden=false; };
@@ -883,7 +883,7 @@ function doAction(a,pt){
   if(a==='milk'&&pt) tapMilk(pt);
   else if(a.startsWith('color:')) pickColor(+a.split(':')[1],true);
   else if(a==='soap') selectSoap();
-  else if(a==='carton'){ click(); setTip('Whole milk has tiny bits of fat inside.','Sữa tươi nguyên kem có những hạt chất béo nhỏ.'); }
+  else if(a==='carton'){ click(); setTip('Whole milk has tiny bits of fat inside.','Sữa tươi nguyên kem có những hạt chất béo nhỏ.',true,true); }
 }
 $('#btnSoap').onclick=()=>{unlock();selectSoap();};
 $('#btnStir').onclick=()=>{unlock();stir();};

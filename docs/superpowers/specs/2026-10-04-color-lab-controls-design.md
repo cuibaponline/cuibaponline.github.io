@@ -113,8 +113,14 @@ The two floating panels in every game get a small chevron button (≥ 44px tap t
 
 Applies to the Color Lab manifest and the standalone `/rainbow-maker` manifest.
 
-- **Install button** "Install app / Cài ứng dụng" on the Color Lab home page and inside each game's
-  "For grown-ups" sheet (standalone: its grown-ups sheet).
+- Browsers never auto-open the install dialog: Chrome's own mini-infobar is heuristic and stays
+  hidden for months once dismissed, and `prompt()` needs a user tap. So the app offers it visibly:
+- **Install button** "Install app / Cài ứng dụng", shown only when installing is possible, in three places:
+  - Color Lab home page: a dismissible banner card above the games ("Play offline from your home screen").
+    Dismissing it hides the banner for 14 days (`cuibap-prefs.installDismissedAt`); the button in the
+    sheets below stays.
+  - Each game's start screen (and standalone's): a secondary button under "Let's play!".
+  - Each game's "For grown-ups" sheet (standalone: its grown-ups sheet).
   - Chrome / Edge / Samsung Internet on Android (and desktop): capture `beforeinstallprompt`, show the
     button, call `prompt()` on tap; hide on `appinstalled`.
   - iOS / iPadOS, any browser (all are WebKit; Safari, and Chrome/Edge on iOS 16.4+, can Add to Home
@@ -143,7 +149,8 @@ No test framework covers these static pages; verification is manual in a browser
 - Language: bubble text and speech follow the setting; the setting carries over between games, the home
   page and the standalone app.
 - DevTools → Application → Manifest: no installability errors, maskable icon preview looks right.
-- Real-device check by the user on iPhone (Add to Home Screen hint) and Android Chrome (Install button).
+- Real-device check by the user on iPhone (Add to Home Screen hint) and Android Chrome (banner and
+  start-screen Install button open the native install dialog in one tap).
 
 ## Out of scope
 

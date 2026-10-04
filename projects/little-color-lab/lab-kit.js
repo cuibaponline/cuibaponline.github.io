@@ -85,13 +85,15 @@
     langBtns.forEach((b) => { b.textContent = LANG_LABEL[state.lang]; b.title = lt[0]; b.setAttribute('aria-label', 'Language: ' + lt[0] + ' / ' + lt[1]); });
     folds.forEach(paintFold);
   }
-  let toastEl = null, toastT = 0;
+  let toastEl = null, toastT = 0, inited = false;
+  function ensureToast() {
+    if (toastEl) return;
+    toastEl = doc.createElement('div'); toastEl.className = 'lk-toast';
+    toastEl.setAttribute('role', 'status'); toastEl.setAttribute('aria-live', 'polite');
+    toastEl.innerHTML = '<b></b><i lang="vi"></i>'; doc.body.appendChild(toastEl);
+  }
   function toast(en, vi) {
-    if (!toastEl) {
-      toastEl = doc.createElement('div'); toastEl.className = 'lk-toast';
-      toastEl.setAttribute('role', 'status'); toastEl.setAttribute('aria-live', 'polite');
-      toastEl.innerHTML = '<b></b><i lang="vi"></i>'; doc.body.appendChild(toastEl);
-    }
+    ensureToast();
     toastEl.firstChild.textContent = en; toastEl.lastChild.textContent = vi;
     toastEl.classList.add('show'); clearTimeout(toastT);
     toastT = setTimeout(() => toastEl.classList.remove('show'), 1600);
@@ -127,17 +129,19 @@
     b.setAttribute('aria-expanded', String(!c));
     b.setAttribute('aria-label', kind === 'tray' ? (c ? 'Show controls' : 'Hide controls') : (c ? 'Show tip' : 'Hide tip'));
   }
-  function setFolded(kind, c) { state.collapsed[kind] = !!c; save(); folds.forEach(paintFold); afterLayout(); }
+  function setFolded(kind, c) { state.collapsed[kind] = !!c; save(); folds.forEach((el) => { el.classList.remove('lk-pulse'); paintFold(el); }); afterLayout(); }
   function notifyTip() {
     if (!state.collapsed.bubble) return;
     folds.forEach((el) => {
       if (el.getAttribute('data-lk-fold') !== 'bubble') return;
       el.classList.remove('lk-pulse'); void el.offsetWidth; el.classList.add('lk-pulse');
+      const off = () => el.classList.remove('lk-pulse');
+      el.addEventListener('animationend', off, { once: true }); setTimeout(off, 1300);   // timer covers reduced-motion (no animation)
     });
   }
 
   /* install help */
-  let deferred = null, justInstalled = false, hintEl = null;
+  let deferred = null, justInstalled = false, hintEl = null, hintReturn = null, inerted = [];
   const realStandalone = () => { try { return matchMedia('(display-mode: standalone)').matches || navigator.standalone === true; } catch (e) { return false; } };
   const installModeNow = () => installMode(navigator.userAgent || '', navigator.maxTouchPoints || 0, realStandalone() || justInstalled, !!deferred);
   function refreshInstall() {
@@ -157,13 +161,13 @@
     const m = installModeNow();
     if (m === 'prompt' && deferred) {
       const d = deferred; deferred = null;
-      try { d.prompt(); d.userChoice.then((c) => { if (c && c.outcome === 'accepted') justInstalled = true; refreshInstall(); }, () => {}); } catch (e) {}
+      try { Promise.resolve(d.prompt()).catch(() => {}); d.userChoice.then((c) => { if (c && c.outcome === 'accepted') justInstalled = true; refreshInstall(); }, () => {}); } catch (e) {}
       refreshInstall(); return;
     }
     if (m !== 'none' && m !== 'installed') showHint(m);
   }
   function showHint(m) {
-    closeHint();
+    closeHint(); hintReturn = doc.activeElement;
     const line = (en, vi) => en + '<br><i lang="vi">' + vi + '</i>';
     const body = m === 'inapp'
       ? '<p>' + line('This app’s browser cannot install games. Open this page in Chrome or Safari, then install it from there.', 'Trình duyệt trong ứng dụng này không cài được. Hãy mở trang này bằng Chrome hoặc Safari rồi cài từ đó.') + '</p>'
@@ -176,13 +180,22 @@
       + '<button class="lk-x" type="button" data-lk-close aria-label="Close">✕</button>'
       + '<h2 id="lkHintTitle">Install app</h2><p class="lk-vi" lang="vi">Cài ứng dụng</p>' + body + '</div>';
     const url = hintEl.querySelector('.lk-url'); if (url) url.value = location.href.split('#')[0];
-    doc.body.appendChild(hintEl); hintEl.querySelector('[data-lk-close]').focus();
+    doc.body.appendChild(hintEl);
+    inerted = Array.from(doc.body.children).filter((el) => el !== hintEl && !el.inert);
+    inerted.forEach((el) => { el.inert = true; });
+    hintEl.querySelector('[data-lk-close]').focus();
   }
-  function closeHint() { if (hintEl) { hintEl.remove(); hintEl = null; } }
+  function closeHint() {
+    if (!hintEl) return;
+    hintEl.remove(); hintEl = null;
+    inerted.forEach((el) => { el.inert = false; }); inerted = [];
+    if (hintReturn && doc.contains(hintReturn)) { try { hintReturn.focus(); } catch (e) {} }
+    hintReturn = null;
+  }
   function copyLink(btn) {
     const input = hintEl && hintEl.querySelector('.lk-url'), url = location.href.split('#')[0];
     const done = () => { btn.innerHTML = 'Copied! <i lang="vi">Đã sao chép!</i>'; };
-    const fallback = () => { if (!input) return; input.focus(); input.select(); try { if (doc.execCommand('copy')) done(); } catch (e) {} };
+    const fallback = () => { if (!input) return; input.focus(); input.select(); input.setSelectionRange(0, input.value.length); try { if (doc.execCommand('copy')) done(); } catch (e) {} };
     if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(url).then(done, fallback); else fallback();
   }
   doc.addEventListener('click', (e) => {
@@ -206,6 +219,8 @@
   /* opts: legacy ('rbm'), soundBtn/langBtn (selector, default '#muteBtn'/'#langBtn', false = none),
      fold ([[selector, 'bubble'|'tray'], ...], default bubble + tray), onLang, onSound, onPanels, onSync */
   function init(opts = {}) {
+    if (inited) return;
+    inited = true;
     Object.assign(handlers, { onLang: opts.onLang, onSound: opts.onSound, onPanels: opts.onPanels, onSync: opts.onSync });
     if (opts.legacy && store) { const r = readPrefs(store, opts.legacy); if (r.migrated) { state = r.prefs; save(); } }
     applyAttrs();
@@ -214,6 +229,7 @@
     if (sb) { soundBtns.push(sb); sb.addEventListener('click', cycleSound); }
     if (lb) { langBtns.push(lb); lb.addEventListener('click', cycleLang); }
     (opts.fold || [['.bubble', 'bubble'], ['.tray', 'tray']]).forEach(([sel, kind]) => foldable(sel, kind));
+    if (doc.body) ensureToast();
     paint(); refreshInstall();
   }
 

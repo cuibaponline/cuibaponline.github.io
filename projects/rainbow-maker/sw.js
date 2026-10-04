@@ -35,10 +35,9 @@ self.addEventListener('fetch', (event) => {
   const fresh = req.mode === 'navigate' || (url.origin === self.location.origin && /\.(js|css)$/.test(url.pathname));
   if (fresh) {
     event.respondWith(
-      fetch(req)
+      fetch(req, req.mode === 'navigate' ? undefined : { cache: 'no-cache' })
         .then((res) => {
-          const copy = res.clone();
-          caches.open(CACHE).then((cache) => cache.put(req, copy));
+          if (res.ok) { const copy = res.clone(); event.waitUntil(caches.open(CACHE).then((cache) => cache.put(req, copy))); }
           return res;
         })
         .catch(() => caches.match(req, { ignoreSearch: true })

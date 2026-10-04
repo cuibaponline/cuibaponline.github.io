@@ -90,6 +90,7 @@ button:focus-visible{outline:3px solid var(--sun);outline-offset:3px}
 .start h2{margin:0;font-family:var(--f-display);font-weight:800;font-size:2rem;line-height:1.05}
 .start .vi{margin:2px 0 12px;font-family:var(--f-hand);font-size:1.6rem;color:var(--marker)}
 .start p.note{margin:0 0 16px;font-size:.95rem;line-height:1.45;color:#4a5670}
+.start .lk-install{margin-top:10px}
 .go{background:var(--sun);border-radius:20px;padding:12px 26px;font-family:var(--f-display);font-weight:800;font-size:1.4rem;
   box-shadow:inset 0 -5px 0 rgba(0,0,0,.12);display:inline-flex;flex-direction:column;align-items:center;line-height:1.05}
 .go i{font-style:normal;font-family:var(--f-hand);font-size:1.2rem;font-weight:400}
@@ -125,7 +126,7 @@ button:focus-visible{outline:3px solid var(--sun);outline-offset:3px}
   .act b{font-size:.8rem}.act i{font-size:.84rem}
   .act svg{width:24px;height:24px}.act.turn svg{width:30px;height:30px}
 }
-@media (max-width:400px){ .tools #langBtn{display:none} .title .arc{display:none} }
+@media (max-width:400px){ .title .arc{display:none} }
 @media (max-height:520px){
   .top{position:absolute;top:calc(env(safe-area-inset-top,0px) + 10px);left:16px;right:16px}
   .col{padding-top:58px;align-items:flex-start}
@@ -142,6 +143,8 @@ button:focus-visible{outline:3px solid var(--sun);outline-offset:3px}
 <link rel="manifest" href="../manifest.webmanifest">
 <link rel="apple-touch-icon" href="../icons/icon-180.png">
 <script>if('serviceWorker' in navigator)addEventListener('load',()=>navigator.serviceWorker.register('../sw.js'));</script>
+<link rel="stylesheet" href="../lab-kit.css">
+<script src="../lab-kit.js"></script>
 </head>
 <body>
 <canvas id="c" tabindex="-1" aria-label="3D darkened classroom with a flashlight, a glass prism and a white screen that can show a rainbow"></canvas>
@@ -157,10 +160,7 @@ button:focus-visible{outline:3px solid var(--sun);outline-offset:3px}
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg>
       </a>
       <button class="tool" id="langBtn" aria-label="Voice language">EN + VI</button>
-      <button class="tool" id="muteBtn" aria-pressed="true" aria-label="Sound">
-        <svg class="on" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9h4l5-4v14l-5-4H4z" fill="currentColor"/><path d="M16.5 8.5a5 5 0 0 1 0 7M19 6a8.5 8.5 0 0 1 0 12"/></svg>
-        <svg class="off" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9h4l5-4v14l-5-4H4z" fill="currentColor"/><path d="M17 9l5 6M22 9l-5 6"/></svg>
-      </button>
+      <button class="tool" id="muteBtn" aria-label="Sound"></button>
       <button class="tool" id="infoBtn" aria-label="For grown-ups">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><circle cx="12" cy="12" r="9.5"/><path d="M9.3 9.3a2.8 2.8 0 1 1 3.9 2.6c-.8.4-1.2 1-1.2 1.8v.5"/><circle cx="12" cy="17.3" r=".6" fill="currentColor"/></svg>
       </button>
@@ -215,6 +215,7 @@ button:focus-visible{outline:3px solid var(--sun);outline-offset:3px}
     <p class="vi" lang="vi">Làm cầu vồng</p>
     <p class="note" id="loadNote">Turning off the classroom lights…</p>
     <button class="go" id="goBtn" disabled>Let's play! <i lang="vi">Chơi thôi!</i></button>
+    <button class="lk-install" type="button" data-lk-install hidden>Install app <i lang="vi">Cài ứng dụng</i></button>
   </div>
 </div>
 
@@ -223,6 +224,7 @@ button:focus-visible{outline:3px solid var(--sun);outline-offset:3px}
     <button class="x" id="infoClose" aria-label="Close">✕</button>
     <h2 id="infoTitle">For grown-ups</h2>
     <p class="vi" lang="vi">Dành cho ba mẹ</p>
+    <p><button class="lk-install" type="button" data-lk-install hidden>Install app <i lang="vi">Cài ứng dụng</i></button></p>
 
     <h3>How to play</h3>
     <p>Tap the big turn buttons, or drag on the glass prism, to turn it. When it is at the right angle, the white flashlight beam fans out into a rainbow on the white screen. Tap a color on the screen (or in the tray) to hear its name. "Sing" reads all seven colors in order. "Add prism" puts a second, upside-down prism in the colored light and turns it white again. Drag anywhere else to look around.</p>
@@ -278,26 +280,19 @@ COLORS.forEach((c,i)=>{
 });
 
 /* ---------- speech + sound ---------- */
-let soundOn=true, voiceMode='both';
-try{ const v=localStorage.getItem('rbm-voice'); if(v) voiceMode=v; if(localStorage.getItem('rbm-mute')==='1') soundOn=false; }catch(e){}
-const langBtn=$('#langBtn'), muteBtn=$('#muteBtn');
-const LANG_LABEL={both:'EN + VI',en:'EN',vi:'VI'};
-function syncTools(){ langBtn.textContent=LANG_LABEL[voiceMode]; muteBtn.setAttribute('aria-pressed',String(soundOn)); }
-syncTools();
-langBtn.onclick=()=>{ voiceMode=voiceMode==='both'?'en':voiceMode==='en'?'vi':'both'; try{localStorage.setItem('rbm-voice',voiceMode)}catch(e){} syncTools(); sayTip(); };
-muteBtn.onclick=()=>{ soundOn=!soundOn; try{localStorage.setItem('rbm-mute',soundOn?'0':'1')}catch(e){} syncTools(); if(!soundOn){try{speechSynthesis.cancel()}catch(e){}} };
+LabKit.init({ legacy:'rbm', onLang:()=>sayTip(), onPanels:()=>{ fitCamera(); placeCamera(); lastBubbleH=$('.bubble').offsetHeight; } });
 let voices=[];
 function loadVoices(){ try{ voices=window.speechSynthesis?speechSynthesis.getVoices():[]; }catch(e){} }
 try{ if(window.speechSynthesis){ loadVoices(); speechSynthesis.onvoiceschanged=loadVoices; } }catch(e){}
 const pickVoice=l=>voices.find(v=>v.lang&&v.lang.toLowerCase().replace('_','-').startsWith(l));
-function say(en,vi){
-  if(!soundOn) return;
+function say(en,vi,force){
+  if(!(LabKit.voiceOn||(force&&LabKit.sfxOn))) return;
   try{
     const ss=window.speechSynthesis; if(!ss) return;
     const busyNow=ss.speaking||ss.pending; ss.cancel();
     const q=[];
-    if(voiceMode!=='vi') q.push({t:en,l:'en-US',v:pickVoice('en-us')||pickVoice('en')});
-    if(voiceMode!=='en') q.push({t:vi,l:'vi-VN',v:pickVoice('vi')});
+    if(LabKit.lang!=='vi') q.push({t:en,l:'en-US',v:pickVoice('en-us')||pickVoice('en')});
+    if(LabKit.lang!=='en') q.push({t:vi,l:'vi-VN',v:pickVoice('vi')});
     const go=()=>q.forEach(o=>{ const u=new SpeechSynthesisUtterance(o.t); u.lang=o.l; if(o.v) u.voice=o.v; u.rate=o.l==='vi-VN'?0.95:0.92; u.pitch=1.15; ss.speak(u); });
     if(busyNow) setTimeout(go,80); else go();
   }catch(e){}
@@ -305,22 +300,22 @@ function say(en,vi){
 let ac=null;
 function unlock(){ if(!ac){ try{ ac=new (window.AudioContext||window.webkitAudioContext)(); }catch(e){} } if(ac&&ac.state==='suspended') ac.resume(); }
 function tone(f0,f1,dur,vol,type){
-  if(!soundOn||!ac) return;
+  if(!LabKit.sfxOn||!ac) return;
   const t=ac.currentTime,o=ac.createOscillator(),g=ac.createGain();
   o.type=type||'sine'; o.frequency.setValueAtTime(f0,t); o.frequency.exponentialRampToValueAtTime(f1,t+dur);
   g.gain.setValueAtTime(vol,t); g.gain.exponentialRampToValueAtTime(0.0001,t+dur);
   o.connect(g).connect(ac.destination); o.start(t); o.stop(t+dur+0.02);
 }
-const click=()=>{ tone(1200,700,0.05,0.12,'square'); try{ if(soundOn&&navigator.vibrate) navigator.vibrate(12);}catch(e){} };
+const click=()=>{ tone(1200,700,0.05,0.12,'square'); LabKit.vibrate(12); };
 const tick=()=>tone(900,600,0.04,0.07,'triangle');
 const whoosh=()=>tone(300,900,0.25,0.08,'triangle');
 const sparkle=()=>{ [880,1175,1568].forEach((f,i)=>setTimeout(()=>tone(f,f,0.22,0.1,'triangle'),i*90)); };
 const fanfare=()=>{ COLORS.forEach((c,i)=>setTimeout(()=>tone(c.f,c.f,0.28,0.09,'triangle'),i*85)); setTimeout(()=>{ tone(1047,1047,0.6,0.08,'sine'); tone(1319,1319,0.6,0.06,'sine'); tone(1568,1568,0.6,0.05,'sine'); },7*85+40); };
 
 let tip={en:'',vi:''};
-function setTip(en,vi,speak){ tip={en,vi}; if(typeof refitSoon==='function') refitSoon(); $('#tipEn').textContent=en; $('#tipVi').textContent=vi; if(speak!==false) say(en,vi); }
-function sayTip(){ say(tip.en,tip.vi); }
-$('#sayBtn').onclick=()=>{unlock();sayTip();};
+function setTip(en,vi,speak){ tip={en,vi}; if(typeof refitSoon==='function') refitSoon(); $('#tipEn').textContent=en; $('#tipVi').textContent=vi; if(speak!==false) say(en,vi); LabKit.notifyTip(); }
+function sayTip(force){ say(tip.en,tip.vi,force); }
+$('#sayBtn').onclick=()=>{unlock();sayTip(true);};
 $('#infoBtn').onclick=()=>{ $('#info').hidden=false; };
 $('#infoClose').onclick=()=>{ $('#info').hidden=true; };
 $('#info').addEventListener('click',e=>{ if(e.target.id==='info') $('#info').hidden=true; });
@@ -734,7 +729,7 @@ function sing(){
   if(singing){ stopSing(); return; }
   singing=true; $('#singBtn').setAttribute('aria-pressed','true');
   setTip(RHYME_EN,RHYME_VI,false);
-  const gap=voiceMode==='both'&&soundOn?1500:900;
+  const gap=LabKit.lang==='both'&&LabKit.voiceOn?1500:900;
   COLORS.forEach((c,i)=>{ singTimers.push(setTimeout(()=>{ bands[i].hl=1.3; dirty=true; setSwatch(i); tone(c.f,c.f,0.35,0.1,'triangle'); say(c.en,c.vi); },300+i*gap)); });
   singTimers.push(setTimeout(()=>{ singing=false; $('#singBtn').setAttribute('aria-pressed','false'); setSwatch(-1); sparkle();
     bands.forEach(b=>b.hl=0.8); dirty=true;

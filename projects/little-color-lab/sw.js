@@ -1,6 +1,6 @@
 // Offline support: pages and same-origin JS/CSS are network-first (so updates show up), everything else
 // (three.js, fonts, icons) is cache-first. Bump VERSION to drop old caches.
-const VERSION = 'v2';
+const VERSION = 'v3';
 const CACHE = 'little-color-lab-' + VERSION;
 const PRECACHE = [
   './',
@@ -13,6 +13,7 @@ const PRECACHE = [
   './color-hunt/',
   './light-and-color/',
   './paint-mixing/',
+  './paint-mixing-2/',
   './rainbow-maker/',
   './rainbow-milk/',
   './walking-water/',

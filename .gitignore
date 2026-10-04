@@ -45,3 +45,6 @@ Thumbs.db
 
 # Angular files
 /.angular
+
+# brainstorm companion mockups
+.superpowers/

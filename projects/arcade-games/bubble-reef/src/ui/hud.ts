@@ -50,7 +50,7 @@ export class Hud {
 
   private coinsTarget = 0;
   private coinsShown = 0;
-  private coinsText = '';
+  private coinsDrawn = -1;
   private last: Partial<Record<string, string | number | boolean>> = {};
 
   constructor(actions: HudActions) {
@@ -160,10 +160,9 @@ export class Hud {
       const step = Math.max(1, Math.ceil(Math.abs(diff) * Math.min(1, dt * 9)));
       this.coinsShown += Math.sign(diff) * Math.min(step, Math.abs(diff));
     }
-    const text = formatNumber(this.coinsShown);
-    if (text !== this.coinsText) {
-      this.coinsText = text;
-      this.coinValue.textContent = text;
+    if (this.coinsShown !== this.coinsDrawn) {
+      this.coinsDrawn = this.coinsShown;
+      this.coinValue.textContent = formatNumber(this.coinsShown);
     }
 
     if (this.changed('wave', snap.wave)) this.waveLabel.textContent = `Wave ${snap.wave}`;
@@ -200,6 +199,7 @@ export class Hud {
   }
 
   setBanner(text: string | null): void {
+    if (!this.changed('banner', text ?? '')) return;
     setClass(this.banner, 'hidden', text === null);
     if (text !== null) this.bannerText.textContent = text;
   }

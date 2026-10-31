@@ -20,5 +20,5 @@
     "allowSyntheticDefaultImports": true,
     "paths": { "@config/*": ["./config/*"] }
   },
-  "include": ["src", "tests/sim", "tests/services", "config", "vite.config.ts", "tools"]
+  "include": ["src", "tests/sim", "tests/services", "tests/render", "tests/game", "tests/e2e", "config", "vite.config.ts", "tools"]
 }

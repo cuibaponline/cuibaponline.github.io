@@ -25,7 +25,7 @@ export function fishAt(s: SimState, x: number, y: number): Fish | null {
   let bestPoints = -1;
   for (const f of s.fish) {
     if (f.state !== 'swim' || !isVisible(s, f)) continue;
-    if (touchesCircle(s, f, x, y, 36) && f.def.points > bestPoints) {
+    if (touchesCircle(s, f, x, y, s.view.tapSlop ?? 36) && f.def.points > bestPoints) {
       best = f;
       bestPoints = f.def.points;
     }

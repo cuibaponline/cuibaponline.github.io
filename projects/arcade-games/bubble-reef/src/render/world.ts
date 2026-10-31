@@ -7,8 +7,7 @@ import { DT, type SimEvent } from '../sim/state';
 import { Assets, type CannonTextures } from './assets';
 import { FishViews } from './fishViews';
 import { FxSystem, ImagePool } from './fxSystem';
-import { bootStep, showFailure } from '../services/bootLog';
-import { mayReloadAfterContextLoss } from '../services/guard';
+import { bootStep } from '../services/bootLog';
 import { computeLayout, type Layout } from './layout';
 
 /** An iPad 11" screen. Larger displays upscale rather than spend GPU memory and power on detail the art doesn't have. */
@@ -24,8 +23,8 @@ uniform float strength;
 varying vec2 fragCoord;
 void main() {
   vec2 uv = fragCoord / resolution.y;
-  float a = texture2D(iChannel0, uv * 0.82 + fract(vec2(time * 0.021, time * 0.013))).r;
-  float b = texture2D(iChannel0, uv * 1.13 + fract(vec2(-time * 0.017, time * 0.019))).r;
+  float a = texture2D(iChannel0, uv * 1.367 + fract(vec2(time * 0.021, time * 0.013))).r;
+  float b = texture2D(iChannel0, uv * 1.883 + fract(vec2(-time * 0.017, time * 0.019))).r;
   float c = min(a, b);
   gl_FragColor = vec4(tint * c * strength * 1.25, 0.0);
 }`;
@@ -34,6 +33,23 @@ export interface WorldHooks {
   onEvents(events: SimEvent[]): void;
   onCoinArrive(coins: number): void;
   onFrame(dt: number): void;
+  onContextLost(): void;
+}
+
+/** About 30 line segments a turn: Graphics.arc always builds 100 Point objects, however short the arc. */
+const ARC_STEP = TAU / 32;
+
+function strokeArc(g: Phaser.GameObjects.Graphics, x: number, y: number, r: number, from: number, to: number): void {
+  if (to <= from) return;
+  const segments = Math.ceil((to - from) / ARC_STEP);
+  const step = (to - from) / segments;
+  g.beginPath();
+  g.moveTo(x + Math.cos(from) * r, y + Math.sin(from) * r);
+  for (let i = 1; i <= segments; i++) {
+    const a = from + step * i;
+    g.lineTo(x + Math.cos(a) * r, y + Math.sin(a) * r);
+  }
+  g.strokePath();
 }
 
 const colourVec = (c: number): { r: number; g: number; b: number } => ({
@@ -96,11 +112,14 @@ export class World {
   private crossfade = 1;
   private cannonLevelShown = -1;
 
+  private readonly safeProbe: HTMLElement;
   private renderScale = 2;
-  /** Set once WebGL has gone, so a boot still in progress stops rather than hiding the failure screen. */
-  contextLost = false;
   private slowFor = 0;
   private fastFor = 0;
+  private stepUpAfter = 30;
+  private lastStepUp = -Infinity;
+  private reducedFx = false;
+  private asleep = false;
   /** Average frames per second, smoothed. Exposed for the dynamic-resolution check and tests. */
   fps = 60;
 
@@ -109,13 +128,21 @@ export class World {
     private readonly hooks: WorldHooks,
     readyCb: (w: World) => void,
   ) {
-    this.layout = computeLayout(parent.clientWidth || 1180, parent.clientHeight || 820);
+    this.safeProbe = document.createElement('div');
+    this.safeProbe.className = 'safe-probe';
+    document.body.append(this.safeProbe);
+    this.layout = this.measure(1180, 820);
     // The bake is the tightest moment for memory, so full resolution waits for adaptResolution to earn it.
     this.renderScale = Math.min(1.5, this.topScale());
     const scene = new WorldScene();
     scene.ready = () => {
       this.scene = scene;
       this.assets = new Assets(scene);
+      // Attached before any art is baked: that is when an iPad is most likely to run out of memory.
+      this.game.canvas.addEventListener('webglcontextlost', () => {
+        bootStep('webgl context lost');
+        this.hooks.onContextLost();
+      });
       readyCb(this);
     };
     this.game = new Phaser.Game({
@@ -143,6 +170,10 @@ export class World {
     return new Promise((resolve) => {
       new World(parent, hooks, resolve);
     });
+  }
+
+  private measure(fallbackW: number, fallbackH: number): Layout {
+    return computeLayout(this.parent.clientWidth || fallbackW, this.parent.clientHeight || fallbackH, this.safeProbe.offsetHeight);
   }
 
   get canvas(): HTMLCanvasElement {
@@ -212,24 +243,7 @@ export class World {
     this.layers.overlay.add([this.ambient, ...this.rays, this.vignette, this.frost, this.flashRect]);
 
     scene.events.on(Phaser.Scenes.Events.UPDATE, (_: number, delta: number) => this.update(delta));
-    this.game.canvas.addEventListener('webglcontextlost', () => this.onContextLost());
     this.resize();
-  }
-
-  private onContextLost(): void {
-    bootStep('webgl context lost');
-    this.contextLost = true;
-    let storage: Storage | null = null;
-    try {
-      storage = window.sessionStorage;
-    } catch {
-      // Blocked storage: treated below as being unable to count reloads.
-    }
-    if (storage && mayReloadAfterContextLoss(storage, Date.now())) {
-      window.setTimeout(() => location.reload(), 400);
-    } else {
-      showFailure('The graphics stopped working.');
-    }
   }
 
   private buildCaustics(): void {
@@ -238,7 +252,8 @@ export class World {
         tint: { type: '3f', value: { x: 1, y: 1, z: 1 } },
         strength: { type: '1f', value: 0.3 },
       });
-      const shader = this.scene.add.shader(base, 960, 640, 2500, 1800, ['caustics']);
+      // Square, to cover a tall view as well as a wide one; the shader's UV scales match this size.
+      const shader = this.scene.add.shader(base, 960, 640, 3000, 3000, ['caustics']);
       this.layers.bg.add(shader);
       this.caustics = shader;
     } catch (err) {
@@ -247,9 +262,16 @@ export class World {
     }
   }
 
-  /** Bakes up front; a mid-game bake would hitch, so callers do this behind a loading moment. */
+  /** Bakes up front; a mid-game bake would hitch, so callers do this between waves. */
   prepareOcean(id: OceanId): void {
+    bootStep(`ocean ${id}`);
     this.assets.ocean(id);
+    bootStep(`ocean ${id} baked`);
+  }
+
+  /** Frees every other ocean, apart from whatever is still on screen during a crossfade. */
+  keepOceans(ids: OceanId[]): void {
+    this.assets.evictOceans((id, textures) => ids.includes(id) || id === this.oceanId || textures.seabed === this.seabed.texture.key);
   }
 
   setOcean(id: OceanId, instant = false): void {
@@ -268,8 +290,8 @@ export class World {
     if (first || instant) {
       this.seabed.setTexture(textures.seabed).setVisible(true).setAlpha(1);
       this.midground.setTexture(textures.midground).setVisible(true).setAlpha(1);
-      this.seabedNext.setVisible(false);
-      this.midgroundNext.setVisible(false);
+      this.seabedNext.setTexture('__DEFAULT').setVisible(false);
+      this.midgroundNext.setTexture('__DEFAULT').setVisible(false);
       this.crossfade = 1;
       this.fitOcean();
       return;
@@ -289,6 +311,18 @@ export class World {
       const scale = Math.max(w / img.width, h / img.height, 1 / 0.8);
       img.setScale(scale);
     }
+  }
+
+  /** The sea, light and frost are sized to the view, which can be far taller than the core on a phone. */
+  private fitDecor(): void {
+    const { view } = this.layout;
+    const w = view.right - view.left + 480;
+    const h = view.bottom - view.top + 420;
+    this.vignette.setDisplaySize(Math.max(2400, w), Math.max(1700, h));
+    this.frost.setDisplaySize(Math.max(2400, w), Math.max(1700, h));
+    const rayStretch = Math.max(1, (view.bottom - view.top) / 1440);
+    for (const ray of this.rays) ray.setScale(5.2, 3.4 * rayStretch);
+    this.ambient.setPosition(0, Math.max(0, view.bottom + 100 - 1460));
   }
 
   setSkin(skin: SkinId): void {
@@ -338,10 +372,25 @@ export class World {
   }
 
   resize(): void {
-    this.layout = computeLayout(this.parent.clientWidth || 1, this.parent.clientHeight || 1);
+    this.layout = this.measure(1, 1);
     this.applyScale();
     this.sim?.setView(this.layout.view);
+    this.fitDecor();
     if (this.oceanId) this.fitOcean();
+  }
+
+  /** Stops drawing behind an opaque screen, which would only heat the iPad. */
+  setAsleep(asleep: boolean): void {
+    if (asleep === this.asleep) return;
+    this.asleep = asleep;
+    if (asleep) this.game.loop.sleep();
+    else this.game.loop.wake();
+  }
+
+  private setReducedFx(on: boolean): void {
+    this.reducedFx = on;
+    this.caustics?.setVisible(!on);
+    for (const ray of this.rays) ray.setVisible(!on);
   }
 
   private topScale(): number {
@@ -365,7 +414,11 @@ export class World {
     canvas.style.height = `${cssH}px`;
   }
 
-  /** 17.2: step down when the frame rate sags for 3 s, back up after it has been steady for a while. */
+  /**
+   * 17.2: step down when the frame rate sags for 3 s, back up after it has been steady for a while. The full-screen
+   * caustics and light rays go first, since they cost more than they show. A step up that fails soon after makes the
+   * next try wait twice as long, because every resolution change reallocates the drawing buffer.
+   */
   private adaptResolution(dt: number): void {
     this.fps = lerp(this.fps, 1 / Math.max(dt, 1 / 240), 0.05);
     const top = this.topScale();
@@ -376,14 +429,24 @@ export class World {
       this.slowFor = 0;
       if (this.fps > 57) this.fastFor += dt;
     }
-    if (this.slowFor >= 3 && this.renderScale > Math.min(1.25, top)) {
-      this.renderScale = this.renderScale > 1.5 ? 1.5 : 1.25;
+    if (this.slowFor >= 3) {
       this.slowFor = 0;
-      this.applyScale();
-    } else if (this.fastFor >= 30 && this.renderScale < top) {
-      this.renderScale = Math.min(top, this.renderScale >= 1.5 ? top : 1.5);
+      if (this.clock - this.lastStepUp < 20) this.stepUpAfter = Math.min(this.stepUpAfter * 2, 240);
+      if (!this.reducedFx) {
+        this.setReducedFx(true);
+      } else if (this.renderScale > Math.min(1.25, top)) {
+        this.renderScale = this.renderScale > 1.5 ? 1.5 : 1.25;
+        this.applyScale();
+      }
+    } else if (this.fastFor >= this.stepUpAfter && (this.reducedFx || this.renderScale < top)) {
       this.fastFor = 0;
-      this.applyScale();
+      this.lastStepUp = this.clock;
+      if (this.renderScale < top) {
+        this.renderScale = Math.min(top, this.renderScale >= 1.5 ? top : 1.5);
+        this.applyScale();
+      } else {
+        this.setReducedFx(false);
+      }
     }
   }
 
@@ -392,8 +455,8 @@ export class World {
     this.clock += dt;
     this.adaptResolution(dt);
 
-    const sim = this.sim;
-    if (sim && !this.paused) {
+    if (this.sim && !this.paused) {
+      const sim = this.sim;
       this.acc += dt;
       let steps = 0;
       while (this.acc >= DT && steps < 6) {
@@ -409,7 +472,8 @@ export class World {
       }
     }
 
-    if (sim) this.syncState(sim, this.acc / DT, this.paused ? 0 : dt);
+    // Read again: the events above can end the session, which swaps the sim.
+    if (this.sim) this.syncState(this.sim, this.acc / DT, this.paused ? 0 : dt);
     this.fx.update(this.paused ? 0 : dt);
     this.drawAmbient(dt);
     this.hooks.onFrame(dt);
@@ -432,8 +496,8 @@ export class World {
       if (this.crossfade >= 1) {
         this.seabed.setTexture(this.seabedNext.texture.key).setScale(this.seabedNext.scaleX);
         this.midground.setTexture(this.midgroundNext.texture.key).setScale(this.midgroundNext.scaleX);
-        this.seabedNext.setVisible(false);
-        this.midgroundNext.setVisible(false);
+        this.seabedNext.setTexture('__DEFAULT').setVisible(false);
+        this.midgroundNext.setTexture('__DEFAULT').setVisible(false);
       }
     }
     const frozen = this.sim?.s.freezeT ?? 0;
@@ -526,13 +590,9 @@ export class World {
       const r = Math.max(p.r * 0.95, 44);
       const a = clamp(f.hpRing / 0.4, 0, 1);
       g.lineStyle(9, 0x062a44, 0.45 * a);
-      g.beginPath();
-      g.arc(p.x, p.y, r, 0, TAU);
-      g.strokePath();
+      strokeArc(g, p.x, p.y, r, 0, TAU);
       g.lineStyle(7, f.hp / f.maxHp > 0.33 ? 0x7dffb0 : 0xffd166, 0.95 * a);
-      g.beginPath();
-      g.arc(p.x, p.y, r, -Math.PI / 2, -Math.PI / 2 + TAU * clamp(f.hp / f.maxHp, 0, 1));
-      g.strokePath();
+      strokeArc(g, p.x, p.y, r, -Math.PI / 2, -Math.PI / 2 + TAU * clamp(f.hp / f.maxHp, 0, 1));
     }
 
     const seat = sim.localSeat;
@@ -542,14 +602,10 @@ export class World {
       const from = Math.PI * 1.12;
       const span = Math.PI * 0.76;
       g.lineStyle(16, 0x04283f, 0.6);
-      g.beginPath();
-      g.arc(seat.x, seat.y, r, from, from + span);
-      g.strokePath();
+      strokeArc(g, seat.x, seat.y, r, from, from + span);
       const ratio = clamp(seat.energy / energy.max, 0, 1);
       g.lineStyle(10, ratio > 0.25 ? 0x62e6ff : 0xffa94d, 1);
-      g.beginPath();
-      g.arc(seat.x, seat.y, r, from, from + span * ratio);
-      g.strokePath();
+      strokeArc(g, seat.x, seat.y, r, from, from + span * ratio);
     }
 
     if (this.sparks.length > 0) {
@@ -625,9 +681,5 @@ export class World {
       default:
         break;
     }
-  }
-
-  destroy(): void {
-    this.game.destroy(true);
   }
 }

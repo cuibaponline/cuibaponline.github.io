@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { mayReloadAfterContextLoss } from '../../src/services/guard';
+import { holdSingleInstance, mayReloadAfterContextLoss } from '../../src/services/guard';
 
 const memory = (): Pick<Storage, 'getItem' | 'setItem'> => {
   const items = new Map<string, string>();
@@ -28,5 +28,34 @@ describe('mayReloadAfterContextLoss', () => {
   it('will not reload blindly when it cannot keep count', () => {
     const store = { getItem: () => null, setItem: () => { throw new Error('full'); } };
     expect(mayReloadAfterContextLoss(store, 1000)).toBe(false);
+  });
+});
+
+describe('holdSingleInstance', () => {
+  it('goes ahead where the browser has no Web Locks', async () => {
+    await expect(holdSingleInstance(() => {}, undefined)).resolves.toBeUndefined();
+  });
+
+  it('holds the lock for as long as the page lives', async () => {
+    let held: Promise<unknown> | null = null;
+    const locks = { request: (_: string, cb: () => Promise<unknown>) => { held = cb(); return held; } } as unknown as LockManager;
+    await holdSingleInstance(() => {}, locks);
+    let released = false;
+    void held!.then(() => { released = true; });
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    expect(released).toBe(false);
+  });
+
+  it('goes ahead if the lock request fails', async () => {
+    const locks = { request: () => Promise.reject(new Error('denied')) } as unknown as LockManager;
+    await expect(holdSingleInstance(() => {}, locks)).resolves.toBeUndefined();
+  });
+
+  it('tells the player when another copy holds the lock', async () => {
+    let waited = false;
+    const locks = { request: () => new Promise(() => {}) } as unknown as LockManager;
+    void holdSingleInstance(() => (waited = true), locks);
+    await new Promise((r) => setTimeout(r, 1600));
+    expect(waited).toBe(true);
   });
 });

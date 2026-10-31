@@ -153,19 +153,14 @@ test.describe('playing', () => {
     await expect(page.locator('.timer')).toContainText('18 min');
   });
 
-  test('turning to portrait during the intermission holds the next wave (6.1)', async ({ page, viewport }) => {
+  test('turning the device during the intermission keeps the countdown going (6.1)', async ({ page, viewport }) => {
     await completeSetup(page);
     await tapToHome(page);
     await startGame(page);
     await page.evaluate(() => window.__br.endWave());
     await expect(page.locator('#intermission')).toBeVisible();
     await page.setViewportSize({ width: viewport!.height, height: viewport!.width });
-    await page.waitForTimeout(9_000);
-    await expect(page.locator('#intermission')).toBeAttached();
-    await page.setViewportSize(viewport!);
-    await expect(page.locator('#intermission')).toBeVisible();
-    await expect(page.locator('#intermission')).not.toBeAttached({ timeout: 10_000 });
-    expect((await page.evaluate(() => window.__br.state())).phase).toBe('wave');
+    await expect(page.locator('#intermission')).toBeHidden({ timeout: 20_000 });
   });
 
   test('wave end shows the intermission with Keep playing and Take a break (5.4)', async ({ page }) => {
@@ -312,16 +307,56 @@ test.describe('parental controls', () => {
 });
 
 test.describe('device', () => {
-  test('portrait shows the rotate overlay and pauses play (6.1)', async ({ page }) => {
+  test('turning the device pauses play, and the game carries on afterwards @responsive', async ({ page, viewport }) => {
     await completeSetup(page);
     await tapToHome(page);
     await startGame(page);
-    await page.setViewportSize({ width: 820, height: 1180 });
-    await expect(page.locator('#rotate')).toBeVisible();
+    await page.setViewportSize({ width: viewport!.height, height: viewport!.width });
     await expect(page.locator('#pause')).toBeVisible();
+    await page.locator('#resume').click();
+    await expect(page.locator('#pause')).toBeHidden();
+    const box = await page.locator('#stage canvas').boundingBox();
+    expect(box?.width).toBeCloseTo(viewport!.height, 0);
+    expect(box?.height).toBeCloseTo(viewport!.width, 0);
   });
 
-  test('the world fills the screen with no letterbox at this size (6.1)', async ({ page, viewport }) => {
+  test('every screen a child needs fits this size @responsive', async ({ page, viewport }) => {
+    const inside = async (selector: string): Promise<void> => {
+      const box = (await page.locator(selector).boundingBox())!;
+      expect(box.x).toBeGreaterThanOrEqual(0);
+      expect(box.x + box.width).toBeLessThanOrEqual(viewport!.width);
+    };
+    await completeSetup(page);
+    await tapToHome(page);
+    await inside('#play');
+    await page.locator('#play').click();
+    for (const id of ['#diff-easy', '#diff-medium', '#diff-hard']) await inside(id);
+    await page.locator('#diff-medium').click();
+    await expect(page.locator('#hud')).toBeVisible();
+
+    const selectors = ['.hud-btn.pause', '.hud-btn.lock', '.hud-btn.auto', '.level-box .hud-btn:first-child', '.level-box .hud-btn:last-child'];
+    const boxes = [];
+    for (const selector of selectors) {
+      const box = (await page.locator(selector).boundingBox())!;
+      expect(box.width).toBeGreaterThanOrEqual(44);
+      expect(box.height).toBeGreaterThanOrEqual(44);
+      expect(box.x).toBeGreaterThanOrEqual(0);
+      expect(box.x + box.width).toBeLessThanOrEqual(viewport!.width);
+      expect(box.y + box.height).toBeLessThanOrEqual(viewport!.height);
+      boxes.push(box);
+    }
+    for (const a of boxes) {
+      for (const b of boxes) {
+        if (a === b) continue;
+        const overlap = a.x < b.x + b.width && b.x < a.x + a.width && a.y < b.y + b.height && b.y < a.y + a.height;
+        expect(overlap).toBe(false);
+      }
+    }
+    const state = await page.evaluate(() => window.__br.state());
+    expect(state.fish.length).toBeGreaterThan(0);
+  });
+
+  test('the world fills the screen with no letterbox at this size (6.1) @responsive', async ({ page, viewport }) => {
     await completeSetup(page);
     const box = await page.locator('#stage canvas').boundingBox();
     expect(box?.width).toBeCloseTo(viewport!.width, 0);

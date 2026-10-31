@@ -93,8 +93,12 @@ export class GameSession {
     return OCEAN_TRACK[this.ocean] ?? 'coral';
   }
 
-  get lastCatchActive(): boolean {
-    return this.lastCatchLeft !== null;
+  /** Holds the ocean now on screen and the next one, baked ahead so the mid-wave change can't hitch. */
+  prepareOceans(): void {
+    const { oceans } = this.sim.s.unlocks;
+    const next = oceans[(this.sim.s.oceanIndex + 1) % Math.max(1, oceans.length)] ?? this.ocean;
+    this.deps.world.keepOceans([this.currentOcean, next as OceanId]);
+    this.deps.world.prepareOcean(next as OceanId);
   }
 
   get atIntermission(): boolean {
@@ -335,11 +339,11 @@ export class GameSession {
   }
 
   keepPlaying(): void {
-    const { save, world, hud } = this.deps;
+    const { save, hud } = this.deps;
     this.inIntermission = false;
     const unlocks = this.unlocks();
-    for (const ocean of unlocks.oceans) world.prepareOcean(ocean as OceanId);
     this.sim.setUnlocks(unlocks);
+    this.prepareOceans();
     hud.setLaserUnlocked(unlocks.laser);
     this.sim.nextWave();
     void save.saveNow();

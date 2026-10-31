@@ -83,7 +83,8 @@ export class FishViews {
     // setTexture, not setFrame: a pufferfish caught while puffed comes back from the pool with the puffed sheet.
     body.setTexture(sheet.key, 0).setOrigin(sheet.originX, sheet.originY).setDepth(-f.def.size);
     const shadow = this.take(sheet.shadowKey, this.layers.shadows);
-    shadow.setAlpha(0.26).setScale(sheet.scale * 1.05);
+    // Same depth rule as the bodies: it groups shadows by texture, which saves a batch flush per fish on the iPad pipeline.
+    shadow.setAlpha(0.26).setScale(sheet.scale * 1.05).setDepth(-f.def.size);
 
     const view: FishView = {
       gen: this.gen, sheet, body, shadow, flash: null, aura: null, icon: null, shell: null, bubble: null,

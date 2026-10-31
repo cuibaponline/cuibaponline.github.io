@@ -69,6 +69,16 @@ export function buildPath(config: PathConfig, view: ViewRect, mirrorX: boolean, 
   return fromPoints(px, py);
 }
 
+/** The same path stretched from one view onto another, keeping each point at the same place on screen. */
+export function refitPath(path: Path, from: ViewRect, to: ViewRect): Path {
+  const scaleX = (to.right - to.left) / (from.right - from.left);
+  const scaleY = (to.bottom - to.top) / (from.bottom - from.top);
+  return fromPoints(
+    Array.from(path.xs, (x) => to.left + (x - from.left) * scaleX),
+    Array.from(path.ys, (y) => to.top + (y - from.top) * scaleY),
+  );
+}
+
 /** Before the start and past the end a path continues along its end tangent, so formations can queue off screen. */
 export function samplePath(path: Path, dist: number, out: PathSample): PathSample {
   const { xs, ys, ls, length } = path;

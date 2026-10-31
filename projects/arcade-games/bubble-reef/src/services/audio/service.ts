@@ -8,7 +8,7 @@ import { mulberry32 } from './synth';
 
 const MAX_VOICES = 16;
 const CROSSFADE = 0.8;
-const MAX_CACHED_TRACKS = 3;
+const MAX_CACHED_TRACKS = 4;
 const COINS_PER_SECOND = 8;
 const COIN_STREAK_MS = 1000;
 const COIN_SPACING = 0.06;

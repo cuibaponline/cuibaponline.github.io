@@ -1,6 +1,6 @@
 # Bubble Reef
 
-A kid-friendly, offline fish-catching game for iPad, built from the Bubble Reef GDD/BRD (`§` references below point to it).
+A kid-friendly, offline fish-catching game for iPad and phones, in either orientation, built from the Bubble Reef GDD/BRD (`§` references below point to it).
 Touch the water to fire bubbles, catch fish in nets, fill the Fish Book and unlock new oceans. Shots are free,
 catches are decided by fish HP rather than dice, and coins only ever buy cosmetic cannon skins.
 
@@ -33,7 +33,7 @@ npm install
 npm run dev            # dev server; open it from the iPad using the Network URL
 npm test               # simulation, economy, save and parental tests
 npm run test:coverage  # the same, with a 70 % line-coverage gate (NFR-09). Audio is excluded: it needs a browser
-npm run test:e2e       # WebKit at both iPad sizes
+npm run test:e2e       # WebKit at both iPad sizes, plus the portrait and phone sizes for @responsive tests
 npm run build          # type check and production build to dist/
 ```
 
@@ -51,6 +51,9 @@ deployed site rather than the dev server's Network URL once you reach the setup 
 - A special fish's shared stats and hit circles are tuned to the drawn art rather than to a sprite sheet.
 - A new version takes over at the next launch instead of waiting for a parent to apply it (§17.8). Waiting would trap
   any build that crashes before the Parent Zone can open.
+- Portrait and phones deliberately depart from §6.1 and §10.3, which assumed a landscape iPad. Anything but a landscape
+  tablet shows the same world area as the core in the screen's own shape (`render/layout.ts`), and the compact HUD in
+  `styles.css` uses 52 to 64 px buttons rather than 80.
 - Phaser's preFX, postFX and canvas MSAA are switched off. On an iPad screen the FX pipelines alone reserve over 800 MB
   of render targets, which crashes Safari and can restart the iPad. Leave them off unless the game really needs them.
 - Music loops run 55 to 65 s instead of 90 to 120 s, which keeps each decoded track near 5 MB.

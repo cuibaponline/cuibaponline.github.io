@@ -42,6 +42,8 @@ html, body {
 #stage { position: fixed; inset: 0; touch-action: none; }
 #stage canvas { display: block; touch-action: none; }
 #ui { position: fixed; inset: 0; pointer-events: none; }
+.safe-probe { position: fixed; bottom: 0; width: 0; height: var(--safe-b); visibility: hidden; pointer-events: none; }
+.boot-note { max-width: 86vw; font-size: 22px; font-weight: 500; text-align: center; }
 .hidden { display: none !important; }
 
 svg { display: block; width: 100%; height: 100%; }
@@ -301,7 +303,7 @@ input.code-input { width: 340px; height: 60px; font: inherit; font-size: 30px; l
 .boss-bar { position: absolute; top: calc(var(--safe-t) + 84px); left: 50%; transform: translateX(-50%); width: min(620px, 56vw); display: flex; flex-direction: column; align-items: center; gap: 3px; font-size: 21px; font-weight: 500; text-shadow: 0 2px 0 rgba(0, 30, 50, 0.6); }
 .boss-track { width: 100%; height: 22px; border-radius: 11px; background: rgba(0, 20, 36, 0.62); overflow: hidden; box-shadow: inset 0 0 0 2px rgba(255, 224, 138, 0.7); }
 .boss-fill { height: 100%; width: 100%; background: linear-gradient(90deg, #ffb340, #ffe28a); transition: width 120ms linear; }
-.banner { position: absolute; top: 26%; left: 0; right: 0; text-align: center; font-size: 60px; font-weight: 700; color: #fff; -webkit-text-stroke: 2px #0a6b96; paint-order: stroke fill; text-shadow: 0 5px 0 #0a5a80, 0 12px 20px rgba(0, 20, 40, 0.5); animation: banner-in 260ms cubic-bezier(0.2, 1.4, 0.4, 1); }
+.banner { position: absolute; top: 26%; left: 0; right: 0; text-align: center; padding: 0 12px; font-size: clamp(30px, 8vw, 60px); font-weight: 700; color: #fff; -webkit-text-stroke: 2px #0a6b96; paint-order: stroke fill; text-shadow: 0 5px 0 #0a5a80, 0 12px 20px rgba(0, 20, 40, 0.5); animation: banner-in 260ms cubic-bezier(0.2, 1.4, 0.4, 1); }
 @keyframes banner-in { from { transform: scale(0.6); opacity: 0; } }
 .toasts { position: absolute; top: calc(var(--safe-t) + 88px); right: calc(var(--safe-r) + var(--edge)); display: flex; flex-direction: column; align-items: flex-end; gap: 10px; }
 .hud:has(~ .screen) .toasts { display: none; }
@@ -314,10 +316,11 @@ input.code-input { width: 340px; height: 60px; font: inherit; font-size: 30px; l
 .ring-bg, .ring-fill { fill: none; stroke-width: 8; }
 .ring-bg { stroke: rgba(0, 20, 36, 0.55); }
 .ring-fill { stroke: var(--sea); transition: stroke-dashoffset 160ms linear; }
-.hud-btn.laser.ready { color: #fff; background: #ff5fa2; animation: ready 900ms ease-in-out infinite; }
+.hud-btn.laser.ready { color: #fff; background: #ff5fa2; box-shadow: 0 0 20px #ff9ccc; animation: ready 900ms ease-in-out infinite; }
 .hud-btn.laser.ready .ring-fill { stroke: var(--sun); }
 .hud-btn.laser.firing { color: var(--sun); }
-@keyframes ready { 50% { transform: scale(1.1); box-shadow: 0 0 26px #ff9ccc; } }
+/* Transform only: animating the glow would repaint over the canvas for as long as the laser waits. */
+@keyframes ready { 50% { transform: scale(1.1); } }
 .hud-actions { position: absolute; right: calc(var(--safe-r) + var(--edge)); bottom: calc(var(--safe-b) + var(--edge)); display: flex; gap: 16px; }
 .level-box { position: absolute; left: 50%; bottom: calc(var(--safe-b) + var(--edge)); transform: translateX(-50%); width: 340px; display: flex; align-items: center; justify-content: space-between; }
 .level-box .hud-btn.level { width: 64px; height: 64px; padding: 15px; border-radius: 22px; }
@@ -330,14 +333,99 @@ input.code-input { width: 340px; height: 60px; font: inherit; font-size: 30px; l
 .hud.lefty .hud-actions { right: auto; left: calc(var(--safe-l) + var(--edge)); flex-direction: row-reverse; }
 .hud.lefty .hud-btn.fire { right: auto; left: calc(var(--safe-l) + var(--edge)); }
 
-/* Rotate overlay */
-.rotate { position: fixed; inset: 0; display: none; flex-direction: column; align-items: center; justify-content: center; gap: 24px; background: #04395e; z-index: 90; font-size: 34px; pointer-events: auto; text-align: center; padding: 30px; }
-.rotate .tablet { width: 120px; height: 170px; border-radius: 18px; box-shadow: inset 0 0 0 8px var(--sun); animation: turn 2.2s ease-in-out infinite; }
-@keyframes turn { 30%, 70% { transform: rotate(-90deg); } }
-@media (orientation: portrait) { .rotate { display: flex; } }
-
 /* Smaller windows: Safari tab with its toolbars, or the mini. */
 @media (max-height: 700px) {
   .btn.huge { min-height: 96px; font-size: 40px; }
   .pin-pad button { height: 58px; }
+}
+
+/* Phones either way up, and narrow split views. Keep in step with isCompact() in render/layout.ts. */
+@media (max-width: 740px), (max-height: 500px) {
+  :root { --edge: 12px; }
+
+  .screen { overflow-y: auto; -webkit-overflow-scrolling: touch; touch-action: pan-y; overscroll-behavior: contain; }
+  /* Auto margins rather than justify-content: centring would push the top of a tall screen out of scroll reach. */
+  .screen.center { justify-content: flex-start; gap: 12px; }
+  .screen.center > :first-child { margin-top: auto; }
+  .screen.center > :last-child { margin-bottom: auto; }
+
+  .btn { min-height: 64px; padding: 0 24px; border-radius: 22px; font-size: 24px; }
+  .btn.huge { min-height: 84px; padding: 0 48px; border-radius: 30px; font-size: 36px; }
+  .btn.huge svg { width: 44px; height: 44px; }
+  .round-btn { width: 56px; height: 56px; padding: 13px; border-radius: 18px; }
+  .topbar { min-height: 56px; gap: 10px; margin-bottom: 8px; }
+  .topbar h1 { font-size: 28px; }
+  .pill { height: 48px; padding: 0 12px; gap: 6px; font-size: 20px; }
+  .pill svg { width: 24px; height: 24px; }
+  .panel { padding: 18px 20px; border-radius: 24px; }
+  h2 { font-size: 30px; }
+  .logo { font-size: clamp(36px, min(12vw, 14vh), 72px) !important; }
+  .tap-hint { font-size: 28px; }
+  .home-top { flex-wrap: wrap; }
+  .home-menu { gap: 16px; }
+  .home-row { gap: 14px; }
+  .home-mid { gap: 20px; }
+
+  .diff-fish .f { width: 56px; height: 56px; }
+  .stat { min-width: 100px; padding: 10px 14px; }
+  .stat b { font-size: 30px; }
+  .stat b svg { width: 28px; height: 28px; }
+  .xp { width: 100%; max-width: 620px; }
+  .otto-tip { flex-wrap: wrap; justify-content: center; font-size: 19px; }
+
+  .book-grid { grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); }
+  .skin-grid { grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); }
+  .detail canvas { width: 140px !important; height: 140px !important; flex: none; }
+  .detail .fact { font-size: 20px; }
+
+  .setting { gap: 12px; padding: 8px 14px; font-size: 20px; }
+  input[type='range'] { width: min(280px, 46vw); }
+  .segmented button { min-width: 84px; font-size: 18px; }
+
+  .pin-pad { gap: 8px; }
+  .pin-pad button { height: 52px; }
+  .code { font-size: 30px; letter-spacing: 4px; padding: 8px 16px; }
+  input.code-input { width: 100%; max-width: 340px; }
+  .wizard p { font-size: 19px; }
+
+  .pz-row { flex-wrap: wrap; }
+  .stepper b { min-width: 64px; }
+  .sleep h2 { font-size: 34px; }
+  .sleep p { font-size: 21px; }
+  .countdown { font-size: 52px; }
+
+  .dialog .panel { width: calc(100vw - 24px); max-height: calc(100dvh - 24px); overflow-y: auto; touch-action: pan-y; }
+
+  /* Bottom row: laser, minus, the cannon, plus, auto. Lock stacks above auto. */
+  .hud-top { top: calc(var(--safe-t) + 8px); gap: 8px; }
+  .hud-btn { width: 64px; height: 64px; padding: 15px; border-radius: 20px; }
+  .hud-btn.pause { width: 48px; height: 48px; padding: 11px; border-radius: 16px; }
+  .coin-box { height: 48px; min-width: 0; padding: 0 12px 0 4px; gap: 4px; font-size: 21px; }
+  .coin-box svg { width: 32px; height: 32px; }
+  .wave { font-size: 15px; gap: 6px; min-width: 0; }
+  .wave-track { min-width: 24px; height: 12px; }
+  .wave-mark { top: -9px; width: 26px; height: 26px; }
+  .timer { position: absolute; left: 0; top: 54px; height: 34px; padding: 0 10px; font-size: 16px; }
+  .timer span { width: 20px; height: 20px; }
+  .boss-bar { top: calc(var(--safe-t) + 98px); width: 62vw; font-size: 17px; }
+  .boss-track { height: 16px; }
+  .toasts { top: calc(var(--safe-t) + 62px); }
+  .toast { padding: 4px 12px 4px 4px; font-size: 16px; max-width: calc(100vw - 24px); }
+  .toast canvas { width: 40px !important; height: 40px !important; flex: none; }
+  .hud-btn.laser { width: 64px; height: 64px; padding: 17px; }
+  .hud-actions { flex-direction: column-reverse; gap: 8px; }
+  .hud.lefty .hud-actions { flex-direction: column-reverse; }
+  .level-box { bottom: calc(var(--safe-b) + var(--edge) + 6px); width: min(222px, calc(100% - 168px)); }
+  .level-box .hud-btn.level { width: 52px; height: 52px; padding: 13px; border-radius: 18px; }
+  .level-value { bottom: -8px; min-width: 28px; height: 26px; line-height: 26px; font-size: 17px; }
+  .hud-btn.fire { bottom: calc(var(--safe-b) + var(--edge) + 144px); width: 84px; height: 84px; font-size: 21px; }
+}
+
+@media (max-width: 740px) {
+  .home-mid { flex-direction: column; }
+  .cards { flex-direction: column; gap: 14px; align-items: stretch; }
+  .diff-card { flex: 1 1 0; width: 100%; max-width: none; height: auto; min-height: 96px; max-height: 170px; flex-direction: row; padding: 12px 22px; font-size: 30px; }
+  .pz-grid { grid-template-columns: 1fr; }
+  .pz-card.wide { grid-column: auto; }
+  .detail { flex-direction: column; gap: 12px; }
 }

@@ -14,6 +14,10 @@ export interface ViewRect {
   top: number;
   right: number;
   bottom: number;
+  /** How far the cannon sits above the bottom edge. Compact screens raise it clear of the home indicator. */
+  seatInset?: number;
+  /** World-unit forgiveness when tapping a fish to lock on, so a small fish on a phone is still a fair target. */
+  tapSlop?: number;
 }
 
 export type Phase = 'wave' | 'parade' | 'transition' | 'boss' | 'bossOutro' | 'waveComplete' | 'wrapUp' | 'ended';

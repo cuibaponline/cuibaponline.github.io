@@ -25,7 +25,7 @@ export function titleScreen(app: App): HTMLElement {
     'div',
     { class: 'screen dim center', id: 'title' },
     h('div', { class: 'logo', html: 'Bubble <span>Reef</span>' }),
-    otto('cheer', Math.min(300, window.innerHeight * 0.42)),
+    otto('cheer', Math.min(300, window.innerHeight * 0.42, window.innerWidth * 0.7)),
     h('div', { class: 'tap-hint' }, 'Tap to start'),
   );
   el.addEventListener('pointerdown', () => app.onFirstTap());
@@ -54,7 +54,7 @@ export function homeScreen(app: App): HTMLElement {
     h(
       'div',
       { class: 'home-mid' },
-      otto('idle', Math.min(340, window.innerHeight * 0.52)),
+      otto('idle', Math.min(340, window.innerHeight * (window.innerHeight > window.innerWidth ? 0.3 : 0.52))),
       h(
         'div',
         { class: 'home-menu' },
@@ -152,10 +152,10 @@ function unlockList(ups: LevelUp[]): HTMLElement | null {
 
 export function intermissionScreen(app: App, data: { summary: WaveSummary; suggestMedium: boolean }): HTMLElement {
   const { summary, suggestMedium } = data;
-  // Counts down only while the game can be seen, so a wave never starts behind the rotate overlay or the Home Screen.
+  // Counts down only while the game can be seen, so a wave never starts behind the Home Screen.
   let leftMs = CONFIG.waves.intermissionSec * 1000 + (summary.levelUps.length > 0 ? 4000 : 0);
   const auto = window.setInterval(() => {
-    if (document.hidden || window.matchMedia('(orientation: portrait)').matches) return;
+    if (document.hidden) return;
     leftMs -= 250;
     if (leftMs > 0) return;
     window.clearInterval(auto);

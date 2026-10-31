@@ -19,6 +19,8 @@ export interface SaveServiceOptions {
   debounceMs?: number;
   /** Longest saveSoon() may be pushed back, so steady play still meets the 10 s promise (US-21). */
   maxWaitMs?: number;
+  /** Told once when saving starts to fail, not on every retry. */
+  onError?: (error: unknown) => void;
 }
 
 /**
@@ -96,6 +98,7 @@ export class SaveService {
   private readonly timers: SaveTimers;
   private readonly debounceMs: number;
   private readonly maxWaitMs: number;
+  private readonly onError: (error: unknown) => void;
 
   private data: SaveData = createDefaultSave();
   private loaded = false;
@@ -112,6 +115,7 @@ export class SaveService {
     this.timers = options.timers ?? realTimers;
     this.debounceMs = Math.max(MIN_DEBOUNCE_MS, options.debounceMs ?? MIN_DEBOUNCE_MS);
     this.maxWaitMs = Math.max(this.debounceMs, options.maxWaitMs ?? DEFAULT_MAX_WAIT_MS);
+    this.onError = options.onError ?? (() => {});
   }
 
   async load(): Promise<LoadResult> {
@@ -155,17 +159,13 @@ export class SaveService {
       : { data: this.data, recovered: false, status: 'ok' };
   }
 
-  /** The live save. After changing it directly, call markDirty(). */
+  /** The live save. Change it through update(). */
   get(): SaveData {
     return this.data;
   }
 
   update(fn: (data: SaveData) => void): void {
     fn(this.data);
-    this.dirty = true;
-  }
-
-  markDirty(): void {
     this.dirty = true;
   }
 
@@ -206,7 +206,7 @@ export class SaveService {
   private async write(): Promise<void> {
     if (!this.loaded || !this.dirty) return;
     if (!this.writable) {
-      this.saveError = new Error('Saving is off: the stored save could not be read');
+      this.fail(new Error('Saving is off: the stored save could not be read'));
       return;
     }
 
@@ -228,8 +228,13 @@ export class SaveService {
       this.saveError = null;
     } catch (error) {
       this.dirty = true;
-      this.saveError = error;
+      this.fail(error);
     }
+  }
+
+  private fail(error: unknown): void {
+    if (this.saveError === null) this.onError(error);
+    this.saveError = error;
   }
 
   private async readStored(): Promise<{ a: SlotRead; b: SlotRead; pointer: SlotName | null } | null> {

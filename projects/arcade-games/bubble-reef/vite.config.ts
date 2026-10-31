@@ -60,7 +60,7 @@ export default defineConfig({
         start_url: './',
         scope: './',
         display: 'standalone',
-        orientation: 'landscape',
+        orientation: 'any',
         background_color: '#04395e',
         theme_color: '#04395e',
         icons: [
@@ -72,7 +72,7 @@ export default defineConfig({
     }),
   ],
   test: {
-    include: ['tests/sim/**/*.test.ts', 'tests/services/**/*.test.ts'],
+    include: ['tests/sim/**/*.test.ts', 'tests/services/**/*.test.ts', 'tests/render/**/*.test.ts', 'tests/game/**/*.test.ts'],
     environment: 'node',
     coverage: {
       provider: 'v8',

@@ -376,6 +376,28 @@ describe('saveNow', () => {
     expect((await reload(kv)).data.profile.coins).toBe(3);
   });
 
+  it('reports a failed save once, and again if it fails after recovering', async () => {
+    const kv = await twoGoodSlots();
+    kv.relaunch();
+    const onError = vi.fn();
+    const svc = open(kv, { onError });
+    await svc.load();
+    kv.onSet = () => {
+      throw new DOMException('full', 'QuotaExceededError');
+    };
+    await svc.saveNow();
+    await svc.saveNow();
+    expect(onError).toHaveBeenCalledTimes(1);
+
+    kv.onSet = null;
+    await svc.saveNow();
+    kv.onSet = () => {
+      throw new DOMException('full', 'QuotaExceededError');
+    };
+    await svc.saveNow();
+    expect(onError).toHaveBeenCalledTimes(2);
+  });
+
   it('keeps alternating when only the pointer write failed', async () => {
     const kv = await twoGoodSlots();
     kv.relaunch();
@@ -728,12 +750,13 @@ describe('flush', () => {
     expect((await reload(kv)).data.profile.coins).toBe(1);
   });
 
-  it('writes after markDirty', async () => {
+  it('writes after update', async () => {
     const kv = new MemoryKv();
     const svc = open(kv);
     await svc.load();
-    svc.get().profile.coins = 2;
-    svc.markDirty();
+    svc.update((d) => {
+      d.profile.coins = 2;
+    });
     await svc.flush();
     expect((await reload(kv)).data.profile.coins).toBe(2);
   });

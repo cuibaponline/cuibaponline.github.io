@@ -1,4 +1,6 @@
-export type Difficulty = 'easy' | 'medium' | 'hard';
+import type { Difficulty } from '../config';
+
+export type { Difficulty };
 
 export const CURRENT_SCHEMA_VERSION = 1;
 

@@ -6,11 +6,37 @@ import { icon } from './icons';
 import type { App } from './app';
 import { otto } from './screens';
 
+const PIN_UNAVAILABLE = 'The PIN can\'t be checked here. Open the game from its https:// address.';
+
 interface PinPad {
   el: HTMLElement;
   message(text: string): void;
   shake(): void;
   reset(): void;
+}
+
+/** Enter-twice entry of a new PIN. Hand it each finished entry; it calls `done` with a PIN that passed both checks. */
+function newPinFlow(done: (pin: string) => void): (value: string, pad: PinPad) => void {
+  let first = '';
+  return (value, pad) => {
+    if (first === '') {
+      if (isTrivialPin(value)) {
+        pad.message('That PIN is too easy to guess');
+        pad.shake();
+        return;
+      }
+      first = value;
+      pad.message('Enter it again');
+      return;
+    }
+    if (value !== first) {
+      first = '';
+      pad.message("Those didn't match. Start again");
+      pad.shake();
+      return;
+    }
+    done(value);
+  };
 }
 
 function pinPad(title: string, onComplete: (pin: string) => void): PinPad {
@@ -104,27 +130,13 @@ export function wizardScreen(app: App): HTMLElement {
 
   const createPin = (): void => {
     clear(body);
-    let first = '';
-    const pad = pinPad('Choose a 4-digit PIN', (value) => {
-      pad.reset();
-      if (first === '') {
-        if (isTrivialPin(value)) {
-          pad.message('That PIN is too easy to guess');
-          pad.shake();
-          return;
-        }
-        first = value;
-        pad.message('Enter it again');
-        return;
-      }
-      if (value !== first) {
-        first = '';
-        pad.message("Those didn't match. Start again");
-        pad.shake();
-        return;
-      }
+    const entry = newPinFlow((value) => {
       pin = value;
       showCode();
+    });
+    const pad = pinPad('Choose a 4-digit PIN', (value) => {
+      pad.reset();
+      entry(value, pad);
     });
     body.append(pad.el);
   };
@@ -162,7 +174,7 @@ export function wizardScreen(app: App): HTMLElement {
     const failure = h('div', { class: 'pin-msg' });
     const finish = async (): Promise<void> => {
       if (await app.finishSetup(pin, code, dailyLimit)) return;
-      failure.textContent = 'Could not save the PIN here. Open the game from its https:// address.';
+      failure.textContent = 'Could not save the PIN. Open the game from its https:// address, or free up some storage.';
     };
     body.append(
       h('h2', {}, 'How long each day?'),
@@ -198,7 +210,7 @@ export function pinGateScreen(app: App, after: () => void): HTMLElement {
       pad.shake();
       const wait = result.lockedForSec ?? 0;
       pad.message(wait > 0 ? `Too many tries. Wait ${formatClock(wait)}` : 'Not right. Try again');
-    });
+    }, () => pad.message(PIN_UNAVAILABLE));
   });
   return h(
     'div',
@@ -218,29 +230,15 @@ export function recoveryScreen(app: App, after: () => void): HTMLElement {
 
   const pickNewPin = (code: string): void => {
     clear(body);
-    let first = '';
-    const pad = pinPad('Choose a new PIN', (value) => {
-      pad.reset();
-      if (first === '') {
-        if (isTrivialPin(value)) {
-          pad.message('That PIN is too easy to guess');
-          pad.shake();
-          return;
-        }
-        first = value;
-        pad.message('Enter it again');
-        return;
-      }
-      if (first !== value) {
-        first = '';
-        pad.message("Those didn't match. Start again");
-        pad.shake();
-        return;
-      }
+    const entry = newPinFlow((value) => {
       void app.parental.resetPinWithRecovery(code, value).then((result) => {
         if (result.ok) after();
         else enterCode('That code is not right');
-      });
+      }, () => pad.message(PIN_UNAVAILABLE));
+    });
+    const pad = pinPad('Choose a new PIN', (value) => {
+      pad.reset();
+      entry(value, pad);
     });
     body.append(pad.el);
   };
@@ -336,8 +334,15 @@ export function parentScreen(app: App): HTMLElement {
   windowStart.value = p().playWindow?.start ?? '07:00';
   windowEnd.value = p().playWindow?.end ?? '19:30';
   const windowOn = h('button', { class: `toggle${p().playWindow ? ' on' : ''}`, label: 'Play window' });
+  const windowNote = h('div', { class: 'pin-msg' });
   const applyWindow = (): void => {
-    set({ playWindow: windowOn.classList.contains('on') ? { start: windowStart.value, end: windowEnd.value } : null });
+    void parental.updateSettings({ playWindow: windowOn.classList.contains('on') ? { start: windowStart.value, end: windowEnd.value } : null }).then((saved) => {
+      windowNote.textContent = saved ? '' : 'Those play hours were not saved: pick a start and an end that differ.';
+      if (saved) return;
+      windowOn.classList.toggle('on', p().playWindow !== null);
+      windowStart.value = p().playWindow?.start ?? '07:00';
+      windowEnd.value = p().playWindow?.end ?? '19:30';
+    });
   };
   windowOn.addEventListener('click', () => {
     windowOn.classList.toggle('on');
@@ -362,6 +367,7 @@ export function parentScreen(app: App): HTMLElement {
       h('h1', {}, 'Parent Zone'),
       h('button', { class: 'btn small sea', id: 'pz-close', html: icon('check'), label: 'Done', onTap: () => app.closeParentZone() }),
     ),
+    save.saveError !== null && h('div', { class: 'pin-msg', id: 'save-warning' }, 'The game could not save lately, so progress and play time may be lost. Free up some storage on this device.'),
     h(
       'div',
       { class: 'scroll' },
@@ -444,7 +450,9 @@ export function parentScreen(app: App): HTMLElement {
 
 export function changePinScreen(app: App): HTMLElement {
   let current = '';
-  let first = '';
+  const entry = newPinFlow((value) => {
+    void app.parental.changePin(current, value).then(() => app.show(parentScreen), () => pad.message(PIN_UNAVAILABLE));
+  });
   const pad = pinPad('Current PIN', (value) => {
     pad.reset();
     if (current === '') {
@@ -457,26 +465,10 @@ export function changePinScreen(app: App): HTMLElement {
         }
         current = value;
         pad.message('Choose a new PIN');
-      });
+      }, () => pad.message(PIN_UNAVAILABLE));
       return;
     }
-    if (first === '') {
-      if (isTrivialPin(value)) {
-        pad.message('That PIN is too easy to guess');
-        pad.shake();
-        return;
-      }
-      first = value;
-      pad.message('Enter it again');
-      return;
-    }
-    if (first !== value) {
-      first = '';
-      pad.message("Those didn't match. Start again");
-      pad.shake();
-      return;
-    }
-    void app.parental.changePin(current, value).then(() => app.show(parentScreen));
+    entry(value, pad);
   });
   return h(
     'div',

@@ -4,7 +4,8 @@ import { aimAt, clampAim, laserFill, laserReady, lockAt, setLevel, stepCannons, 
 import { SpatialGrid } from './collision';
 import { beginWave, releaseFish, startSwimAway, stepDirector } from './director';
 import { rebuildGrid } from './hit';
-import { stepFish } from './motion';
+import { initBossBody, stepFish } from './motion';
+import { refitPath, type Path } from './paths';
 import { fireLaser, popBubbleAt, resolveSpecials, stepBubblePop, stepFreeze, stepLaser } from './powerups';
 import { Rng } from './rng';
 import { helpActive, newSessionStats, TICK_HZ, type Command, type Seat, type SimEvent, type SimState, type Unlocks, type ViewRect } from './state';
@@ -49,7 +50,7 @@ export interface HudSnapshot {
 /** Seat positions: one seat now, bottom centre. More seats later only add entries here. */
 function seatPosition(view: ViewRect, index: number): { x: number; y: number } {
   void index;
-  return { x: (view.left + view.right) / 2, y: view.bottom - 96 };
+  return { x: (view.left + view.right) / 2, y: view.bottom - (view.seatInset ?? 96) };
 }
 
 function newSeat(id: number, view: ViewRect, opts: SimOptions): Seat {
@@ -63,6 +64,32 @@ function newSeat(id: number, view: ViewRect, opts: SimOptions): Seat {
     energy: energy ? energy.max : 0, lockMode: false, lockUid: 0, laserMeter: 0, laserT: 0,
     lastFireTick: -999, firedEmpty: false,
   };
+}
+
+/** Keeps every fish at the same place on screen when the view changes shape, so turning the device never empties the sea. */
+function refitFish(s: SimState, from: ViewRect, to: ViewRect): void {
+  const scaleX = (to.right - to.left) / (from.right - from.left);
+  const scaleY = (to.bottom - to.top) / (from.bottom - from.top);
+  const mapX = (x: number): number => to.left + (x - from.left) * scaleX;
+  const mapY = (y: number): number => to.top + (y - from.top) * scaleY;
+  // Fish in a formation share one path.
+  const refitted = new Map<Path, Path>();
+  for (const f of s.fish) {
+    f.x = f.px = mapX(f.x);
+    f.y = f.py = mapY(f.y);
+    f.waypointX = mapX(f.waypointX);
+    f.waypointY = mapY(f.waypointY);
+    if (f.path) {
+      let path = refitted.get(f.path);
+      if (!path) {
+        path = refitPath(f.path, from, to);
+        refitted.set(f.path, path);
+      }
+      f.dist *= path.length / (f.path.length || 1);
+      f.path = path;
+    }
+    if (f.isBoss) initBossBody(f);
+  }
 }
 
 export class Simulation {
@@ -185,7 +212,10 @@ export class Simulation {
   }
 
   setView(view: ViewRect): void {
+    const from = this.s.view;
+    const moved = from.left !== view.left || from.right !== view.right || from.top !== view.top || from.bottom !== view.bottom;
     this.s.view = { ...view };
+    if (moved) refitFish(this.s, from, view);
     for (const seat of this.s.seats) {
       const pos = seatPosition(view, seat.id);
       seat.x = pos.x;

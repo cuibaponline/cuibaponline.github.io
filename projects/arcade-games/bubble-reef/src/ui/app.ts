@@ -5,6 +5,7 @@ import { shouldSuggestMedium, syncProgress, unlocksForLevel } from '../economy/e
 import { GameSession, type SessionResults, type WaveSummary } from '../game/session';
 import { InputSystem } from '../input/input';
 import { World } from '../render/world';
+import { holdSingleInstance, mayReloadAfterContextLoss } from '../services/guard';
 import { ParentalService } from '../services/parental';
 import { initPwa } from '../services/pwa';
 import { createIdbStorage, requestPersistentStorage, SaveService } from '../services/save';
@@ -24,7 +25,7 @@ const nextFrame = (): Promise<void> => new Promise((resolve) => window.setTimeou
 
 export class App {
   readonly audio = new AudioService();
-  readonly save = new SaveService({ storage: createIdbStorage() });
+  readonly save = new SaveService({ storage: createIdbStorage(), onError: (e) => bootStep(`SAVE FAILED ${String(e)}`) });
   parental!: ParentalService;
   world!: World;
   hud!: Hud;
@@ -40,18 +41,32 @@ export class App {
   private inParentZone = false;
   private wrapUpPending = false;
   private saveUnreadable = false;
+  /** Set once the GL context is gone for good: nothing may cover the rest screen or count as play time. */
+  private halted = false;
+  private ticker = 0;
 
   async boot(): Promise<void> {
     initPwa();
     this.lockDownBrowser();
     const fill = document.getElementById('boot-fill') as HTMLElement;
 
+    const notice = h('div', { class: 'boot-note' });
+    await holdSingleInstance(() => {
+      notice.textContent = 'Bubble Reef is open in another tab. Close it to play here.';
+      document.getElementById('boot')?.append(notice);
+    });
+    notice.remove();
+
     this.saveUnreadable = (await this.save.load()).status === 'unavailable';
     bootStep('save loaded');
-    this.parental = new ParentalService(this.save, {
-      wallNow: () => Date.now(),
-      monoNow: () => performance.now(),
-    });
+    this.parental = new ParentalService(
+      this.save,
+      { wallNow: () => Date.now(), monoNow: () => performance.now() },
+      { visible: document.visibilityState === 'visible' },
+    );
+    // Attached before the slow boot steps, so hiding the app during them can't credit play time.
+    document.addEventListener('visibilitychange', () => this.onVisibility());
+    void requestPersistentStorage();
     this.parental.on('warning', (minutes) => this.onWarning(minutes));
     this.parental.on('limit', () => this.onLimit());
     this.parental.on('parentZoneExpired', () => this.closeParentZone());
@@ -64,6 +79,7 @@ export class App {
         this.audio.sfx('coin');
       },
       onFrame: (dt) => this.session?.frame(dt),
+      onContextLost: () => void this.onContextLost(),
     });
 
     bootStep('phaser ready');
@@ -75,7 +91,7 @@ export class App {
       step();
       fill.style.width = `${(++done / total) * 100}%`;
       await nextFrame();
-      this.stopIfContextLost();
+      if (this.halted) return;
     }
 
     bootStep('art done');
@@ -110,26 +126,21 @@ export class App {
     });
 
     window.addEventListener('resize', () => this.onResize());
-    document.addEventListener('visibilitychange', () => this.onVisibility());
     window.addEventListener('pagehide', () => void this.parental.flush());
-    window.matchMedia('(orientation: portrait)').addEventListener('change', (e) => {
-      if (e.matches) this.pause();
+    window.matchMedia('(orientation: portrait)').addEventListener('change', () => {
+      this.pause();
+      this.onResize();
     });
     document.addEventListener('pointerdown', (e) => this.onAnyPress(e), { capture: true });
-    window.setInterval(() => {
+    this.ticker = window.setInterval(() => {
       this.parental.tick();
       if (this.session) this.syncTimer();
     }, 1000);
 
-    this.stopIfContextLost();
     document.getElementById('boot')?.remove();
     this.route();
     bootStep('boot finished');
     if (import.meta.env.VITE_E2E) (await import('../game/e2eHooks')).installE2eHooks(this);
-  }
-
-  private stopIfContextLost(): void {
-    if (this.world.contextLost) throw new Error('The graphics stopped working during start-up.');
   }
 
   private newAttract(): Simulation {
@@ -147,7 +158,7 @@ export class App {
     document.addEventListener(
       'touchmove',
       (e) => {
-        if (!(e.target as Element).closest('.scroll, input[type=range]')) e.preventDefault();
+        if (!(e.target as Element).closest('.scroll, .screen, .dialog, input[type=range]')) e.preventDefault();
       },
       { passive: false },
     );
@@ -168,7 +179,30 @@ export class App {
     this.world.setCoinTarget(point.x, point.y);
   }
 
+  /** GL state can't be rebuilt from the freed art canvases, so the page reloads, with a stop in case it keeps happening. */
+  private async onContextLost(): Promise<void> {
+    await Promise.race([this.save.flush(), new Promise((resolve) => window.setTimeout(resolve, 300))]);
+    let storage: Storage | null = null;
+    try {
+      storage = window.sessionStorage;
+    } catch {
+      // Blocked storage: treated below as being unable to count reloads.
+    }
+    if (storage && mayReloadAfterContextLoss(storage, Date.now())) {
+      location.reload();
+      return;
+    }
+    bootStep('giving up after repeated context loss');
+    this.halted = true;
+    window.clearInterval(this.ticker);
+    this.parental.setVisible(false);
+    this.audio.pause();
+    document.getElementById('boot')?.remove();
+    this.ui.append(h('div', { class: 'screen deep center', id: 'out-of-memory' }, h('h2', {}, 'Bubble Reef needs a rest'), h('p', {}, 'Close some other apps, then open the game again.')));
+  }
+
   private onVisibility(): void {
+    if (this.halted) return;
     const visible = document.visibilityState === 'visible';
     this.parental.setVisible(visible);
     if (visible) {
@@ -185,10 +219,12 @@ export class App {
   show<A>(screen: Screen<A>, arg: A): void;
   show(screen: Screen<undefined>): void;
   show<A>(screen: Screen<A>, arg?: A): void {
+    if (this.halted) return;
     this.leave();
     const el = screen(this, arg as A);
     this.screenEl = el;
     this.ui.append(el);
+    this.world.setAsleep(el.matches('.deep, .sleep'));
   }
 
   private leave(): void {
@@ -196,6 +232,7 @@ export class App {
     this.leaveFns = [];
     this.screenEl?.remove();
     this.screenEl = null;
+    this.world.setAsleep(false);
     this.closeDialog();
     stopSpeaking();
   }
@@ -267,7 +304,11 @@ export class App {
     const result = await this.parental
       .setupParent({ pin, confirmPin: pin, recoveryCode: code, dailyLimitMin })
       .catch(() => null);
-    if (!result?.ok) return false;
+    // already-set is a retry: the PIN reached memory last time, but saving it failed.
+    if (!result?.ok && result?.error !== 'already-set') return false;
+    if (!result.ok) await this.parental.updateSettings({ dailyLimitMin });
+    await this.save.saveNow();
+    if (this.save.saveError) return false;
     await requestPersistentStorage();
     this.route();
     return true;
@@ -316,8 +357,8 @@ export class App {
       seed,
     );
     this.session = session;
-    for (const ocean of this.save.get().profile.unlockedOceans) this.world.prepareOcean(ocean as OceanId);
     this.world.setOcean(session.currentOcean, true);
+    session.prepareOceans();
     this.world.setSim(session.sim, true);
     this.world.setPaused(false);
     this.hud.show(true);
@@ -403,7 +444,6 @@ export class App {
     this.hud.show(false);
     this.world.setSim(this.attract, false);
     this.world.setPaused(false);
-    this.world.setOcean((this.save.get().profile.unlockedOceans[0] ?? 'coral') as OceanId, true);
     if (this.wrapUpPending) {
       this.wrapUpPending = false;
       this.parental.wrapUpFinished();

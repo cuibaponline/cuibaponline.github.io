@@ -139,6 +139,16 @@ export class Assets {
     return textures;
   }
 
+  /** Oceans are the largest textures here, at 17.5 MB each, so only the ones in use stay on the GPU. */
+  evictOceans(keep: (id: OceanId, textures: OceanTextures) => boolean): void {
+    for (const [id, textures] of this.oceans) {
+      if (keep(id, textures)) continue;
+      this.scene.textures.remove(textures.seabed);
+      this.scene.textures.remove(textures.midground);
+      this.oceans.delete(id);
+    }
+  }
+
   cannon(skin: SkinId): CannonTextures {
     const known = this.cannons.get(skin);
     if (known) return known;

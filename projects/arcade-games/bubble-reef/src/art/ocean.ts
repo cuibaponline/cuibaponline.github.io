@@ -130,7 +130,7 @@ function bakeSeabed(W: number, H: number, s: number, b: BedSpec): Cnv {
   const lightC = hexRgb(b.light);
   const patch = b.patch ? hexRgb(b.patch) : null;
   const canvas = newCanvas(w, h);
-  const cx = ctxOf(canvas, true);
+  const cx = ctxOf(canvas);
   const img = cx.createImageData(w, h);
   const px = img.data;
   for (let y = 0; y < h; y++) {
@@ -229,7 +229,7 @@ function stamp(target: Ctx, x: number, y: number, o: StampOpts): void {
     let bump: Cnv | null = null;
     if (o.bump) {
       bump = newCanvas(w, h);
-      const bx = ctxOf(bump, true);
+      const bx = ctxOf(bump);
       bx.fillStyle = 'rgb(128,128,128)';
       bx.fillRect(0, 0, w, h);
       bx.translate(w / 2, h / 2);
@@ -1253,7 +1253,7 @@ export function bakeCausticsTile(size: number): Cnv {
     py.push(0.5 + (r() - 0.5) * 0.72);
   }
   const canvas = newCanvas(N, N);
-  const c = ctxOf(canvas, true);
+  const c = ctxOf(canvas);
   const img = c.createImageData(N, N);
   const d = img.data;
   const f = TAU / N;

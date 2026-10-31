@@ -315,7 +315,7 @@ function paintTube(ctxScale: number, skin: Skin, t: Tube): Cnv {
   });
   let bump: Cnv | null = null;
   const b = newCanvas(c.width, c.height);
-  const bx = ctxOf(b, true);
+  const bx = ctxOf(b);
   bx.fillStyle = 'rgb(128,128,128)';
   bx.fillRect(0, 0, b.width, b.height);
   bx.setTransform(s, 0, 0, s, (BARREL_W / 2) * s, PIVOT_Y * s);
@@ -400,7 +400,7 @@ function bakeBase(s: number, skin: Skin): Cnv {
   x.fill();
   clipped(x, shape, () => skin.baseArt?.(x, shape));
   const b = newCanvas(c.width, c.height);
-  const bx = ctxOf(b, true);
+  const bx = ctxOf(b);
   bx.fillStyle = 'rgb(128,128,128)';
   bx.fillRect(0, 0, b.width, b.height);
   tf(bx);

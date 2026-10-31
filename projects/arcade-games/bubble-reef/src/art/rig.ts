@@ -77,7 +77,7 @@ export class Builder {
 
   /** Paints on top of a part, in art units. */
   over(part: Part, paint: (ctx: Ctx) => void): void {
-    const x = ctxOf(part.canvas, true);
+    const x = ctxOf(part.canvas);
     x.save();
     x.setTransform(this.s, 0, 0, this.s, -part.x * this.s, -part.y * this.s);
     paint(x);
@@ -91,7 +91,7 @@ export class Builder {
       let bump: Cnv | null = null;
       if (spec.bump) {
         bump = newCanvas(part.canvas.width, part.canvas.height);
-        const bx = ctxOf(bump, true);
+        const bx = ctxOf(bump);
         bx.fillStyle = 'rgb(128,128,128)';
         bx.fillRect(0, 0, bump.width, bump.height);
         bx.setTransform(this.s, 0, 0, this.s, -part.x * this.s, -part.y * this.s);

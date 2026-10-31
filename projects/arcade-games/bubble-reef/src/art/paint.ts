@@ -15,8 +15,12 @@ export function newCanvas(w: number, h: number): Cnv {
   return c;
 }
 
-export function ctxOf(c: Cnv, readback = false): Ctx {
-  const x = c.getContext('2d', readback ? { willReadFrequently: true } : undefined);
+/**
+ * Always willReadFrequently, because only the first getContext's options count. It keeps art canvases in page memory:
+ * GPU-backed ones made getImageData throw InvalidStateError on a real iPad while baking the largest sprite sheet.
+ */
+export function ctxOf(c: Cnv): Ctx {
+  const x = c.getContext('2d', { willReadFrequently: true });
   if (!x) throw new Error('2D canvas context unavailable');
   return x;
 }
@@ -348,7 +352,7 @@ function paintedBox(img: ImageData, margin: number): [number, number, number, nu
 
 /** Treats the canvas's alpha as a silhouette, inflates it into a height field, and lights the painted colours. */
 export function lit(c: Cnv, o: LitOpts): void {
-  const x2 = ctxOf(c, true);
+  const x2 = ctxOf(c);
   const full = x2.getImageData(0, 0, c.width, c.height);
   // Every pass below runs on the painted area only. The margin covers the blur, so results match an uncropped run.
   const R0 = Math.max(1, o.dome);
@@ -426,7 +430,7 @@ export function lit(c: Cnv, o: LitOpts): void {
   }
 
   if (o.bump) {
-    const bx = ctxOf(o.bump, true);
+    const bx = ctxOf(o.bump);
     const bd = bx.getImageData(cx0, cy0, W, H).data;
     const amt = (o.bumpPx ?? 2) / 127;
     for (let i = 0; i < n; i++) Z[i] = Z[i]! + (bd[i * 4]! - 128) * amt;

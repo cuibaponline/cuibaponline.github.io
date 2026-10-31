@@ -197,7 +197,7 @@ function wholeDragon(px: number, phase: number): Cnv {
 
 function paintedBounds(c: Cnv): [number, number, number, number] {
   const { width: w, height: h } = c;
-  const data = ctxOf(c, true).getImageData(0, 0, w, h).data;
+  const data = ctxOf(c).getImageData(0, 0, w, h).data;
   let x0 = w;
   let y0 = h;
   let x1 = 0;

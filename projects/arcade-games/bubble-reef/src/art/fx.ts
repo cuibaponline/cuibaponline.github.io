@@ -122,7 +122,7 @@ function bakeCoin(size: number): Cnv {
   shellRibs(x, r, 'rgba(176,96,8,0.75)', r * 0.08);
   x.restore();
   const b = newCanvas(size, size);
-  const bx = ctxOf(b, true);
+  const bx = ctxOf(b);
   bx.fillStyle = 'rgb(128,128,128)';
   bx.fillRect(0, 0, size, size);
   bx.translate(size / 2, size / 2);
@@ -154,7 +154,7 @@ function bakeShellBadge(size: number): Cnv {
   x.fill();
   shellRibs(x, r, 'rgba(30,60,110,0.6)', r * 0.05);
   const b = newCanvas(size, size);
-  const bx = ctxOf(b, true);
+  const bx = ctxOf(b);
   bx.fillStyle = 'rgb(128,128,128)';
   bx.fillRect(0, 0, size, size);
   bx.translate(size / 2, size / 2 + r * 0.04);

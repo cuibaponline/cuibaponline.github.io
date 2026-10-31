@@ -29,6 +29,13 @@ jobs:
       - name: Build all projects
         run: npm run build:all
 
+      - name: Test and build Bubble Reef
+        working-directory: projects/arcade-games/bubble-reef
+        run: |
+          npm ci
+          npm test
+          npm run build
+
       - name: Prepare deployment directory
         run: |
           # Create deploy directory structure
@@ -44,6 +51,9 @@ jobs:
           cp -r projects/little-color-lab deploy/little-color-lab
           cp -r projects/rainbow-maker deploy/rainbow-maker
           cp -r projects/arcade-games/lasso-ranch deploy/lasso-ranch
+
+          # Copy Bubble Reef build output
+          cp -r projects/arcade-games/bubble-reef/dist deploy/bubble-reef
 
           # Create .nojekyll file to disable Jekyll processing
           touch deploy/.nojekyll

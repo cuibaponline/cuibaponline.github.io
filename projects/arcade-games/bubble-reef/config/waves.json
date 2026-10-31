@@ -1,0 +1,21 @@
+{
+  "spawnOutsideU": 150,
+  "bossEveryWaves": 3,
+  "density": { "startRatio": 0.5, "rampEndRatio": 0.6 },
+  "tierMix": { "small": 60, "medium": 30, "large": 10 },
+  "tierSlots": { "small": 1, "medium": 1, "large": 2, "boss": 6, "special": 1 },
+  "specialJitter": 0.3,
+  "intermissionSec": 8,
+  "parade": [
+    { "at": 0.0, "formation": "line", "fish": "F01", "count": 16, "gap": 95, "lane": 0.22 },
+    { "at": 0.0, "formation": "line", "fish": "F02", "count": 14, "gap": 110, "lane": 0.78, "reverse": true },
+    { "at": 3.0, "formation": "vee", "fish": "F08", "count": 9, "gap": 120, "lane": 0.5 },
+    { "at": 6.5, "formation": "line", "fish": "F03", "count": 14, "gap": 105, "lane": 0.3, "reverse": true },
+    { "at": 6.5, "formation": "line", "fish": "F01", "count": 16, "gap": 95, "lane": 0.7 },
+    { "at": 9.5, "formation": "ring", "fish": "F07", "count": 8, "gap": 260, "lane": 0.5, "reverse": true },
+    { "at": 13.0, "formation": "line", "fish": "F06", "count": 7, "gap": 170, "lane": 0.25 },
+    { "at": 13.0, "formation": "line", "fish": "F05", "count": 7, "gap": 170, "lane": 0.75, "reverse": true },
+    { "at": 16.5, "formation": "vee", "fish": "F09", "count": 5, "gap": 190, "lane": 0.5 },
+    { "at": 19.0, "formation": "ring", "fish": "F02", "count": 12, "gap": 300, "lane": 0.5, "reverse": true }
+  ]
+}

@@ -1,0 +1,52 @@
+/** A save as §17.6 first described it: no easyWave*, lastMediumPromptDay, levelSeen or session fields. */
+export function v0Fixture(): unknown {
+  return {
+    schemaVersion: 0,
+    profile: {
+      coins: 1234,
+      xp: 2900,
+      level: 5,
+      maxCannonLevel: 4,
+      unlockedOceans: ['coral', 'kelp'],
+      ownedSkins: ['classic', 'seashell'],
+      selectedSkin: 'seashell',
+      fishBook: { F01: { caught: 7, firstCaughtAt: '2026-01-02T03:04:05.000Z' } },
+      bestWave: { easy: 4, medium: 2, hard: 0 },
+      easyWavesCompleted: 6,
+    },
+    settings: {
+      musicVolume: 0.25,
+      sfxVolume: 0.5,
+      controlMode: 'joystick',
+      leftHanded: true,
+      reduceFlashing: true,
+      readAloud: false,
+      autoFire: { easy: true, medium: false, hard: false },
+      lastDifficulty: 'medium',
+    },
+    parental: {
+      pinHash: 'aabb',
+      pinSalt: 'ccdd',
+      recoveryHash: '1122',
+      recoverySalt: '5566',
+      dailyLimitMin: 45,
+      weekendLimitMin: 60,
+      sessionLimitMin: 20,
+      breakEveryMin: null,
+      breakLengthMin: 10,
+      playWindow: { start: '07:00', end: '19:30' },
+      dayResetTime: '03:00',
+      difficultyLock: 'easy',
+      showTimerToChild: false,
+      failedAttempts: 2,
+      lockoutUntil: null,
+    },
+    usage: {
+      days: { '2026-01-02': { activeSec: 600, sessions: 2 } },
+      grantSec: 0,
+      grantDayKey: '2026-01-02',
+      breakUntil: null,
+      lastSeenWallClock: 1767323045000,
+    },
+  };
+}

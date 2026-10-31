@@ -1,0 +1,15 @@
+{
+  "aimLimitDeg": 85,
+  "turnRateDegPerSec": 720,
+  "fireRate": 4,
+  "maxBubbles": 12,
+  "bubble": { "speed": 1000, "radius": 14, "radiusPerLevel": 1.5, "lifetimeSec": 4, "assistTurnDegPerSec": 180, "homingTurnDegPerSec": 900 },
+  "net": { "expandSec": 0.12, "holdSec": 0.25, "fadeSec": 0.2 },
+  "levels": [
+    { "level": 1, "damage": 1.0, "netRadius": 50, "energyCost": 1, "barrels": 1, "glow": 0 },
+    { "level": 2, "damage": 1.4, "netRadius": 60, "energyCost": 2, "barrels": 1, "glow": 0 },
+    { "level": 3, "damage": 1.8, "netRadius": 70, "energyCost": 3, "barrels": 2, "glow": 0 },
+    { "level": 4, "damage": 2.3, "netRadius": 80, "energyCost": 4, "barrels": 2, "glow": 1 },
+    { "level": 5, "damage": 3.0, "netRadius": 95, "energyCost": 5, "barrels": 3, "glow": 2 }
+  ]
+}

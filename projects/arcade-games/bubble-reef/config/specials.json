@@ -1,0 +1,14 @@
+[
+  { "id": "S01", "name": "Burst Puffer", "tier": "special", "size": 100, "effect": "burst", "icon": "burst", "hitCircles": [[0, 0, 46]],
+    "fact": "Puffers are slow swimmers, so puffing up is how they stay safe." },
+  { "id": "S02", "name": "Ice Jelly", "tier": "special", "size": 110, "effect": "freeze", "icon": "snow", "hitCircles": [[0, -22, 42], [0, 22, 24]],
+    "fact": "Some jellyfish live happily in the freezing water under Arctic ice." },
+  { "id": "S03", "name": "Spark Eel", "tier": "special", "size": 170, "effect": "chain", "icon": "spark", "hitCircles": [[62, -2, 25], [8, 4, 25], [-44, 2, 22], [-76, -2, 13]],
+    "fact": "Electric eels can make enough electricity to light up a bulb." },
+  { "id": "S04", "name": "Rainbow Starfish", "tier": "special", "size": 110, "effect": "sameKind", "icon": "rainbow", "hitCircles": [[0, 0, 48]],
+    "fact": "A starfish can grow back an arm if it loses one." },
+  { "id": "S05", "name": "Treasure Crab", "tier": "special", "size": 120, "effect": "bubblePop", "icon": "chest", "hitCircles": [[0, 0, 50]],
+    "fact": "Hermit crabs move into bigger shells as they grow." },
+  { "id": "S06", "name": "Laser Shrimp", "tier": "special", "size": 110, "effect": "laserFill", "icon": "beam", "hitCircles": [[-6, -2, 42], [50, 4, 17]],
+    "fact": "Pistol shrimp snap a claw so fast that it makes a flash of light." }
+]

@@ -1,0 +1,29 @@
+{
+  "easy": {
+    "fishSpeedMul": 0.75, "hitboxScale": 1.3, "aimAssistDeg": 20, "ricochets": 4,
+    "energy": null, "showLevelButtons": false, "autoLock": true,
+    "specialIntervalSec": 20, "laserFillPoints": 300, "freezeSec": 7,
+    "bossTimerSec": 90, "waveSec": 150, "maxFishSlots": 25,
+    "adaptiveHelp": { "noCatchSec": 8, "damageMul": 1.5, "extraAssistDeg": 10 },
+    "coinMul": 1.0, "armouredFish": [], "burstRadius": 700, "minSmallFish": 3,
+    "pathTags": ["gentle"]
+  },
+  "medium": {
+    "fishSpeedMul": 1.0, "hitboxScale": 1.1, "aimAssistDeg": 8, "ricochets": 3,
+    "energy": { "max": 100, "regenPerSec": 8, "refundRatio": 0.5, "emptyFireRate": 2 },
+    "showLevelButtons": true, "autoLock": false,
+    "specialIntervalSec": 35, "laserFillPoints": 400, "freezeSec": 5,
+    "bossTimerSec": 60, "waveSec": 180, "maxFishSlots": 35,
+    "adaptiveHelp": null, "coinMul": 1.2, "armouredFish": [], "burstRadius": 500, "minSmallFish": 0,
+    "pathTags": ["gentle", "curve"]
+  },
+  "hard": {
+    "fishSpeedMul": 1.25, "hitboxScale": 1.0, "aimAssistDeg": 0, "ricochets": 2,
+    "energy": { "max": 100, "regenPerSec": 4, "refundRatio": 0.5, "emptyFireRate": 1 },
+    "showLevelButtons": true, "autoLock": false,
+    "specialIntervalSec": 60, "laserFillPoints": 500, "freezeSec": 4,
+    "bossTimerSec": 45, "waveSec": 180, "maxFishSlots": 45,
+    "adaptiveHelp": null, "coinMul": 1.5, "armouredFish": ["F09", "F12"], "burstRadius": 500, "minSmallFish": 0,
+    "pathTags": ["curve", "zigzag"]
+  }
+}

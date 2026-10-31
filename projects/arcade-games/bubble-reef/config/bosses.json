@@ -1,0 +1,8 @@
+[
+  { "id": "B01", "name": "Golden Whale", "tier": "boss", "size": 600, "speed": 40, "hp": { "easy": 60, "medium": 100, "hard": 160 }, "points": 300,
+    "hitCircles": [[170, 0, 128], [10, 0, 142], [-150, -30, 84], [-250, -44, 42]], "behaviours": ["whaleRing"],
+    "fact": "Blue whales are the biggest animals that have ever lived." },
+  { "id": "B02", "name": "Coral Dragon", "tier": "boss", "size": 520, "speed": 55, "hp": { "easy": 80, "medium": 130, "hard": 200 }, "points": 400,
+    "hitCircles": [[-2, 2, 68], [76, 10, 30]], "behaviours": ["dragonDive"], "chain": { "segments": 7, "spacing": 66, "radius": 56 },
+    "fact": "The leafy sea dragon looks like floating seaweed and hides in plain sight." }
+]

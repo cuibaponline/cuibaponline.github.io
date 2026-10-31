@@ -1,0 +1,17 @@
+{
+  "laser": { "durationSec": 3, "width": 80, "dps": 8 },
+  "armour": { "damageMul": 0.5, "untilHpRatio": 0.5 },
+  "puff": { "hitboxMul": 1.6, "durationSec": 2 },
+  "hpRing": { "minHp": 6, "showSec": 1.5 },
+  "burst": { "damage": 10 },
+  "chain": { "targets": 6, "damage": 5 },
+  "bubblePop": { "durationSec": 6, "coinsEach": 5, "spawnEverySec": 0.28, "riseSpeed": 300, "radius": 74 },
+  "boss": {
+    "whaleRingCount": 8, "whaleRingFish": "F01",
+    "dragonDiveAt": [0.66, 0.33], "dragonDiveSec": 2,
+    "escorts": { "count": 6, "fish": "F02", "orbit": 420 }
+  },
+  "parade": { "durationSec": 25, "speedMul": 1.5, "pointsMul": 1.5 },
+  "swimAway": { "durationSec": 3, "speed": 900 },
+  "lastCatchSec": 15
+}

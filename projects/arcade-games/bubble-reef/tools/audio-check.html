@@ -1,0 +1,19 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Audio check</title>
+    <style>
+      body { font: 13px/1.4 ui-monospace, Menlo, monospace; margin: 16px; background: #04395e; color: #e8f6ff; }
+      button { font: inherit; padding: 8px 14px; margin: 0 8px 12px 0; }
+      pre { white-space: pre-wrap; }
+    </style>
+  </head>
+  <body>
+    <button id="unlock">Unlock (real gesture)</button>
+    <button id="offline">Run offline checks</button>
+    <pre id="out">idle</pre>
+    <script type="module" src="./audio-check.ts"></script>
+  </body>
+</html>

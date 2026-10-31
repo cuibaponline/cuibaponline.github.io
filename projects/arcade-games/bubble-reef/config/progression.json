@@ -1,0 +1,33 @@
+{
+  "levels": [
+    { "level": 1, "xp": 0, "maxCannonLevel": 2, "oceans": ["coral"], "specials": ["S01"], "bosses": ["B01"], "features": ["lock", "auto"], "skins": [] },
+    { "level": 2, "xp": 400, "maxCannonLevel": 3, "oceans": [], "specials": ["S02"], "bosses": [], "features": [], "skins": [] },
+    { "level": 3, "xp": 1000, "maxCannonLevel": 3, "oceans": ["kelp"], "specials": ["S06"], "bosses": [], "features": ["laser"], "skins": [] },
+    { "level": 4, "xp": 1800, "maxCannonLevel": 3, "oceans": [], "specials": ["S03"], "bosses": [], "features": [], "skins": ["seashell"] },
+    { "level": 5, "xp": 2800, "maxCannonLevel": 4, "oceans": [], "specials": ["S05"], "bosses": [], "features": [], "skins": [] },
+    { "level": 6, "xp": 4000, "maxCannonLevel": 4, "oceans": ["ship"], "specials": [], "bosses": [], "features": [], "skins": [] },
+    { "level": 7, "xp": 5500, "maxCannonLevel": 4, "oceans": [], "specials": ["S04"], "bosses": [], "features": [], "skins": [] },
+    { "level": 8, "xp": 7500, "maxCannonLevel": 5, "oceans": [], "specials": [], "bosses": ["B02"], "features": [], "skins": [] },
+    { "level": 9, "xp": 10000, "maxCannonLevel": 5, "oceans": ["glow"], "specials": [], "bosses": [], "features": [], "skins": [] },
+    { "level": 10, "xp": 13000, "maxCannonLevel": 5, "oceans": ["arctic"], "specials": [], "bosses": [], "features": [], "skins": [] }
+  ],
+  "xpPerLevelAfter10": 3500,
+  "badges": { "bronze": 10, "silver": 50, "gold": 100 },
+  "skins": [
+    { "id": "classic", "name": "Classic", "price": 0, "how": "default" },
+    { "id": "seashell", "name": "Seashell", "price": 0, "how": "level", "level": 4 },
+    { "id": "coral", "name": "Coral", "price": 500, "how": "coins" },
+    { "id": "submarine", "name": "Submarine", "price": 1000, "how": "coins" },
+    { "id": "rainbow", "name": "Rainbow", "price": 1800, "how": "coins" },
+    { "id": "robotcrab", "name": "Robot Crab", "price": 3000, "how": "coins" },
+    { "id": "golden", "name": "Golden", "price": 0, "how": "fishbook" }
+  ],
+  "oceans": [
+    { "id": "coral", "name": "Coral Reef", "bias": {} },
+    { "id": "kelp", "name": "Kelp Forest", "bias": { "F04": 2, "F06": 1.5 } },
+    { "id": "ship", "name": "Sunken Ship", "bias": { "F08": 2, "F12": 1.5 } },
+    { "id": "glow", "name": "Glow Deep", "bias": { "F07": 2, "F10": 1.5 } },
+    { "id": "arctic", "name": "Arctic Waters", "bias": { "F07": 2.5, "F09": 0.5 } }
+  ],
+  "suggestMedium": { "afterEasyWaves": 5, "minCatchRate": 0.5 }
+}

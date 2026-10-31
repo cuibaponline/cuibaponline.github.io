@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="Bubble Reef" />
+    <meta name="theme-color" content="#04395e" />
+    <meta name="description" content="Fire bubbles, catch fish in sparkly nets and fill Captain Otto's Fish Book." />
+    <link rel="apple-touch-icon" href="icons/icon-180.png" />
+    <link rel="icon" href="icons/icon-192.png" />
+    <title>Bubble Reef</title>
+    <style>
+      html, body { margin: 0; height: 100%; background: #04395e; }
+      #boot { position: fixed; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 24px; color: #fff; font: 600 44px ui-rounded, system-ui, sans-serif; z-index: 80; background: linear-gradient(#0a6b96, #04395e); }
+      #boot .track { width: min(420px, 60vw); height: 18px; border-radius: 9px; background: rgba(0, 20, 36, 0.5); overflow: hidden; }
+      #boot .fill { width: 0; height: 100%; border-radius: 9px; background: #ffd34d; transition: width 90ms linear; }
+    </style>
+  </head>
+  <body>
+    <div id="stage"></div>
+    <div id="ui"></div>
+    <div id="boot"><div>Bubble Reef</div><div class="track"><div class="fill" id="boot-fill"></div></div></div>
+    <div class="rotate" id="rotate"><div class="tablet"></div><div>Please turn your iPad</div></div>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>

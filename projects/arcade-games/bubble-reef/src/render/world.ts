@@ -7,6 +7,7 @@ import { DT, type SimEvent } from '../sim/state';
 import { Assets, type CannonTextures } from './assets';
 import { FishViews } from './fishViews';
 import { FxSystem, ImagePool } from './fxSystem';
+import { bootStep } from '../services/bootLog';
 import { computeLayout, type Layout } from './layout';
 
 /** An iPad 11" screen. Larger displays upscale rather than spend GPU memory and power on detail the art doesn't have. */
@@ -207,7 +208,10 @@ export class World {
     this.layers.overlay.add([this.ambient, ...this.rays, this.vignette, this.frost, this.flashRect]);
 
     scene.events.on(Phaser.Scenes.Events.UPDATE, (_: number, delta: number) => this.update(delta));
-    this.game.canvas.addEventListener('webglcontextlost', () => window.setTimeout(() => location.reload(), 400));
+    this.game.canvas.addEventListener('webglcontextlost', () => {
+      bootStep('webgl context lost');
+      window.setTimeout(() => location.reload(), 400);
+    });
     this.resize();
   }
 

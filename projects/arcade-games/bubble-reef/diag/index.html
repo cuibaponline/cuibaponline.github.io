@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Bubble Reef Diagnostics</title>
+    <style>
+      body { margin: 0; padding: 16px; background: #04395e; color: #fff; font: 15px/1.45 -apple-system, sans-serif; }
+      h1 { font-size: 20px; margin: 0 0 8px; }
+      h2 { font-size: 16px; margin: 18px 0 4px; color: #ffd24d; }
+      pre { margin: 0; white-space: pre-wrap; word-break: break-word; font: 12px/1.4 ui-monospace, Menlo, monospace; }
+    </style>
+  </head>
+  <body>
+    <h1>Bubble Reef diagnostics</h1>
+    <p>Take a screenshot of this page and send it over. Scroll down if there is more.</p>
+    <div id="out"></div>
+    <script>
+      const out = document.getElementById('out');
+      const section = (title, text) => {
+        const h = document.createElement('h2');
+        h.textContent = title;
+        const pre = document.createElement('pre');
+        pre.textContent = text;
+        out.append(h, pre);
+      };
+
+      const gl = document.createElement('canvas').getContext('webgl');
+      const info = gl && gl.getExtension('WEBGL_debug_renderer_info');
+      section('Device', [
+        navigator.userAgent,
+        `screen ${screen.width}x${screen.height} @${devicePixelRatio}, window ${innerWidth}x${innerHeight}`,
+        `cores ${navigator.hardwareConcurrency}, home screen ${navigator.standalone === true}`,
+        gl ? `gpu ${info ? gl.getParameter(info.UNMASKED_RENDERER_WEBGL) : 'unknown'}, max texture ${gl.getParameter(gl.MAX_TEXTURE_SIZE)}` : 'WebGL not available',
+      ].join('\n'));
+
+      let attempts = [];
+      try {
+        attempts = JSON.parse(localStorage.getItem('bubble-reef-boot-log') || '[]');
+      } catch (err) {
+        section('Could not read the log', String(err));
+      }
+      if (attempts.length === 0) section('Launches', 'Nothing recorded yet. Open the game in this same browser first.');
+      attempts.reverse().forEach((a, i) => {
+        const finished = a.steps.some((s) => s.endsWith('boot finished'));
+        const title = `${i === 0 ? 'Latest launch' : `${i + 1} launches ago`}: ${finished ? 'finished starting' : 'DID NOT FINISH'}`;
+        section(title, [`${a.at}  ${a.build}`, ...a.steps.slice(-14)].join('\n'));
+      });
+    </script>
+  </body>
+</html>

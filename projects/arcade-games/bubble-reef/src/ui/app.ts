@@ -1,4 +1,5 @@
 import { AudioService } from '../services/audio';
+import { bootStep } from '../services/bootLog';
 import type { Difficulty } from '../config';
 import { shouldSuggestMedium, syncProgress, unlocksForLevel } from '../economy/economy';
 import { GameSession, type SessionResults, type WaveSummary } from '../game/session';
@@ -10,6 +11,7 @@ import { createIdbStorage, requestPersistentStorage, SaveService } from '../serv
 import { isSetupComplete } from '../services/saveSchema';
 import { speak, stopSpeaking } from '../services/speech';
 import type { OceanId, SkinId } from '../art/types';
+import { SPRITE_IDS } from '../render/assets';
 import { Simulation } from '../sim/simulation';
 import { h } from './dom';
 import { Hud } from './hud';
@@ -45,6 +47,7 @@ export class App {
     const fill = document.getElementById('boot-fill') as HTMLElement;
 
     this.saveUnreadable = (await this.save.load()).status === 'unavailable';
+    bootStep('save loaded');
     this.parental = new ParentalService(this.save, {
       wallNow: () => Date.now(),
       monoNow: () => performance.now(),
@@ -63,16 +66,20 @@ export class App {
       onFrame: (dt) => this.session?.frame(dt),
     });
 
+    bootStep('phaser ready');
     const steps = this.world.assets.bootSteps();
     let done = 0;
     const total = steps.length + 2;
     for (const step of steps) {
+      bootStep(`art ${SPRITE_IDS[done] ?? `effects ${done}`}`);
       step();
       fill.style.width = `${(++done / total) * 100}%`;
       await nextFrame();
     }
 
+    bootStep('art done');
     this.world.build();
+    bootStep('world built');
     const { profile } = this.save.get();
     this.world.setOcean((profile.unlockedOceans[0] ?? 'coral') as OceanId);
     fill.style.width = `${(++done / total) * 100}%`;
@@ -115,6 +122,7 @@ export class App {
 
     document.getElementById('boot')?.remove();
     this.route();
+    bootStep('boot finished');
     if (import.meta.env.VITE_E2E) (await import('../game/e2eHooks')).installE2eHooks(this);
   }
 
@@ -242,6 +250,7 @@ export class App {
   }
 
   onFirstTap(): void {
+    bootStep('first tap');
     this.tapped = true;
     void this.audio.unlock();
     this.route();
@@ -287,6 +296,7 @@ export class App {
   }
 
   private beginSession(difficulty: Difficulty): void {
+    bootStep(`game starting: ${difficulty}`);
     this.leave();
     const seed = crypto.getRandomValues(new Uint32Array(1))[0] ?? 1;
     const session = new GameSession(

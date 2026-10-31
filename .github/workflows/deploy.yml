@@ -54,6 +54,7 @@ jobs:
 
           # Copy Bubble Reef build output
           cp -r projects/arcade-games/bubble-reef/dist deploy/bubble-reef
+          cp -r projects/arcade-games/bubble-reef/diag deploy/bubble-reef-diag
 
           # Create .nojekyll file to disable Jekyll processing
           touch deploy/.nojekyll

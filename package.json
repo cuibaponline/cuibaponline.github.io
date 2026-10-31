@@ -9,7 +9,9 @@
     "build:animal-learning": "ng build animal-learning --configuration production",
     "watch": "ng build --watch --configuration development",
     "test": "ng test",
-    "test:lab": "node --test tests/little-color-lab/lab-kit.test.cjs"
+    "test:lab": "node --test tests/little-color-lab/lab-kit.test.cjs",
+    "test:lasso": "node --test tests/lasso-ranch/*.test.mjs",
+    "balance:lasso": "node tests/lasso-ranch/bot.mjs"
   },
   "prettier": {
     "printWidth": 100,

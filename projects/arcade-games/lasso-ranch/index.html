@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<title>Lasso Ranch</title>
+<meta name="description" content="Throw your lasso and rope the ranch animals! An offline arcade game for kids.">
+<meta property="og:title" content="Lasso Ranch">
+<meta property="og:description" content="Throw your lasso and rope the ranch animals! An offline arcade game for kids.">
+<meta name="theme-color" content="#54b8f0">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Lasso Ranch">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icons/icon-180.png">
+<link rel="icon" href="icons/icon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<canvas id="field" aria-label="Lasso Ranch field"></canvas>
+
+<div id="hud" hidden>
+  <div class="hud-chip hud-level" id="hudLevel"></div>
+  <div class="hud-chip hud-goal">
+    <span class="hud-star" aria-hidden="true">★</span>
+    <div class="hud-bar"><div id="hudBar"></div><span id="hudGoal"></span></div>
+  </div>
+  <div class="hud-chip hud-score" id="hudScore"></div>
+  <div class="hud-chip hud-combo" id="hudCombo" hidden></div>
+  <div class="hud-chip hud-time" id="hudTime"></div>
+  <button class="hud-pause" id="btnPause" aria-label="Pause"><span></span><span></span></button>
+</div>
+
+<div id="controls" hidden>
+  <button class="lane-btn" id="btnLeft"><svg viewBox="0 0 100 100" aria-hidden="true"><path d="M64 14 24 50l40 36z"/></svg></button>
+  <button class="lane-btn" id="btnCentre"><svg viewBox="0 0 100 100" aria-hidden="true"><path d="M50 18 86 76H14z"/></svg></button>
+  <button class="throw-btn" id="btnThrow"></button>
+  <button class="lane-btn" id="btnRight"><svg viewBox="0 0 100 100" aria-hidden="true"><path d="M36 14 76 50 36 86z"/></svg></button>
+</div>
+
+<div id="banner" hidden></div>
+<div id="screen" hidden></div>
+<div id="toasts" aria-live="polite"></div>
+<div id="rotate" hidden></div>
+
+<noscript>Lasso Ranch needs JavaScript to run.</noscript>
+<script type="module" src="src/main.js"></script>
+</body>
+</html>

@@ -43,6 +43,7 @@ jobs:
           # Copy static (no-build) threejs games
           cp -r projects/little-color-lab deploy/little-color-lab
           cp -r projects/rainbow-maker deploy/rainbow-maker
+          cp -r projects/arcade-games/lasso-ranch deploy/lasso-ranch
 
           # Create .nojekyll file to disable Jekyll processing
           touch deploy/.nojekyll

@@ -40,11 +40,14 @@ export default defineConfig({
   plugins: [
     contentSecurityPolicy(),
     VitePWA({
-      // 'prompt': a new version waits quietly; the "Update available" notice lives in the Parent Zone (§17.8).
+      // 'prompt' only so the page never reloads itself mid-game. skipWaiting below means a new version takes over at the
+      // next launch: waiting for a parent (§17.8) would trap a build that crashes before the Parent Zone can open.
       registerType: 'prompt',
       injectRegister: false,
       includeManifestIcons: false,
       workbox: {
+        skipWaiting: true,
+        clientsClaim: true,
         globPatterns: ['**/*.{js,css,html,woff2,png}'],
         navigateFallback: 'index.html',
         maximumFileSizeToCacheInBytes: 8 * 1024 * 1024,

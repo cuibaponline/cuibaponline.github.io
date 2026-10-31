@@ -49,6 +49,10 @@ deployed site rather than the dev server's Network URL once you reach the setup 
 - `waves.json` holds the parade timeline and `bosses.json`, `specialsCommon.json` hold boss and special-fish data,
   alongside the files named in §17.5.
 - A special fish's shared stats and hit circles are tuned to the drawn art rather than to a sprite sheet.
+- A new version takes over at the next launch instead of waiting for a parent to apply it (§17.8). Waiting would trap
+  any build that crashes before the Parent Zone can open.
+- Phaser's preFX, postFX and canvas MSAA are switched off. On an iPad screen the FX pipelines alone reserve over 800 MB
+  of render targets, which crashes Safari and can restart the iPad. Leave them off unless the game really needs them.
 - Music loops run 55 to 65 s instead of 90 to 120 s, which keeps each decoded track near 5 MB.
 
 Not built: Captain Otto's Aquarium (§12.5, US-26), a Could item for Phase 3.

@@ -261,7 +261,6 @@ input.code-input { width: 340px; height: 60px; font: inherit; font-size: 30px; l
 .usage .bar.flag { background: var(--coral); }
 .note { font-size: 17px; color: var(--text-soft); }
 .grant { display: flex; gap: 10px; flex-wrap: wrap; }
-.update-note { padding: 14px 18px; border-radius: 18px; background: rgba(88, 214, 141, 0.2); font-size: 19px; display: flex; align-items: center; justify-content: space-between; gap: 12px; }
 
 /* Enforcement */
 .sleep { background: linear-gradient(#0a2f5e, #071c3f 70%, #05142c); }

@@ -5,7 +5,7 @@ import { GameSession, type SessionResults, type WaveSummary } from '../game/sess
 import { InputSystem } from '../input/input';
 import { World } from '../render/world';
 import { ParentalService } from '../services/parental';
-import { initPwa, onUpdateReady } from '../services/pwa';
+import { initPwa } from '../services/pwa';
 import { createIdbStorage, requestPersistentStorage, SaveService } from '../services/save';
 import { isSetupComplete } from '../services/saveSchema';
 import { speak, stopSpeaking } from '../services/speech';
@@ -112,9 +112,6 @@ export class App {
       this.parental.tick();
       if (this.session) this.syncTimer();
     }, 1000);
-    onUpdateReady(() => {
-      if (this.inParentZone) this.show(parentScreen, undefined);
-    });
 
     document.getElementById('boot')?.remove();
     this.route();

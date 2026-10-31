@@ -9,6 +9,9 @@ import { FishViews } from './fishViews';
 import { FxSystem, ImagePool } from './fxSystem';
 import { computeLayout, type Layout } from './layout';
 
+/** An iPad 11" screen. Larger displays upscale rather than spend GPU memory and power on detail the art doesn't have. */
+const MAX_RENDER_PIXELS = 2360 * 1640;
+
 const CAUSTICS_FRAG = `
 precision highp float;
 uniform float time;
@@ -103,7 +106,7 @@ export class World {
     readyCb: (w: World) => void,
   ) {
     this.layout = computeLayout(parent.clientWidth || 1180, parent.clientHeight || 820);
-    this.renderScale = Math.min(window.devicePixelRatio || 1, 2);
+    this.renderScale = this.topScale();
     const scene = new WorldScene();
     scene.ready = () => {
       this.scene = scene;
@@ -120,7 +123,12 @@ export class World {
       audio: { noAudio: true },
       input: { keyboard: false, mouse: false, touch: false, gamepad: false },
       scale: { mode: Phaser.Scale.NONE },
-      render: { antialias: true, powerPreference: 'high-performance', batchSize: 4096 },
+      // antialiasGL is the canvas's own MSAA: sprite edges are already soft, so it would only cost about 60 MB.
+      render: { antialias: true, antialiasGL: false, powerPreference: 'high-performance', batchSize: 4096 },
+      // Phaser's FX pipelines pre-allocate three render targets per 32 px step up to the screen size: over 800 MB at
+      // iPad resolution, which crashes Safari and can restart the iPad. Nothing here uses preFX or postFX.
+      disablePreFX: true,
+      disablePostFX: true,
       disableContextMenu: true,
       scene,
     });
@@ -315,8 +323,14 @@ export class World {
     if (this.oceanId) this.fitOcean();
   }
 
+  private topScale(): number {
+    const { cssW, cssH } = this.layout;
+    return Math.min(window.devicePixelRatio || 1, 2, Math.sqrt(MAX_RENDER_PIXELS / (cssW * cssH)));
+  }
+
   private applyScale(): void {
     const { cssW, cssH, zoom } = this.layout;
+    this.renderScale = Math.min(this.renderScale, this.topScale());
     const r = this.renderScale;
     const w = Math.round(cssW * r);
     const h = Math.round(cssH * r);
@@ -333,7 +347,7 @@ export class World {
   /** 17.2: step down when the frame rate sags for 3 s, back up after it has been steady for a while. */
   private adaptResolution(dt: number): void {
     this.fps = lerp(this.fps, 1 / Math.max(dt, 1 / 240), 0.05);
-    const top = Math.min(window.devicePixelRatio || 1, 2);
+    const top = this.topScale();
     if (this.fps < 50) {
       this.slowFor += dt;
       this.fastFor = 0;

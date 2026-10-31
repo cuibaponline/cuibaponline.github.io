@@ -1,5 +1,4 @@
 import { DIFFICULTIES, type Difficulty } from '../config';
-import { applyUpdate, isUpdateReady } from '../services/pwa';
 import type { GrantAmount } from '../services/parental';
 import { generateRecoveryCode, isTrivialPin } from '../services/pin';
 import { clear, formatClock, h } from './dom';
@@ -354,15 +353,6 @@ export function parentScreen(app: App): HTMLElement {
     set({ showTimerToChild: on });
   });
 
-  const update = isUpdateReady()
-    ? h(
-        'div',
-        { class: 'update-note pz-card wide' },
-        'A new version of the game is ready.',
-        h('button', { class: 'btn small sea', onTap: () => applyUpdate() }, 'Update now'),
-      )
-    : null;
-
   return h(
     'div',
     { class: 'screen deep', id: 'parent' },
@@ -378,7 +368,6 @@ export function parentScreen(app: App): HTMLElement {
       h(
         'div',
         { class: 'pz-grid' },
-        update,
         h(
           'div',
           { class: 'pz-card wide' },

@@ -7,7 +7,8 @@ import { DT, type SimEvent } from '../sim/state';
 import { Assets, type CannonTextures } from './assets';
 import { FishViews } from './fishViews';
 import { FxSystem, ImagePool } from './fxSystem';
-import { bootStep } from '../services/bootLog';
+import { bootStep, showFailure } from '../services/bootLog';
+import { mayReloadAfterContextLoss } from '../services/guard';
 import { computeLayout, type Layout } from './layout';
 
 /** An iPad 11" screen. Larger displays upscale rather than spend GPU memory and power on detail the art doesn't have. */
@@ -96,6 +97,8 @@ export class World {
   private cannonLevelShown = -1;
 
   private renderScale = 2;
+  /** Set once WebGL has gone, so a boot still in progress stops rather than hiding the failure screen. */
+  contextLost = false;
   private slowFor = 0;
   private fastFor = 0;
   /** Average frames per second, smoothed. Exposed for the dynamic-resolution check and tests. */
@@ -107,7 +110,8 @@ export class World {
     readyCb: (w: World) => void,
   ) {
     this.layout = computeLayout(parent.clientWidth || 1180, parent.clientHeight || 820);
-    this.renderScale = this.topScale();
+    // The bake is the tightest moment for memory, so full resolution waits for adaptResolution to earn it.
+    this.renderScale = Math.min(1.5, this.topScale());
     const scene = new WorldScene();
     scene.ready = () => {
       this.scene = scene;
@@ -208,11 +212,24 @@ export class World {
     this.layers.overlay.add([this.ambient, ...this.rays, this.vignette, this.frost, this.flashRect]);
 
     scene.events.on(Phaser.Scenes.Events.UPDATE, (_: number, delta: number) => this.update(delta));
-    this.game.canvas.addEventListener('webglcontextlost', () => {
-      bootStep('webgl context lost');
-      window.setTimeout(() => location.reload(), 400);
-    });
+    this.game.canvas.addEventListener('webglcontextlost', () => this.onContextLost());
     this.resize();
+  }
+
+  private onContextLost(): void {
+    bootStep('webgl context lost');
+    this.contextLost = true;
+    let storage: Storage | null = null;
+    try {
+      storage = window.sessionStorage;
+    } catch {
+      // Blocked storage: treated below as being unable to count reloads.
+    }
+    if (storage && mayReloadAfterContextLoss(storage, Date.now())) {
+      window.setTimeout(() => location.reload(), 400);
+    } else {
+      showFailure('The graphics stopped working.');
+    }
   }
 
   private buildCaustics(): void {

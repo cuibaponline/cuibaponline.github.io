@@ -67,7 +67,8 @@ export class Assets {
   private addCanvas(key: string, canvas: HTMLCanvasElement): void {
     const textures = this.scene.textures;
     if (textures.exists(key)) textures.remove(key);
-    textures.addCanvas(key, canvas);
+    // Not addCanvas: a CanvasTexture keeps a full ImageData copy of itself on the JS heap for as long as it lives.
+    textures.create(key, canvas, canvas.width, canvas.height)?.add('__BASE', 0, 0, 0, canvas.width, canvas.height);
   }
 
   private addSheet(id: SpriteId, sheet: Sheet): void {

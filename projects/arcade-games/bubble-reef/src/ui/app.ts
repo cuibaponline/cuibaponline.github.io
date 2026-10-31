@@ -75,6 +75,7 @@ export class App {
       step();
       fill.style.width = `${(++done / total) * 100}%`;
       await nextFrame();
+      this.stopIfContextLost();
     }
 
     bootStep('art done');
@@ -120,10 +121,15 @@ export class App {
       if (this.session) this.syncTimer();
     }, 1000);
 
+    this.stopIfContextLost();
     document.getElementById('boot')?.remove();
     this.route();
     bootStep('boot finished');
     if (import.meta.env.VITE_E2E) (await import('../game/e2eHooks')).installE2eHooks(this);
+  }
+
+  private stopIfContextLost(): void {
+    if (this.world.contextLost) throw new Error('The graphics stopped working during start-up.');
   }
 
   private newAttract(): Simulation {

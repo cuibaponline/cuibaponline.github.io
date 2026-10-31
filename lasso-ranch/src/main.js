@@ -301,7 +301,7 @@ function showFail() {
   fails[key] = (fails[key] ?? 0) + 1;
   const gentle = DIFFICULTY[save.difficulty].gentleFail;
   const showHelper = save.difficulty === 'easy' && fails[key] >= HELPER_HORSE.afterFails && !helper;
-  screens.fail(screen, { score: mainScore, target: config.target, gentle, showHelper });
+  screens.fail(screen, { score: mainScore, target: config.target, gentle, showHelper, hat: save.cosmetics.equipped.hat });
   offerBreak();
 }
 
@@ -316,7 +316,7 @@ function showResults() {
   const outcome = recordResult(save, save.difficulty, level, stars, total);
   persist();
   const lit = screens.results(screen, {
-    level, score: total, stars, best: outcome.best, newBest: outcome.newBest, hasNext: level < LEVELS.length,
+    level, score: total, stars, best: outcome.best, newBest: outcome.newBest, hasNext: level < LEVELS.length, hat: save.cosmetics.equipped.hat,
   });
   lit.forEach((node, i) => later(() => {
     node.classList.add('lit');
@@ -501,7 +501,7 @@ function frame(now) {
     attract.update(dt);
     attract.drainEvents();
   }
-  view.draw(round ?? attract, dt, { playing: Boolean(round) });
+  view.draw(round ?? attract, dt, { playing: Boolean(round), mascot: state !== 'results' && state !== 'fail' });
   requestAnimationFrame(frame);
 }
 

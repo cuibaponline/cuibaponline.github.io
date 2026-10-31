@@ -1,6 +1,6 @@
 // Offline support: pages and JS/CSS are network-first (so updates show up) and fall back to the cache;
 // everything else is cache-first. Bump VERSION to drop old caches.
-const VERSION = 'v1';
+const VERSION = 'v2';
 const CACHE = 'lasso-ranch-' + VERSION;
 const PRECACHE = [
   './',

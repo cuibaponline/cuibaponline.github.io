@@ -1,4 +1,4 @@
-import { CONFIG, type CreatureDef, type ParadeEntry, type Tier } from '../config';
+import { CONFIG, type CreatureDef, type GuestEntry, type ParadeEntry, type Tier } from '../config';
 import { TAU } from './math';
 import { initBossBody } from './motion';
 import { buildPath, firstEntryDistance, straightPath, type Path } from './paths';
@@ -9,7 +9,7 @@ const { waves, powerups } = CONFIG;
 
 function blankFish(): Fish {
   return {
-    uid: 0, def: CONFIG.fish[0]!, state: 'swim', x: 0, y: 0, px: 0, py: 0, heading: 0, pheading: 0, face: 1, turned: false,
+    uid: 0, def: CONFIG.fish[0]!, state: 'swim', x: 0, y: 0, px: 0, py: 0, heading: 0, pheading: 0, face: 1, turned: false, scale: 1,
     hp: 1, maxHp: 1, armoured: false, parade: false, slots: 0, path: null, dist: 0, speed: 0, rush: 1, lateral: 0,
     phase: 0, age: 0, burstSpeed: false, flash: 0, hpRing: 0, puff: 0, caughtAge: 0, diveT: 0, isBoss: false,
     waypointX: 0, waypointY: 0, thresholds: [], trailX: [], trailY: [], chainX: [], chainY: [], escortOf: 0,
@@ -66,6 +66,7 @@ export function spawnFish(s: SimState, def: CreatureDef, o: SpawnOpts): Fish {
   f.uid = s.nextUid++;
   f.def = def;
   f.state = 'swim';
+  f.scale = 1;
   f.hp = hp;
   f.maxHp = hp;
   f.armoured = s.cfg.armouredFish.includes(def.id);
@@ -163,11 +164,19 @@ function speciesWeight(s: SimState, def: CreatureDef): number {
   return (def.spawnWeight?.[s.difficulty] ?? 1) * (ocean?.bias[def.id] ?? 1);
 }
 
+function swimIn(s: SimState, def: CreatureDef, count: number, formation: string, startDist: (path: Path) => number): void {
+  const path = randomPath(s);
+  const base = startDist(path);
+  for (const slot of formationSlots(s, formation, count, def.size)) {
+    spawnFish(s, def, { path, dist: base + slot.dist, lateral: slot.lateral, slots: tierSlots(def.tier) });
+  }
+}
+
 function spawnGroup(s: SimState, room: number, startDist: (path: Path) => number): void {
   let tier = chooseTier(s);
   if (tierSlots(tier) > room) tier = 'small';
   if (tierSlots(tier) > room) return;
-  const def = s.rng.weighted(CONFIG.fish.filter((f) => f.tier === tier), (f) => speciesWeight(s, f));
+  const def = s.rng.weighted(CONFIG.fish.filter((f) => f.tier === tier && speciesWeight(s, f) > 0), (f) => speciesWeight(s, f));
   const group = def.group ?? { min: 1, max: 1, formation: 'single' as const };
   const fits = Math.floor(room / tierSlots(tier));
   const count = Math.min(s.rng.int(group.min, group.max), fits);
@@ -176,14 +185,18 @@ function spawnGroup(s: SimState, room: number, startDist: (path: Path) => number
   let formation: string = group.formation;
   if (s.difficulty !== 'easy' && count >= 5 && s.rng.chance(0.35)) formation = s.rng.pick(['line', 'vee', 'ring']);
 
-  const path = randomPath(s);
-  const base = startDist(path);
-  for (const slot of formationSlots(s, formation, count, def.size)) {
-    spawnFish(s, def, { path, dist: base + slot.dist, lateral: slot.lateral, slots: tierSlots(tier) });
-  }
+  swimIn(s, def, count, formation, startDist);
 }
 
 const offScreenStart = (): number => 0;
+
+/** Every wave brings these in on cue, so a favourite animal never depends on the luck of the mix. */
+function spawnGuest(s: SimState, entry: GuestEntry): void {
+  const def = CONFIG.creatures.get(entry.fish);
+  if (!def) return;
+  const group = def.group ?? { min: 1, max: 1, formation: 'single' as const };
+  swimIn(s, def, s.rng.int(group.min, group.max), group.formation, offScreenStart);
+}
 
 function targetSlots(s: SimState): number {
   const { startRatio, rampEndRatio } = waves.density;
@@ -255,10 +268,30 @@ export function rushOff(s: SimState, rush: number): void {
   }
 }
 
+/** A whale closes every wave, a little bigger each time, and is across the sea before the parade ends. */
+function spawnWhale(s: SimState): void {
+  const { whale } = waves;
+  const def = CONFIG.creatures.get(whale.fish);
+  if (!def) return;
+  const scale = Math.min(whale.maxScale, whale.firstScale + whale.growPerWave * (s.wave - 1));
+  const v = s.view;
+  const y = v.top + whale.lane * (v.bottom - v.top);
+  const margin = waves.spawnOutsideU + (def.size * scale) / 2;
+  const path = s.rng.chance(0.5)
+    ? straightPath(v.left - margin, y, v.right + margin, y)
+    : straightPath(v.right + margin, y, v.left - margin, y);
+  const f = spawnFish(s, def, { path, dist: 0, lateral: 0, parade: true, slots: 0 });
+  f.scale = scale;
+  f.hp *= scale;
+  f.maxHp = f.hp;
+  f.speed = path.length / whale.crossSec;
+}
+
 function startParade(s: SimState): void {
   setPhase(s, 'parade');
   s.paradeQueue = [...waves.parade];
   rushOff(s, 2.2);
+  spawnWhale(s);
   s.events.push({ t: 'paradeStart' });
 }
 
@@ -368,6 +401,7 @@ export function beginWave(s: SimState): void {
   s.waveHits = 0;
   s.spawnCooldown = 0.2;
   s.specialT = Math.min(8, nextSpecialDelay(s));
+  s.guestQueue = [...waves.guests];
   setPhase(s, 'wave');
   seedField(s);
 }
@@ -409,6 +443,7 @@ export function stepDirector(s: SimState): void {
         s.spawnCooldown = 0.4;
       }
       stepSpecials(s);
+      while (s.guestQueue.length > 0 && s.guestQueue[0]!.at <= s.phaseT) spawnGuest(s, s.guestQueue.shift()!);
       keepSmallFishOnScreen(s);
       if (s.phaseT >= s.cfg.waveSec) startParade(s);
       break;

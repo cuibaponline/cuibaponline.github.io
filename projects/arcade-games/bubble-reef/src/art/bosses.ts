@@ -1,6 +1,6 @@
-// B01 Golden Whale and B02 Coral Dragon, whose body is a chain of soft-ended segments.
+// B01 Golden Whale, the Blue Whale drawn from the same rig, and B02 Coral Dragon, whose body is a chain of soft-ended segments.
 
-import type { CreatureDef } from './rig';
+import type { CreatureDef, FramePainter } from './rig';
 import { Builder, blush, eye, finPart, smile, swim, swimDy, tube, type S, type SwimOpts } from './rig';
 import { COOL, WARM } from './fish';
 import {
@@ -50,109 +50,178 @@ function sparkle(x: Ctx, cx: number, cy: number, r: number, a: number): void {
   x.restore();
 }
 
+export interface WhaleColors {
+  shadow: Rgb;
+  finRim: Rgb;
+  bodyRim: Rgb;
+  fluke: [string, string];
+  flukeVein: string;
+  dorsal: [string, string];
+  body: [string, string, string, string, string];
+  freckle: string;
+  throat: string;
+  groove: string;
+  blush: string;
+  eyeRim: string;
+  iris: string;
+  mouth: string;
+  pec: [string, string];
+  pecVein: string;
+  sparkles: boolean;
+}
+
+export const GOLDEN_WHALE: WhaleColors = {
+  shadow: GOLD_SHADOW,
+  finRim: [1, 0.95, 0.7],
+  bodyRim: [1, 0.92, 0.6],
+  fluke: ['#f8ae1e', '#ffd65a'],
+  flukeVein: 'rgba(170,90,0,0.32)',
+  dorsal: ['#ffc53c', '#f6a820'],
+  body: ['#e88a08', '#fbab14', '#ffc62c', '#ffd868', '#ffeeb0'],
+  freckle: 'rgba(255,240,170,0.55)',
+  throat: 'rgba(255,246,214,0.82)',
+  groove: 'rgba(208,132,30,0.55)',
+  blush: 'rgba(255,100,70,0.6)',
+  eyeRim: 'rgba(120,60,0,0.85)',
+  iris: '#2f7fd6',
+  mouth: 'rgba(120,60,0,0.9)',
+  pec: ['#ffbc2c', '#ffdd6e'],
+  pecVein: 'rgba(190,110,10,0.34)',
+  sparkles: true,
+};
+
+export const BLUE_WHALE: WhaleColors = {
+  shadow: COOL,
+  finRim: [0.75, 0.92, 1],
+  bodyRim: [0.72, 0.9, 1],
+  fluke: ['#2f78b8', '#6db7e6'],
+  flukeVein: 'rgba(14,62,110,0.32)',
+  dorsal: ['#4b9bd6', '#2f78b8'],
+  body: ['#2a6cab', '#3a87c8', '#5aa9e0', '#8ccbf0', '#dff3fb'],
+  freckle: 'rgba(214,238,255,0.5)',
+  throat: 'rgba(233,247,255,0.86)',
+  groove: 'rgba(58,118,170,0.5)',
+  blush: 'rgba(255,120,150,0.55)',
+  eyeRim: 'rgba(14,48,90,0.85)',
+  iris: '#1f5a9c',
+  mouth: 'rgba(14,48,90,0.9)',
+  pec: ['#3a87c8', '#8ccbf0'],
+  pecVein: 'rgba(14,62,110,0.34)',
+  sparkles: false,
+};
+
+export function whaleRig(b: Builder, c: WhaleColors): FramePainter {
+  const flukeLit = { dome: 7, soften: 0.7, tint: c.shadow, spec: 0.5, gloss: 34, sheen: 0.14, line: 2.2, lineDark: 0.66, rimColor: c.finRim };
+  const heart: P[] = rotatePts(
+    [[2, -2], [-2, -8], [-7, -15], [-13, -20], [-15, -17], [-14, -10], [-10.5, -3], [-9, 0], [-10.5, 3], [-14, 10], [-15, 17], [-13, 20], [-7, 15], [-2, 8], [2, 2]].map((p) => [p[0]! * 0.86 - 42.5, p[1]! * 1.04 - 11.5] as P),
+    -0.3, -42.5, -11.5,
+  );
+  const fluke = b.part({
+    box: [-62, -42, -34, 20],
+    paint: (x) => {
+      fillPath(x, heart, linear(x, -44, 0, -60, 0, [[0, c.fluke[0]], [1, c.fluke[1]]]));
+      clipped(x, heart, () => {
+        x.strokeStyle = c.flukeVein;
+        x.lineWidth = 0.8;
+        x.beginPath();
+        for (let i = 0; i < 7; i++) {
+          x.moveTo(-46, -12);
+          x.lineTo(-62, -40 + i * 10);
+        }
+        x.stroke();
+      });
+    },
+    lit: flukeLit,
+  });
+  const dorsal = b.part({
+    box: [-30, -32, -8, -16],
+    paint: (x) => fillPath(x, [[-11, -22], [-17, -26.5], [-22, -27], [-24, -24], [-25, -17], [-12, -18]], linear(x, 0, -28, 0, -18, [[0, c.dorsal[0]], [1, c.dorsal[1]]])),
+    lit: flukeLit,
+  });
+  const grooves: Array<readonly P[]> = [];
+  for (let i = 0; i < 7; i++) {
+    const front = 45 - i * 1.3;
+    const fy = 12.5 + i * 2;
+    const rear = -3 + i * 3.4;
+    const ry = 15 + i * 1.8;
+    grooves.push([[front, fy], [30, fy + 2.8], [14, fy + 3], [rear, ry]]);
+  }
+  const freckles: Array<[number, number, number]> = [];
+  const rand = makeRng(301);
+  for (let i = 0; i < 40; i++) {
+    freckles.push([lerp(-30, 44, rand()), lerp(-25, 0, rand()), lerp(0.3, 0.8, rand())]);
+  }
+  const body = b.part({
+    box: [-50, -31, 54, 31],
+    paint: (x) => {
+      x.beginPath();
+      trace(x, whaleBody);
+      x.fillStyle = linear(x, 0, -28, 0, 27, [[0, c.body[0]], [0.3, c.body[1]], [0.55, c.body[2]], [0.72, c.body[3]], [1, c.body[4]]]);
+      x.fill();
+      clipped(x, whaleBody, () => {
+        for (const [px, py, r] of freckles) circle(x, px, py, r, c.freckle);
+        // pale throat that tapers along the belly, with pleats
+        fillPath(x, [[56, 9], [42, 10.5], [26, 12], [8, 12], [-8, 13.5], [-18, 15], [-6, 24], [12, 30], [56, 30]], c.throat);
+        for (const g of grooves) strokePath(x, g, c.groove, 0.75);
+      });
+      blush(x, 34, 12.5, 6, 3.6, c.blush);
+    },
+    bump: (x) => {
+      for (const g of grooves) strokePath(x, g, 'rgba(10,10,10,0.75)', 1);
+      circle(x, 32, 1.5, 5.8, 'rgba(50,50,50,0.5)');
+      strokePath(x, [[50, 8.5], [42, 10.5], [33, 10.5], [26, 8], [22, 4]], 'rgba(30,30,30,0.7)', 1.2);
+      circle(x, 24, -26, 2, 'rgba(40,40,40,0.8)');
+    },
+    lit: { dome: 25, soften: 1.8, tint: c.shadow, spec: 0.6, gloss: 30, sheen: 0.16, rim: 0.7, rimColor: c.bodyRim, line: 2.2, lineDark: 0.62, bumpPx: 3, shade: 0.8 },
+  });
+  b.over(body, (x) => {
+    eye(x, 32, 1.5, 5.6, { rim: c.eyeRim, iris: c.iris, look: [0.12, 0.05] });
+    strokePath(x, [[50.5, 8.2], [43, 10.2], [34, 10.4], [27, 8.2], [22.5, 4.4]], c.mouth, 0.95);
+  });
+  const pecPts: P[] = [[23, 13], [16, 18], [8, 26], [0, 32], [-5, 32], [-5, 26], [1, 17], [8, 10], [17, 9]];
+  const pec = b.part({
+    box: [-9, 5, 28, 36],
+    paint: (x) => {
+      fillPath(x, pecPts, linear(x, 18, 8, -4, 32, [[0, c.pec[0]], [1, c.pec[1]]]));
+      clipped(x, pecPts, () => {
+        x.strokeStyle = c.pecVein;
+        x.lineWidth = 0.7;
+        x.beginPath();
+        for (let i = 0; i < 4; i++) {
+          x.moveTo(20 - i, 12 + i);
+          x.lineTo(-2 + i * 3, 31);
+        }
+        x.stroke();
+      });
+    },
+    lit: flukeLit,
+  });
+  b.fadeRoot(pec, 22, 8, 16, 15);
+  const glints: ReadonlyArray<readonly [number, number, number, number]> = [
+    [14, -24, 4.6, 0], [-14, -18, 3.6, 0.33], [40, -12, 3.4, 0.66], [-30, -12, 2.8, 0.17], [2, -14, 2.4, 0.5],
+  ];
+  const all = b.stack([-62, -44, 56, 46], fluke, dorsal, body);
+  const o: SwimOpts = { head: 4, tail: -60, amp: 8.4, waves: 0.42, fore: 0 };
+  return (ctx, phase, v) => {
+    swim(ctx, v, all, phase, { ...o, step: 2 });
+    blitAt(ctx, pec, 20, 10, Math.sin(TAU * phase) * 0.12, 1, 1, 0, swimDy(20, phase, o));
+    if (!c.sparkles) return;
+    for (const [gx, gy, r, ph] of glints) {
+      const q = 0.5 + 0.5 * Math.sin(TAU * (phase + ph));
+      sparkle(ctx, gx, gy + swimDy(gx, phase, o), r * (0.5 + q * 0.6), q * q * 1.1);
+    }
+  };
+}
+
 export const B01: CreatureDef = {
   id: 'B01', size: 600, box: [-62, -44, 56, 46], art: [-56, -36, 52, 40], frames: 6, fps: 6, facing: 'side', ss: 1,
-  build(b) {
-    const flukeLit = { dome: 7, soften: 0.7, tint: GOLD_SHADOW, spec: 0.5, gloss: 34, sheen: 0.14, line: 2.2, lineDark: 0.66, rimColor: [1, 0.95, 0.7] as Rgb };
-    const heart: P[] = rotatePts(
-      [[2, -2], [-2, -8], [-7, -15], [-13, -20], [-15, -17], [-14, -10], [-10.5, -3], [-9, 0], [-10.5, 3], [-14, 10], [-15, 17], [-13, 20], [-7, 15], [-2, 8], [2, 2]].map((p) => [p[0]! * 0.86 - 42.5, p[1]! * 1.04 - 11.5] as P),
-      -0.3, -42.5, -11.5,
-    );
-    const fluke = b.part({
-      box: [-62, -42, -34, 20],
-      paint: (x) => {
-        fillPath(x, heart, linear(x, -44, 0, -60, 0, [[0, '#f8ae1e'], [1, '#ffd65a']]));
-        clipped(x, heart, () => {
-          x.strokeStyle = 'rgba(170,90,0,0.32)';
-          x.lineWidth = 0.8;
-          x.beginPath();
-          for (let i = 0; i < 7; i++) {
-            x.moveTo(-46, -12);
-            x.lineTo(-62, -40 + i * 10);
-          }
-          x.stroke();
-        });
-      },
-      lit: flukeLit,
-    });
-    const dorsal = b.part({
-      box: [-30, -32, -8, -16],
-      paint: (x) => fillPath(x, [[-11, -22], [-17, -26.5], [-22, -27], [-24, -24], [-25, -17], [-12, -18]], linear(x, 0, -28, 0, -18, [[0, '#ffc53c'], [1, '#f6a820']])),
-      lit: flukeLit,
-    });
-    const grooves: Array<readonly P[]> = [];
-    for (let i = 0; i < 7; i++) {
-      const front = 45 - i * 1.3;
-      const fy = 12.5 + i * 2;
-      const rear = -3 + i * 3.4;
-      const ry = 15 + i * 1.8;
-      grooves.push([[front, fy], [30, fy + 2.8], [14, fy + 3], [rear, ry]]);
-    }
-    const freckles: Array<[number, number, number]> = [];
-    const rand = makeRng(301);
-    for (let i = 0; i < 40; i++) {
-      freckles.push([lerp(-30, 44, rand()), lerp(-25, 0, rand()), lerp(0.3, 0.8, rand())]);
-    }
-    const body = b.part({
-      box: [-50, -31, 54, 31],
-      paint: (x) => {
-        x.beginPath();
-        trace(x, whaleBody);
-        x.fillStyle = linear(x, 0, -28, 0, 27, [[0, '#e88a08'], [0.3, '#fbab14'], [0.55, '#ffc62c'], [0.72, '#ffd868'], [1, '#ffeeb0']]);
-        x.fill();
-        clipped(x, whaleBody, () => {
-          for (const [px, py, r] of freckles) circle(x, px, py, r, 'rgba(255,240,170,0.55)');
-          // pale throat that tapers along the belly, with pleats
-          fillPath(x, [[56, 9], [42, 10.5], [26, 12], [8, 12], [-8, 13.5], [-18, 15], [-6, 24], [12, 30], [56, 30]], 'rgba(255,246,214,0.82)');
-          for (const g of grooves) strokePath(x, g, 'rgba(208,132,30,0.55)', 0.75);
-        });
-        blush(x, 34, 12.5, 6, 3.6, 'rgba(255,100,70,0.6)');
-      },
-      bump: (x) => {
-        for (const g of grooves) strokePath(x, g, 'rgba(10,10,10,0.75)', 1);
-        circle(x, 32, 1.5, 5.8, 'rgba(50,50,50,0.5)');
-        strokePath(x, [[50, 8.5], [42, 10.5], [33, 10.5], [26, 8], [22, 4]], 'rgba(30,30,30,0.7)', 1.2);
-        circle(x, 24, -26, 2, 'rgba(40,40,40,0.8)');
-      },
-      lit: { dome: 25, soften: 1.8, tint: GOLD_SHADOW, spec: 0.6, gloss: 30, sheen: 0.16, rim: 0.7, rimColor: [1, 0.92, 0.6], line: 2.2, lineDark: 0.62, bumpPx: 3, shade: 0.8 },
-    });
-    b.over(body, (x) => {
-      eye(x, 32, 1.5, 5.6, { rim: 'rgba(120,60,0,0.85)', iris: '#2f7fd6', look: [0.12, 0.05] });
-      strokePath(x, [[50.5, 8.2], [43, 10.2], [34, 10.4], [27, 8.2], [22.5, 4.4]], 'rgba(120,60,0,0.9)', 0.95);
-    });
-    const pecPts: P[] = [[23, 13], [16, 18], [8, 26], [0, 32], [-5, 32], [-5, 26], [1, 17], [8, 10], [17, 9]];
-    const pec = b.part({
-      box: [-9, 5, 28, 36],
-      paint: (x) => {
-        fillPath(x, pecPts, linear(x, 18, 8, -4, 32, [[0, '#ffbc2c'], [1, '#ffdd6e']]));
-        clipped(x, pecPts, () => {
-          x.strokeStyle = 'rgba(190,110,10,0.34)';
-          x.lineWidth = 0.7;
-          x.beginPath();
-          for (let i = 0; i < 4; i++) {
-            x.moveTo(20 - i, 12 + i);
-            x.lineTo(-2 + i * 3, 31);
-          }
-          x.stroke();
-        });
-      },
-      lit: flukeLit,
-    });
-    b.fadeRoot(pec, 22, 8, 16, 15);
-    const glints: ReadonlyArray<readonly [number, number, number, number]> = [
-      [14, -24, 4.6, 0], [-14, -18, 3.6, 0.33], [40, -12, 3.4, 0.66], [-30, -12, 2.8, 0.17], [2, -14, 2.4, 0.5],
-    ];
-    const all = b.stack([-62, -44, 56, 46], fluke, dorsal, body);
-    const o: SwimOpts = { head: 4, tail: -60, amp: 8.4, waves: 0.42, fore: 0 };
-    return (ctx, phase, v) => {
-      swim(ctx, v, all, phase, { ...o, step: 2 });
-      blitAt(ctx, pec, 20, 10, Math.sin(TAU * phase) * 0.12, 1, 1, 0, swimDy(20, phase, o));
-      for (const [gx, gy, r, ph] of glints) {
-        const q = 0.5 + 0.5 * Math.sin(TAU * (phase + ph));
-        sparkle(ctx, gx, gy + swimDy(gx, phase, o), r * (0.5 + q * 0.6), q * q * 1.1);
-      }
-    };
-  },
+  build: (b) => whaleRig(b, GOLDEN_WHALE),
+};
+
+/** Baked well under full size and scaled up in play: at four frames it costs about a third of the Golden Whale. */
+export const F16: CreatureDef = {
+  id: 'F16', size: 400, box: [-62, -44, 56, 46], art: [-56, -36, 52, 40], frames: 4, fps: 5, facing: 'side', ss: 1,
+  build: (b) => whaleRig(b, BLUE_WHALE),
 };
 
 // ---------------------------------------------------------------- B02 Coral Dragon

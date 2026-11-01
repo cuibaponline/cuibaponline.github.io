@@ -83,10 +83,11 @@ export class FishViews {
     const body = this.take(sheet.key, this.layers.fish);
     // Big creatures swim underneath small ones, so nothing catchable gets hidden.
     // setTexture, not setFrame: a pufferfish caught while puffed comes back from the pool with the puffed sheet.
-    body.setTexture(sheet.key, 0).setOrigin(sheet.originX, sheet.originY).setDepth(-f.def.size);
+    const depth = -f.def.size * f.scale;
+    body.setTexture(sheet.key, 0).setOrigin(sheet.originX, sheet.originY).setDepth(depth);
     const shadow = this.take(sheet.shadowKey, this.layers.shadows);
     // Same depth rule as the bodies: it groups shadows by texture, which saves a batch flush per fish on the iPad pipeline.
-    shadow.setAlpha(0.26).setScale(sheet.scale * 1.05).setDepth(-f.def.size);
+    shadow.setAlpha(0.26).setScale(sheet.scale * f.scale * 1.05).setDepth(depth);
 
     const view: FishView = {
       gen: this.gen, sheet, body, shadow, flash: null, aura: null, icon: null, shell: null, bubble: null,
@@ -152,7 +153,7 @@ export class FishViews {
     const t = clamp(f.caughtAge / CAUGHT_FLOAT_SEC, 0, 1);
     const { body, sheet } = view;
     const lift = (170 * t * t + 30 * t) * (f.turned ? -1 : 1);
-    const squish = sheet.scale * lerp(1.1, 0.72, t);
+    const squish = sheet.scale * f.scale * lerp(1.1, 0.72, t);
     body.setPosition(x, y - lift).setRotation(body.rotation + 0.26).setAlpha(1 - t * t).setScale(squish);
     view.shadow.setVisible(false);
     view.aura?.setVisible(false);
@@ -160,7 +161,7 @@ export class FishViews {
     view.shell?.setVisible(false);
     view.flash?.setVisible(false);
     if (!view.bubble) view.bubble = this.take('fx_catchBubble', this.layers.badges);
-    const radius = Math.max(70, Math.min(f.def.size * 0.72, 320));
+    const radius = Math.max(70, Math.min(f.def.size * f.scale * 0.72, 320));
     view.bubble.setPosition(x, y - lift).setScale((radius / 128) * lerp(0.85, 1.14, t)).setAlpha(Math.min(1, (1 - t) * 1.7));
     for (const seg of view.segments) seg.setAlpha(1 - t);
   }
@@ -221,7 +222,7 @@ export class FishViews {
       const active = puffed ? this.sheetFor('F05_puffed') : sheet;
       body.setFrame(frame % active.frames);
       body.setPosition(x, y);
-      this.bodyTransform(f, view, heading, dt, active.scale);
+      this.bodyTransform(f, view, heading, dt, active.scale * f.scale);
 
       const diving = f.state === 'dive';
       const fade = diving ? clamp(f.diveT / CONFIG.powerups.boss.dragonDiveSec, 0, 1) : 1;
@@ -264,7 +265,7 @@ export class FishViews {
         view.shell.setVisible(armoured).setPosition(x + way * f.def.size * 0.3, y - way * f.def.size * 0.3).setRotation(badgeTurn).setScale(0.62);
       }
 
-      this.positions.set(f.uid, { x, y, r: f.def.size * (isUpright(f.def.id) ? 0.56 : 0.5) });
+      this.positions.set(f.uid, { x, y, r: f.def.size * f.scale * (isUpright(f.def.id) ? 0.56 : 0.5) });
     }
 
     for (const [uid, view] of this.views) {

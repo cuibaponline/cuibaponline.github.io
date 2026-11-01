@@ -105,7 +105,7 @@ export class Simulation {
       difficulty: opts.difficulty, cfg, rng: new Rng(opts.seed), seed: opts.seed >>> 0, tick: 0,
       attract: opts.attract === true, view: { ...opts.view }, unlocks: opts.unlocks,
       fish: [], bubbles: [], nets: [], seats: Array.from({ length: seats }, (_, id) => newSeat(id, opts.view, opts)),
-      phase: 'wave', phaseT: 0, wave: 0, slotsUsed: 0, spawnCooldown: 0, specialT: 0, paradeQueue: [],
+      phase: 'wave', phaseT: 0, wave: 0, slotsUsed: 0, spawnCooldown: 0, specialT: 0, paradeQueue: [], guestQueue: [],
       oceanIndex: opts.oceanIndex ?? 0, freezeT: 0, noCatchT: 0, pendingSpecials: [], bubblePop: null, boss: null,
       bossTimer: 0, events: [], stats: newSessionStats(), waveShots: 0, waveHits: 0, nextUid: 1,
       grid: new SpatialGrid(200), pool: [],

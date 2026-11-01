@@ -8,10 +8,10 @@ import { VIEW } from './helpers';
 describe('config', () => {
   it('parses and has the full roster', () => {
     const cfg = parseConfig();
-    expect(cfg.fish).toHaveLength(12);
+    expect(cfg.fish).toHaveLength(16);
     expect(cfg.bosses).toHaveLength(2);
     expect(cfg.specials).toHaveLength(6);
-    expect(cfg.creatures.size).toBe(20);
+    expect(cfg.creatures.size).toBe(24);
   });
 
   it('matches the GDD HP table for spot-checked fish', () => {

@@ -25,6 +25,7 @@ export function installE2eHooks(app: App): void {
           .map((f) => ({
             id: f.def.id,
             tier: f.def.tier,
+            scale: f.scale,
             x: f.x,
             y: f.y,
             cssX: (f.x - layout.view.left) * layout.zoom,
@@ -53,6 +54,10 @@ export function installE2eHooks(app: App): void {
       if (!s) return;
       s.phase = 'transition';
       s.phaseT = 10;
+    },
+    setWave(wave: number) {
+      const s = app.session?.sim.s;
+      if (s) s.wave = wave;
     },
     setControlMode(mode: 'tap' | 'joystick') {
       app.save.update((d) => {

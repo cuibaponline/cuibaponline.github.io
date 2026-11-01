@@ -5,7 +5,7 @@ const puffMul = CONFIG.powerups.puff.hitboxMul;
 
 /** Scale applied to a fish's hit circles right now. */
 export function hitScale(s: SimState, f: Fish): number {
-  return s.cfg.hitboxScale * (f.puff > 0 ? puffMul : 1);
+  return s.cfg.hitboxScale * f.scale * (f.puff > 0 ? puffMul : 1);
 }
 
 /** Calls `visit` for each world-space hit circle. Return true to stop early. */

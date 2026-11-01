@@ -1,6 +1,6 @@
 // Contract between the procedural art module (src/art) and the renderer / DOM UI (src/render, src/ui).
 
-export type FishId = 'F01' | 'F02' | 'F03' | 'F04' | 'F05' | 'F06' | 'F07' | 'F08' | 'F09' | 'F10' | 'F11' | 'F12';
+export type FishId = 'F01' | 'F02' | 'F03' | 'F04' | 'F05' | 'F06' | 'F07' | 'F08' | 'F09' | 'F10' | 'F11' | 'F12' | 'F13' | 'F14' | 'F15' | 'F16';
 export type BossId = 'B01' | 'B02';
 export type SpecialId = 'S01' | 'S02' | 'S03' | 'S04' | 'S05' | 'S06';
 export type CreatureId = FishId | BossId | SpecialId;

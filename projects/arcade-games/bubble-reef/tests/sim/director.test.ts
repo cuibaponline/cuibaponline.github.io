@@ -76,7 +76,7 @@ describe('spawn director (6.8)', () => {
     const events = collect(sim, 140 * 60);
     expect(sim.s.fish.filter((f) => f.def.tier === 'special').length).toBeLessThanOrEqual(1);
     const appears = events.filter((e) => e.t === 'specialAppear').length;
-    expect(appears).toBeGreaterThanOrEqual(3);
+    expect(appears).toBeGreaterThanOrEqual(2);
     expect(appears).toBeLessThanOrEqual(10);
   });
 

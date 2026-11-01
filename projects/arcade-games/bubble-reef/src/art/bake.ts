@@ -6,11 +6,12 @@ import { ctxOf, flatten, free, newCanvas, releaseScratch, type Cnv, type Ctx, ty
 import { FISH } from './fish';
 import { SPECIALS } from './specials';
 import { BOSSES, dragonPieces } from './bosses';
+import { VISITORS } from './visitors';
 
 const MAX_SHEET = 2048;
 
 const DEFS: Partial<Record<SpriteId, CreatureDef>> = {};
-for (const d of [...FISH, ...SPECIALS, ...BOSSES]) DEFS[d.id] = d;
+for (const d of [...FISH, ...VISITORS, ...SPECIALS, ...BOSSES]) DEFS[d.id] = d;
 
 export function defOf(id: SpriteId): CreatureDef {
   const d = DEFS[id];

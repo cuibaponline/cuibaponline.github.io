@@ -62,6 +62,10 @@ deployed site rather than the dev server's Network URL once you reach the setup 
   still face Player 1. They share one profile, so coins, XP and the daily limit are shared, and their cannons are always
   blue and red rather than Workshop skins. Bosses get 1.6 times the HP (`powerups.json`). Phones don't offer it, as
   there is no room for two sets of buttons.
+- Dolphins, seals, penguins and the Blue Whale (not in the GDD) were asked for by the player. The first three come on cue
+  each wave as `guests` in `waves.json`, as well as in the ordinary mix. The Blue Whale crosses every Fish Parade and
+  grows from wave to wave (`whale` in `waves.json`), with its HP and points growing to match. Its `spawnWeight` of 0
+  keeps it out of the mix, and the Golden Whale still ends wave 3 as before.
 - Music loops run 55 to 65 s instead of 90 to 120 s, which keeps each decoded track near 5 MB.
 
 Not built: Captain Otto's Aquarium (§12.5, US-26), a Could item for Phase 3.

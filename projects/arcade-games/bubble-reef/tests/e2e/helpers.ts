@@ -10,7 +10,7 @@ declare global {
         coins: number;
         shots: number;
         caught: number;
-        fish: { id: string; x: number; y: number; cssX: number; cssY: number; tier: string }[];
+        fish: { id: string; x: number; y: number; cssX: number; cssY: number; tier: string; scale: number }[];
         level: number;
         phase: string | null;
         fps: number;
@@ -21,6 +21,7 @@ declare global {
       setUsed(sec: number): void;
       setXp(xp: number): void;
       endWave(): void;
+      setWave(wave: number): void;
       skipPhase(): void;
       startBreak(sec: number): void;
       setControlMode(mode: 'tap' | 'joystick'): void;

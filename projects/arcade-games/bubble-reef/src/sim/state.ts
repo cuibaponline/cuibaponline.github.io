@@ -1,4 +1,4 @@
-import type { CreatureDef, Difficulty, DifficultyConfig, ParadeEntry, SpecialEffect } from '../config';
+import type { CreatureDef, Difficulty, DifficultyConfig, GuestEntry, ParadeEntry, SpecialEffect } from '../config';
 import { SpatialGrid } from './collision';
 import type { Path } from './paths';
 import type { Rng } from './rng';
@@ -37,6 +37,8 @@ export interface Fish {
   face: number;
   /** Turned round to suit the far player, because it is on their half of the sea. */
   turned: boolean;
+  /** Size as a multiple of its def, for a whale that grows from wave to wave. */
+  scale: number;
   hp: number;
   maxHp: number;
   armoured: boolean;
@@ -236,6 +238,7 @@ export interface SimState {
   spawnCooldown: number;
   specialT: number;
   paradeQueue: ParadeEntry[];
+  guestQueue: GuestEntry[];
   oceanIndex: number;
   freezeT: number;
   noCatchT: number;

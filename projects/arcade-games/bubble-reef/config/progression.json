@@ -27,7 +27,7 @@
     { "id": "kelp", "name": "Kelp Forest", "bias": { "F04": 2, "F06": 1.5 } },
     { "id": "ship", "name": "Sunken Ship", "bias": { "F08": 2, "F12": 1.5 } },
     { "id": "glow", "name": "Glow Deep", "bias": { "F07": 2, "F10": 1.5 } },
-    { "id": "arctic", "name": "Arctic Waters", "bias": { "F07": 2.5, "F09": 0.5 } }
+    { "id": "arctic", "name": "Arctic Waters", "bias": { "F07": 2.5, "F09": 0.5, "F14": 2.5, "F15": 2.5 } }
   ],
   "suggestMedium": { "afterEasyWaves": 5, "minCatchRate": 0.5 }
 }

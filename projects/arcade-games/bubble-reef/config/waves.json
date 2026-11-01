@@ -6,6 +6,12 @@
   "tierSlots": { "small": 1, "medium": 1, "large": 2, "boss": 6, "special": 1 },
   "specialJitter": 0.3,
   "intermissionSec": 8,
+  "guests": [
+    { "at": 10, "fish": "F13" },
+    { "at": 35, "fish": "F15" },
+    { "at": 60, "fish": "F14" }
+  ],
+  "whale": { "fish": "F16", "lane": 0.42, "crossSec": 22, "firstScale": 0.75, "growPerWave": 0.15, "maxScale": 1.5 },
   "parade": [
     { "at": 0.0, "formation": "line", "fish": "F01", "count": 16, "gap": 95, "lane": 0.22 },
     { "at": 0.0, "formation": "line", "fish": "F02", "count": 14, "gap": 110, "lane": 0.78, "reverse": true },

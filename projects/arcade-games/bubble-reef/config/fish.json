@@ -34,5 +34,17 @@
     "fact": "An octopus has three hearts and eight clever arms." },
   { "id": "F12", "name": "Reef Shark", "tier": "large", "size": 340, "speed": 110, "hp": { "easy": 18, "medium": 26, "hard": 38 }, "points": 80,
     "hitCircles": [[118, 0, 42], [40, -10, 54], [-50, -4, 38], [-118, 0, 22]], "spawnWeight": { "easy": 4, "medium": 6, "hard": 8 }, "group": { "min": 1, "max": 1, "formation": "single" }, "behaviours": ["patrol"],
-    "fact": "Reef sharks grow new teeth all their lives, thousands and thousands of them." }
+    "fact": "Reef sharks grow new teeth all their lives, thousands and thousands of them." },
+  { "id": "F13", "name": "Dolphin", "tier": "medium", "size": 160, "speed": 125, "hp": { "easy": 4, "medium": 6, "hard": 9 }, "points": 18,
+    "hitCircles": [[48, 0, 30], [-8, -2, 30], [-58, -4, 18]], "spawnWeight": { "easy": 8, "medium": 8, "hard": 8 }, "group": { "min": 2, "max": 3, "formation": "line" }, "behaviours": ["wavy"],
+    "fact": "Dolphins give each other their own special whistles, a bit like names." },
+  { "id": "F14", "name": "Seal", "tier": "medium", "size": 130, "speed": 85, "hp": { "easy": 3, "medium": 5, "hard": 7 }, "points": 14,
+    "hitCircles": [[34, 0, 34], [-16, 0, 30], [-50, -2, 14]], "spawnWeight": { "easy": 7, "medium": 7, "hard": 7 }, "group": { "min": 1, "max": 2, "formation": "line" }, "behaviours": ["gentle"],
+    "fact": "A thick layer of blubber keeps seals warm in icy water." },
+  { "id": "F15", "name": "Penguin", "tier": "small", "size": 90, "speed": 130, "hp": { "easy": 1, "medium": 2, "hard": 3 }, "points": 5,
+    "hitCircles": [[14, 0, 24], [-20, 0, 20]], "spawnWeight": { "easy": 7, "medium": 7, "hard": 7 }, "group": { "min": 3, "max": 5, "formation": "school" }, "behaviours": ["wavy"],
+    "fact": "Penguins cannot fly in the air, but they zoom through the water with their wings." },
+  { "id": "F16", "name": "Blue Whale", "tier": "large", "size": 400, "speed": 110, "hp": { "easy": 40, "medium": 60, "hard": 90 }, "points": 80,
+    "hitCircles": [[113, 0, 85], [7, 0, 95], [-100, -20, 56], [-167, -29, 28]], "spawnWeight": { "easy": 0, "medium": 0, "hard": 0 }, "group": { "min": 1, "max": 1, "formation": "single" }, "behaviours": ["glide"],
+    "fact": "Whales breathe air through blowholes on the top of their heads." }
 ]

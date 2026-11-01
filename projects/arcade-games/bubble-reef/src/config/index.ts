@@ -16,6 +16,7 @@ export type Difficulty = (typeof DIFFICULTIES)[number];
 const positive = z.number().positive();
 const perDifficulty = z.object({ easy: positive, medium: positive, hard: positive });
 const hitCircle = z.tuple([z.number(), z.number(), positive]);
+const notNegative = z.number().min(0);
 
 const fishSchema = z.object({
   id: z.string().regex(/^F\d\d$/),
@@ -26,7 +27,8 @@ const fishSchema = z.object({
   hp: perDifficulty,
   points: positive,
   hitCircles: z.array(hitCircle).min(1).max(4),
-  spawnWeight: perDifficulty,
+  /** 0 keeps a fish out of the ordinary mix. */
+  spawnWeight: z.object({ easy: notNegative, medium: notNegative, hard: notNegative }),
   group: z.object({
     min: z.number().int().positive(),
     max: z.number().int().positive(),
@@ -140,6 +142,8 @@ const wavesSchema = z.object({
   tierSlots: z.object({ small: positive, medium: positive, large: positive, boss: positive, special: positive }),
   specialJitter: z.number().min(0).max(1),
   intermissionSec: positive,
+  guests: z.array(z.object({ at: notNegative, fish: z.string() })),
+  whale: z.object({ fish: z.string(), lane: z.number().min(0).max(1), crossSec: positive, firstScale: positive, growPerWave: positive, maxScale: positive }),
   parade: z.array(
     z.object({
       at: z.number().min(0),
@@ -201,6 +205,7 @@ export type WavesConfig = z.infer<typeof wavesSchema>;
 export type PathConfig = z.infer<typeof pathsSchema>[number];
 export type ProgressionConfig = z.infer<typeof progressionSchema>;
 export type ParadeEntry = WavesConfig['parade'][number];
+export type GuestEntry = WavesConfig['guests'][number];
 export type SpecialEffect = z.infer<typeof specialSchema>['effect'];
 export type Tier = 'small' | 'medium' | 'large' | 'boss' | 'special';
 
@@ -237,7 +242,7 @@ export interface GameConfig {
 }
 
 export function parseConfig(): GameConfig {
-  const fish = z.array(fishSchema).length(12).parse(fishJson) as CreatureDef[];
+  const fish = z.array(fishSchema).length(16).parse(fishJson) as CreatureDef[];
   const bosses = z.array(bossSchema).length(2).parse(bossesJson) as CreatureDef[];
   const common = specialCommonSchema.parse(specialsCommonJson);
   const specials: CreatureDef[] = z
@@ -250,8 +255,8 @@ export function parseConfig(): GameConfig {
   for (const def of [...fish, ...bosses, ...specials]) creatures.set(def.id, def);
 
   const waves = wavesSchema.parse(wavesJson);
-  for (const entry of waves.parade) {
-    if (!creatures.has(entry.fish)) throw new Error(`waves.json: unknown parade fish ${entry.fish}`);
+  for (const { fish: id } of [...waves.parade, ...waves.guests, waves.whale]) {
+    if (!creatures.has(id)) throw new Error(`waves.json: unknown parade fish ${id}`);
   }
   const powerups = powerupsSchema.parse(powerupsJson);
   for (const id of [powerups.boss.whaleRingFish, powerups.boss.escorts.fish]) {

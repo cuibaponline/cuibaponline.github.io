@@ -8,7 +8,7 @@ const OCEAN_W = 2300;
 const OCEAN_H = 1560;
 
 export const SPRITE_IDS: SpriteId[] = [
-  'F01', 'F02', 'F03', 'F04', 'F05', 'F05_puffed', 'F06', 'F07', 'F08', 'F09', 'F10', 'F11', 'F12',
+  'F01', 'F02', 'F03', 'F04', 'F05', 'F05_puffed', 'F06', 'F07', 'F08', 'F09', 'F10', 'F11', 'F12', 'F13', 'F14', 'F15', 'F16',
   'S01', 'S02', 'S03', 'S04', 'S05', 'S06', 'B01', 'B02', 'B02_segment', 'B02_tail',
 ];
 

@@ -175,6 +175,25 @@ test.describe('playing', () => {
     await expect(page.locator('.hud-btn.laser.p1')).toHaveClass(/ready/);
   });
 
+  test('a whale swims through the Fish Parade, and a bigger one comes the next wave', async ({ page }) => {
+    const problems = watchProblems(page);
+    await completeSetup(page);
+    await tapToHome(page);
+    await startGame(page);
+    const whaleScale = (): Promise<number> => page.evaluate(() => Math.max(0, ...window.__br.state().fish.filter((f) => f.id === 'F16').map((f) => f.scale)));
+
+    await page.evaluate(() => window.__br.skipPhase());
+    await expect.poll(whaleScale).toBeGreaterThan(0);
+    const first = await whaleScale();
+
+    await page.evaluate(() => window.__br.endWave());
+    await page.locator('#keep-playing').click();
+    await page.waitForFunction(() => window.__br.state().phase === 'wave');
+    await page.evaluate(() => window.__br.skipPhase());
+    await expect.poll(whaleScale).toBeGreaterThan(first);
+    expect(problems.errors).toEqual([]);
+  });
+
   test('joystick mode: touching the left side aims only, and FIRE shoots (10.3)', async ({ page }) => {
     await completeSetup(page);
     await tapToHome(page);
@@ -268,11 +287,11 @@ test.describe('saving (US-21)', () => {
 });
 
 test.describe('collection', () => {
-  test('Fish Book shows 20 silhouettes on a new save; Workshop lists 7 skins', async ({ page }) => {
+  test('Fish Book shows 24 silhouettes on a new save; Workshop lists 7 skins', async ({ page }) => {
     await completeSetup(page);
     await tapToHome(page);
     await page.locator('#open-book').click();
-    await expect(page.locator('.card')).toHaveCount(20);
+    await expect(page.locator('.card')).toHaveCount(24);
     await expect(page.locator('.card .name').first()).toHaveText('???');
     await page.locator('.round-btn').first().click();
     await page.locator('#open-workshop').click();

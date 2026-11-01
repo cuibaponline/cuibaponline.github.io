@@ -181,7 +181,7 @@ const TURN_GAP = 60;
 function stepTurned(s: SimState, f: Fish): void {
   if (s.seats.length < 2) return;
   const middle = (s.view.top + s.view.bottom) / 2;
-  const clear = f.def.size / 2 + TURN_GAP;
+  const clear = (f.def.size * f.scale) / 2 + TURN_GAP;
   if (f.y < middle - clear) f.turned = true;
   else if (f.y > middle + clear) f.turned = false;
 }

@@ -6,9 +6,9 @@ import { isCatchable, type Fish, type SimState } from './state';
 
 const { powerups } = CONFIG;
 
-/** Fish points for this catch: parade fish are worth +50 %. */
+/** Fish points for this catch: parade fish are worth +50 %, and a grown whale pays for its size. */
 export function catchPoints(f: Fish): number {
-  return Math.round(f.def.points * (f.parade ? powerups.parade.pointsMul : 1));
+  return Math.round(f.def.points * f.scale * (f.parade ? powerups.parade.pointsMul : 1));
 }
 
 export function catchFish(s: SimState, f: Fish): void {

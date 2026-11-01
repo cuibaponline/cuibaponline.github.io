@@ -51,6 +51,7 @@ jobs:
           cp -r projects/little-color-lab deploy/little-color-lab
           cp -r projects/rainbow-maker deploy/rainbow-maker
           cp -r projects/arcade-games/lasso-ranch deploy/lasso-ranch
+          cp -r projects/arcade-games/plop-and-pull deploy/plop-and-pull
 
           # Copy Bubble Reef build output
           cp -r projects/arcade-games/bubble-reef/dist deploy/bubble-reef

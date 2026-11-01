@@ -11,7 +11,9 @@
     "test": "ng test",
     "test:lab": "node --test tests/little-color-lab/lab-kit.test.cjs",
     "test:lasso": "node --test tests/lasso-ranch/*.test.mjs",
-    "balance:lasso": "node tests/lasso-ranch/bot.mjs"
+    "balance:lasso": "node tests/lasso-ranch/bot.mjs",
+    "test:plop": "node --test tests/plop-and-pull/*.test.mjs",
+    "balance:plop": "node tests/plop-and-pull/bot.mjs"
   },
   "prettier": {
     "printWidth": 100,

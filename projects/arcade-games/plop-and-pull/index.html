@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<title>Plop &amp; Pull</title>
+<meta name="description" content="Plop your ring in the sea and pull a friend up the whole tall screen! An offline fishing game for kids.">
+<meta property="og:title" content="Plop &amp; Pull">
+<meta property="og:description" content="Plop your ring in the sea and pull a friend up the whole tall screen! An offline fishing game for kids.">
+<meta name="theme-color" content="#2cb4e6">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Plop &amp; Pull">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icons/icon-180.png">
+<link rel="icon" href="icons/icon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<canvas id="sea" aria-label="The sea"></canvas>
+
+<div id="hud" hidden>
+  <button class="hud-pause" id="btnPause"><span></span><span></span></button>
+</div>
+
+<div id="screen" hidden></div>
+<div id="toasts" aria-live="polite"></div>
+<div id="turn" hidden></div>
+<div id="bootError" hidden></div>
+
+<noscript>Plop &amp; Pull needs JavaScript to run.</noscript>
+<script type="module" src="src/main.js"></script>
+</body>
+</html>

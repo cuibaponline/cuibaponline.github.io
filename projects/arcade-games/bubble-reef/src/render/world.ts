@@ -1,9 +1,9 @@
 import Phaser from 'phaser';
-import type { OceanId, SkinId } from '../art/types';
+import type { CannonSkinId, OceanId, SkinId } from '../art/types';
 import { CONFIG } from '../config';
 import { cannonDirX, cannonDirY, clamp, lerp, lerpAngle, TAU } from '../sim/math';
 import type { Simulation } from '../sim/simulation';
-import { DT, type SimEvent } from '../sim/state';
+import { DT, type Seat, type SimEvent } from '../sim/state';
 import { Assets, type CannonTextures } from './assets';
 import { FishViews } from './fishViews';
 import { FxSystem, ImagePool } from './fxSystem';
@@ -52,6 +52,21 @@ function strokeArc(g: Phaser.GameObjects.Graphics, x: number, y: number, r: numb
   g.strokePath();
 }
 
+/** Tints a shot, lock ring and beam core by who owns it. Only used with two players, so one player keeps the original art. */
+const SEAT_TINT = [0x8fd2ff, 0xff9a9a] as const;
+const NO_TINT = 0xffffff;
+
+/** One player's cannon, with the lock ring and laser beam that go with it. */
+interface CannonView {
+  base: Phaser.GameObjects.Image;
+  barrel: Phaser.GameObjects.Image;
+  textures: CannonTextures | null;
+  levelShown: number;
+  lockRing: Phaser.GameObjects.Image;
+  beamGlow: Phaser.GameObjects.Image;
+  beamCore: Phaser.GameObjects.Image;
+}
+
 const colourVec = (c: number): { r: number; g: number; b: number } => ({
   r: ((c >> 16) & 255) / 255,
   g: ((c >> 8) & 255) / 255,
@@ -87,12 +102,7 @@ export class World {
   private rays: Phaser.GameObjects.Image[] = [];
   private flashRect!: Phaser.GameObjects.Rectangle;
   private ambient!: Phaser.GameObjects.Particles.ParticleEmitter;
-  private cannonBase!: Phaser.GameObjects.Image;
-  private cannonBarrel!: Phaser.GameObjects.Image;
-  private cannonTex!: CannonTextures;
-  private lockRing!: Phaser.GameObjects.Image;
-  private beamGlow!: Phaser.GameObjects.Image;
-  private beamCore!: Phaser.GameObjects.Image;
+  private cannons: CannonView[] = [];
   private shapes!: Phaser.GameObjects.Graphics;
   private bubblePool!: ImagePool;
   private netPool!: ImagePool;
@@ -110,7 +120,6 @@ export class World {
   private trailToggle = 0;
   private oceanId: OceanId | null = null;
   private crossfade = 1;
-  private cannonLevelShown = -1;
 
   private readonly safeProbe: HTMLElement;
   private renderScale = 2;
@@ -213,17 +222,23 @@ export class World {
     this.netPool = new ImagePool(scene, this.layers.nets, 'fx_net');
     this.popPool = new ImagePool(scene, this.layers.badges, 'fx_popBubble');
 
-    this.beamGlow = scene.add.image(0, 0, 'fx_beamGlow').setOrigin(0, 0.5).setBlendMode(Phaser.BlendModes.ADD).setVisible(false);
-    this.beamCore = scene.add.image(0, 0, 'fx_beamCore').setOrigin(0, 0.5).setBlendMode(Phaser.BlendModes.ADD).setVisible(false);
-    this.layers.bubbles.add([this.beamGlow, this.beamCore]);
-
-    this.cannonBase = scene.add.image(0, 0, '__DEFAULT').setVisible(false);
-    this.cannonBarrel = scene.add.image(0, 0, '__DEFAULT').setVisible(false);
-    this.layers.cannon.add([this.cannonBarrel, this.cannonBase]);
-
-    this.lockRing = scene.add.image(0, 0, 'fx_lockRing').setVisible(false);
+    for (let i = 0; i < SEAT_TINT.length; i++) {
+      const view: CannonView = {
+        base: scene.add.image(0, 0, '__DEFAULT').setVisible(false),
+        barrel: scene.add.image(0, 0, '__DEFAULT').setVisible(false),
+        textures: null,
+        levelShown: -1,
+        lockRing: scene.add.image(0, 0, 'fx_lockRing').setVisible(false),
+        beamGlow: scene.add.image(0, 0, i === 0 ? 'fx_beamGlow' : 'fx_beamGlowRed').setOrigin(0, 0.5).setBlendMode(Phaser.BlendModes.ADD).setVisible(false),
+        beamCore: scene.add.image(0, 0, 'fx_beamCore').setOrigin(0, 0.5).setBlendMode(Phaser.BlendModes.ADD).setVisible(false),
+      };
+      this.layers.bubbles.add([view.beamGlow, view.beamCore]);
+      this.layers.cannon.add([view.barrel, view.base]);
+      this.layers.badges.add(view.lockRing);
+      this.cannons.push(view);
+    }
     this.shapes = scene.add.graphics();
-    this.layers.badges.add([this.lockRing, this.shapes]);
+    this.layers.badges.add(this.shapes);
 
     this.flashRect = scene.add.rectangle(960, 640, 4000, 3000, 0xffffff).setVisible(false).setAlpha(0);
     this.fx = new FxSystem(scene, this.assets, this.layers.fx, this.flashRect);
@@ -326,9 +341,17 @@ export class World {
   }
 
   setSkin(skin: SkinId): void {
-    this.cannonTex = this.assets.cannon(skin);
-    this.cannonBase.setTexture(this.cannonTex.base).setScale(this.cannonTex.scale);
-    this.cannonLevelShown = -1;
+    this.setCannonSkins([skin]);
+  }
+
+  /** One skin for each player. */
+  setCannonSkins(skins: CannonSkinId[]): void {
+    skins.forEach((skin, i) => {
+      const view = this.cannons[i]!;
+      view.textures = this.assets.cannon(skin);
+      view.base.setTexture(view.textures.base).setScale(view.textures.scale);
+      view.levelShown = -1;
+    });
   }
 
   setSim(sim: Simulation | null, showCannon: boolean): void {
@@ -343,11 +366,16 @@ export class World {
     }
     this.sim = sim;
     this.acc = 0;
-    this.cannonBase.setVisible(showCannon);
-    this.cannonBarrel.setVisible(showCannon);
-    this.lockRing.setVisible(false);
-    this.beamGlow.setVisible(false);
-    this.beamCore.setVisible(false);
+    const seats = sim?.s.seats.length ?? 0;
+    this.cannons.forEach((view, i) => {
+      const shown = showCannon && i < seats;
+      const tint = seats > 1 ? SEAT_TINT[i]! : NO_TINT;
+      view.base.setVisible(shown);
+      view.barrel.setVisible(shown);
+      view.lockRing.setVisible(false).setTint(tint);
+      view.beamGlow.setVisible(false);
+      view.beamCore.setVisible(false).setTint(tint);
+    });
     if (sim) sim.setView(this.layout.view);
   }
 
@@ -515,9 +543,11 @@ export class World {
     const s = sim.s;
     const frozen = s.freezeT > 0 || s.bubblePop !== null;
     this.fish.sync(s, alpha, dt, frozen);
+    // Pooled images keep their last tint, so one player has to clear it as well.
+    const tintOf = (seatId: number): number => (s.seats.length > 1 ? SEAT_TINT[seatId]! : NO_TINT);
 
     this.syncList(s.bubbles, this.bubbleImgs, this.bubblePool, (img, b) => {
-      img.setPosition(lerp(b.px, b.x, alpha), lerp(b.py, b.y, alpha)).setScale((b.r * 2.6) / 64);
+      img.setPosition(lerp(b.px, b.x, alpha), lerp(b.py, b.y, alpha)).setScale((b.r * 2.6) / 64).setTint(tintOf(b.seatId));
     });
     if (s.bubbles.length > 0 && ++this.trailToggle % 2 === 0) {
       for (const b of s.bubbles) this.fx.bubbleTrail(b.x, b.y);
@@ -528,7 +558,7 @@ export class World {
       const grow = clamp(n.age / expandSec, 0, 1);
       const eased = 1 - (1 - grow) * (1 - grow);
       const fade = clamp((n.age - expandSec - holdSec) / fadeSec, 0, 1);
-      img.setPosition(n.x, n.y).setScale(((n.radius * 2) / 256) * eased).setAlpha(1 - fade).setRotation(n.age * 0.8);
+      img.setPosition(n.x, n.y).setScale(((n.radius * 2) / 256) * eased).setAlpha(1 - fade).setRotation(n.age * 0.8).setTint(tintOf(n.seatId));
     });
 
     const pop = s.bubblePop;
@@ -536,45 +566,45 @@ export class World {
       img.setPosition(lerp(b.px, b.x, alpha), lerp(b.py, b.y, alpha)).setScale((b.r * 2) / 160);
     });
 
-    this.syncCannon(sim, alpha);
+    for (const seat of s.seats) this.syncCannon(sim, seat, this.cannons[seat.id]!, alpha);
     this.syncShapes(sim, dt);
   }
 
-  private syncCannon(sim: Simulation, alpha: number): void {
-    const seat = sim.localSeat;
-    if (!this.cannonBase.visible) return;
-    if (this.cannonLevelShown !== seat.level && this.cannonTex) {
-      this.cannonLevelShown = seat.level;
-      const key = this.cannonTex.barrels[seat.level - 1];
-      if (key) this.cannonBarrel.setTexture(key).setOrigin(this.cannonTex.pivotX, this.cannonTex.pivotY).setScale(this.cannonTex.scale);
+  private syncCannon(sim: Simulation, seat: Seat, view: CannonView, alpha: number): void {
+    if (!view.base.visible) return;
+    if (view.levelShown !== seat.level && view.textures) {
+      view.levelShown = seat.level;
+      const key = view.textures.barrels[seat.level - 1];
+      if (key) view.barrel.setTexture(key).setOrigin(view.textures.pivotX, view.textures.pivotY).setScale(view.textures.scale);
     }
     const angle = lerpAngle(seat.pangle, seat.angle, alpha);
     const since = sim.tick - seat.lastFireTick;
     const recoil = since < 9 ? (1 - since / 9) * 14 : 0;
-    const dx = cannonDirX(angle);
-    const dy = cannonDirY(angle);
-    this.cannonBase.setPosition(seat.x, seat.y);
-    this.cannonBarrel.setPosition(seat.x - dx * recoil, seat.y - dy * recoil).setRotation(angle);
+    const dx = cannonDirX(angle) * seat.facing;
+    const dy = cannonDirY(angle) * seat.facing;
+    const turn = seat.facing > 0 ? 0 : Math.PI;
+    view.base.setPosition(seat.x, seat.y).setRotation(turn);
+    view.barrel.setPosition(seat.x - dx * recoil, seat.y - dy * recoil).setRotation(angle + turn);
 
     const on = seat.laserT > 0;
-    this.beamGlow.setVisible(on);
-    this.beamCore.setVisible(on);
+    view.beamGlow.setVisible(on);
+    view.beamCore.setVisible(on);
     if (on) {
       const reduce = this.fx.reduceFlashing;
       const width = CONFIG.powerups.laser.width;
       const pulse = reduce ? 1 : 1 + Math.sin(this.clock * 34) * 0.08;
-      const heading = angle - Math.PI / 2;
+      const heading = Math.atan2(dy, dx);
       const x = seat.x + dx * 96;
       const y = seat.y + dy * 96;
-      this.beamGlow.setPosition(x, y).setRotation(heading).setDisplaySize(3000, width * 2.6 * pulse).setAlpha(reduce ? 0.3 : 0.65);
-      this.beamCore.setPosition(x, y).setRotation(heading).setDisplaySize(3000, width * pulse).setAlpha(reduce ? 0.55 : 1);
+      view.beamGlow.setPosition(x, y).setRotation(heading).setDisplaySize(3000, width * 2.6 * pulse).setAlpha(reduce ? 0.3 : 0.65);
+      view.beamCore.setPosition(x, y).setRotation(heading).setDisplaySize(3000, width * pulse).setAlpha(reduce ? 0.55 : 1);
     }
 
     const locked = seat.lockUid !== 0 ? this.fish.positions.get(seat.lockUid) : undefined;
-    this.lockRing.setVisible(locked !== undefined);
+    view.lockRing.setVisible(locked !== undefined);
     if (locked) {
       const r = Math.max(locked.r * 1.25, 62);
-      this.lockRing.setPosition(locked.x, locked.y).setRotation(this.clock * 1.4).setScale(((r * 2) / 256) * (1 + Math.sin(this.clock * 6) * 0.05));
+      view.lockRing.setPosition(locked.x, locked.y).setRotation(this.clock * 1.4).setScale(((r * 2) / 256) * (1 + Math.sin(this.clock * 6) * 0.05));
     }
   }
 
@@ -595,17 +625,19 @@ export class World {
       strokeArc(g, p.x, p.y, r, -Math.PI / 2, -Math.PI / 2 + TAU * clamp(f.hp / f.maxHp, 0, 1));
     }
 
-    const seat = sim.localSeat;
     const energy = s.cfg.energy;
-    if (energy && this.cannonBase.visible) {
+    if (energy) {
       const r = 118;
-      const from = Math.PI * 1.12;
       const span = Math.PI * 0.76;
-      g.lineStyle(16, 0x04283f, 0.6);
-      strokeArc(g, seat.x, seat.y, r, from, from + span);
-      const ratio = clamp(seat.energy / energy.max, 0, 1);
-      g.lineStyle(10, ratio > 0.25 ? 0x62e6ff : 0xffa94d, 1);
-      strokeArc(g, seat.x, seat.y, r, from, from + span * ratio);
+      for (const seat of s.seats) {
+        if (!this.cannons[seat.id]!.base.visible) continue;
+        const from = Math.PI * (seat.facing > 0 ? 1.12 : 0.12);
+        g.lineStyle(16, 0x04283f, 0.6);
+        strokeArc(g, seat.x, seat.y, r, from, from + span);
+        const ratio = clamp(seat.energy / energy.max, 0, 1);
+        g.lineStyle(10, ratio > 0.25 ? 0x62e6ff : 0xffa94d, 1);
+        strokeArc(g, seat.x, seat.y, r, from, from + span * ratio);
+      }
     }
 
     if (this.sparks.length > 0) {
@@ -616,6 +648,12 @@ export class World {
       }
       this.sparks = this.sparks.filter((p) => p.age < 0.4);
     }
+  }
+
+  /** With two players, numbers on the far half are turned round for Player 2. */
+  private onFarSide(y: number): boolean {
+    const s = this.sim?.s;
+    return s !== undefined && s.seats.length > 1 && y < (s.view.top + s.view.bottom) / 2;
   }
 
   private onEvent(e: SimEvent): void {
@@ -634,7 +672,7 @@ export class World {
         const big = e.points >= 200;
         fx.sparkles(e.x, e.y, big ? 40 : e.points >= 50 ? 18 : 7);
         fx.ring(e.x, e.y, big ? 620 : e.points >= 50 ? 240 : 120, 0xfff2b0);
-        fx.popup(e.x, e.y - 20, e.points);
+        fx.popup(e.x, e.y - 20 * (this.onFarSide(e.y) ? -1 : 1), e.points, this.onFarSide(e.y));
         fx.coins(e.x, e.y, e.coins);
         if (big) {
           fx.flash(0xfff0c0, 0.32);
@@ -667,7 +705,7 @@ export class World {
         fx.sparkles(e.x, e.y, 30);
         break;
       case 'laserFilled':
-        fx.sparkles(this.sim?.localSeat.x ?? 960, (this.sim?.localSeat.y ?? 1100) - 60, 20);
+        for (const seat of this.sim?.s.seats ?? []) fx.sparkles(seat.x, seat.y - 60 * seat.facing, 20);
         break;
       case 'bossPhase':
         fx.ring(e.x, e.y, 520, e.kind === 'ring' ? 0xffe08a : 0x9fe8ff, 0.6);

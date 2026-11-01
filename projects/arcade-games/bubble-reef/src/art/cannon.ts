@@ -1,6 +1,6 @@
 // Seven cannon skins across five levels. Skins differ only in look; barrel layouts follow the level table in the GDD.
 
-import type { CannonBake, SkinId } from './types';
+import type { CannonBake, CannonSkinId, SkinId } from './types';
 import {
   TAU,
   alpha,
@@ -77,9 +77,10 @@ function centerHub(x: Ctx, r: number, a: string, b: string): void {
   circle(x, 0, 0, r, radial(x, -r * 0.3, -r * 0.3, r * 0.1, 0, 0, r, [[0, a], [1, b]]));
 }
 
-const SKINS: Record<SkinId, Skin> = {
-  classic: {
-    barrel: ['#2f7fd8', '#5fb4ff'], ring: '#ffd34f', muzzle: '#ffffff', base: ['#2a64b8', '#1c4a92'], trim: '#ffd34f', glow: '#7fe0ff', spec: 0.62, gloss: 46, tint: [0.44, 0.5, 0.9],
+/** The first cannon, which also comes in red for Player 2. */
+function plainSkin(barrel: Skin['barrel'], base: Skin['base'], hub: readonly [string, string], glow: string, tint: Rgb): Skin {
+  return {
+    barrel, ring: '#ffd34f', muzzle: '#ffffff', base, trim: '#ffd34f', glow, spec: 0.62, gloss: 46, tint,
     barrelArt: (x, w, len) => rings(x, w, [-len * 0.3], '#ffffff', 7),
     baseArt: (x) => {
       x.strokeStyle = '#ffd34f';
@@ -88,7 +89,7 @@ const SKINS: Record<SkinId, Skin> = {
       x.arc(0, 0, 54, 0, TAU);
       x.stroke();
       rivets(x, [[-68, -6], [68, -6], [-52, 34], [52, 34], [0, 50]], 4, '#ffffff');
-      centerHub(x, 40, '#8fd2ff', '#2f7fd8');
+      centerHub(x, 40, hub[0], hub[1]);
     },
     baseBump: (x) => {
       x.strokeStyle = 'rgba(255,255,255,0.8)';
@@ -98,7 +99,12 @@ const SKINS: Record<SkinId, Skin> = {
       x.stroke();
       rivets(x, [[-68, -6], [68, -6], [-52, 34], [52, 34], [0, 50]], 4, 'rgba(255,255,255,0.9)');
     },
-  },
+  };
+}
+
+const SKINS: Record<CannonSkinId, Skin> = {
+  classic: plainSkin(['#2f7fd8', '#5fb4ff'], ['#2a64b8', '#1c4a92'], ['#8fd2ff', '#2f7fd8'], '#7fe0ff', [0.44, 0.5, 0.9]),
+  red: plainSkin(['#d8342f', '#ff7a6b'], ['#b82a2a', '#921c1c'], ['#ff9a8f', '#d8342f'], '#ffb0a0', [0.9, 0.46, 0.42]),
   seashell: {
     barrel: ['#ffc6d4', '#fff0e4'], ring: '#ff9fb8', muzzle: '#ffb6c8', base: ['#ffd8d8', '#f0a8b8'], trim: '#ff9fb8', glow: '#ffd0f0', spec: 0.8, gloss: 56, tint: [0.84, 0.54, 0.74],
     barrelArt: (x, w, len) => {
@@ -410,7 +416,7 @@ function bakeBase(s: number, skin: Skin): Cnv {
   return c;
 }
 
-export function bakeCannon(skinId: SkinId, ppu: number): CannonBake {
+export function bakeCannon(skinId: CannonSkinId, ppu: number): CannonBake {
   const skin = SKINS[skinId];
   const s = ppu;
   const glowSteps = [0, 0, 0, 1, 2];

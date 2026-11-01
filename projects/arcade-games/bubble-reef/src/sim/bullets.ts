@@ -64,7 +64,7 @@ function ricochet(s: SimState, b: Bubble): boolean {
 }
 
 function spawnNet(s: SimState, b: Bubble): void {
-  s.nets.push({ x: b.x, y: b.y, radius: b.netRadius, age: 0, level: b.level, damage: b.damage, applied: false, lockUid: b.lockUid });
+  s.nets.push({ x: b.x, y: b.y, radius: b.netRadius, age: 0, level: b.level, damage: b.damage, applied: false, lockUid: b.lockUid, seatId: b.seatId });
   s.events.push({ t: 'net', x: b.x, y: b.y, radius: b.netRadius, level: b.level });
 }
 
@@ -126,7 +126,7 @@ export function stepNets(s: SimState): void {
     if (!net.applied && net.age >= expandSec) {
       net.applied = true;
       for (const f of s.fish) {
-        if (f.state === 'swim' && touchesCircle(s, f, net.x, net.y, net.radius)) damageFish(s, f, net.damage);
+        if (f.state === 'swim' && touchesCircle(s, f, net.x, net.y, net.radius)) damageFish(s, f, net.damage, net.seatId);
       }
     }
   }

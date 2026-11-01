@@ -7,26 +7,26 @@ import { DT, isVisible, type Fish, type SimState } from './state';
 
 const { powerups } = CONFIG;
 
-function burst(s: SimState, x: number, y: number): void {
+function burst(s: SimState, x: number, y: number, seat: number): void {
   const radius = s.cfg.burstRadius;
   s.events.push({ t: 'burst', x, y, radius });
   for (const f of s.fish) {
     if (f.state !== 'swim' || f.isBoss) continue;
-    if (Math.hypot(f.x - x, f.y - y) <= radius) damageFish(s, f, powerups.burst.damage);
+    if (Math.hypot(f.x - x, f.y - y) <= radius) damageFish(s, f, powerups.burst.damage, seat);
   }
 }
 
-function chain(s: SimState, x: number, y: number): void {
+function chain(s: SimState, x: number, y: number, seat: number): void {
   const near = s.fish
     .filter((f) => f.state === 'swim' && isVisible(s, f))
     .map((f) => ({ f, d: Math.hypot(f.x - x, f.y - y) }))
     .sort((a, b) => a.d - b.d || a.f.uid - b.f.uid)
     .slice(0, powerups.chain.targets);
   s.events.push({ t: 'chain', x, y, targets: near.map(({ f }) => ({ x: f.x, y: f.y })) });
-  for (const { f } of near) damageFish(s, f, powerups.chain.damage);
+  for (const { f } of near) damageFish(s, f, powerups.chain.damage, seat);
 }
 
-function sameKind(s: SimState, x: number, y: number): void {
+function sameKind(s: SimState, x: number, y: number, seat: number): void {
   const counts = new Map<string, Fish[]>();
   for (const f of s.fish) {
     if (f.state !== 'swim' || f.isBoss || f.def.tier === 'special' || !isVisible(s, f)) continue;
@@ -41,23 +41,26 @@ function sameKind(s: SimState, x: number, y: number): void {
   const id = best[0]?.def.id;
   if (!id) return;
   s.events.push({ t: 'sameKind', id, x, y });
-  for (const f of best) catchFish(s, f);
+  for (const f of best) {
+    f.lastHitSeat = seat;
+    catchFish(s, f);
+  }
 }
 
-function applyEffect(s: SimState, effect: SpecialEffect, x: number, y: number): void {
+function applyEffect(s: SimState, effect: SpecialEffect, x: number, y: number, seat: number): void {
   switch (effect) {
     case 'burst':
-      burst(s, x, y);
+      burst(s, x, y, seat);
       break;
     case 'freeze':
       s.freezeT = s.cfg.freezeSec;
       s.events.push({ t: 'freeze', sec: s.cfg.freezeSec });
       break;
     case 'chain':
-      chain(s, x, y);
+      chain(s, x, y, seat);
       break;
     case 'sameKind':
-      sameKind(s, x, y);
+      sameKind(s, x, y, seat);
       break;
     case 'bubblePop':
       s.bubblePop = { t: powerups.bubblePop.durationSec, spawnT: 0, bubbles: [], popped: 0 };
@@ -73,7 +76,7 @@ function applyEffect(s: SimState, effect: SpecialEffect, x: number, y: number): 
 export function resolveSpecials(s: SimState): void {
   while (s.pendingSpecials.length > 0) {
     const next = s.pendingSpecials.shift()!;
-    applyEffect(s, next.effect, next.x, next.y);
+    applyEffect(s, next.effect, next.x, next.y, next.seat);
   }
 }
 
@@ -97,8 +100,8 @@ export function stepLaser(s: SimState): void {
     seat.laserT -= DT;
     if (seat.laserT <= 0) s.events.push({ t: 'laserEnd', seat: seat.id });
 
-    const dx = cannonDirX(seat.angle);
-    const dy = cannonDirY(seat.angle);
+    const dx = cannonDirX(seat.angle) * seat.facing;
+    const dy = cannonDirY(seat.angle) * seat.facing;
     const half = powerups.laser.width / 2;
     const dmg = powerups.laser.dps * DT;
     for (const f of s.fish) {
@@ -106,7 +109,7 @@ export function stepLaser(s: SimState): void {
       if (!touchesBeam(s, f, seat.x, seat.y, dx, dy, half)) continue;
       const pulse = s.tick - f.beamHitTick >= 15;
       if (pulse) f.beamHitTick = s.tick;
-      damageFish(s, f, dmg, !pulse);
+      damageFish(s, f, dmg, seat.id, !pulse);
     }
   }
 }

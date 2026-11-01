@@ -35,6 +35,8 @@ export interface Fish {
   pheading: number;
   /** +1 art faces right, -1 faces left; for upright creatures. */
   face: number;
+  /** Turned round to suit the far player, because it is on their half of the sea. */
+  turned: boolean;
   hp: number;
   maxHp: number;
   armoured: boolean;
@@ -72,6 +74,8 @@ export interface Fish {
   orbitRadius: number;
   /** Last time this fish was flashed by the laser, to throttle feedback. */
   beamHitTick: number;
+  /** Who gets the credit if this fish is caught. */
+  lastHitSeat: number;
   /** Fish is leaving for good and is no longer spawn-budgeted. */
   leaving: boolean;
 }
@@ -104,12 +108,15 @@ export interface Net {
   damage: number;
   applied: boolean;
   lockUid: number;
+  seatId: number;
 }
 
 export interface Seat {
   id: number;
   x: number;
   y: number;
+  /** +1 shoots up the screen, -1 down it. Angles are from the seat's own forward, so its left stays its own left. */
+  facing: 1 | -1;
   angle: number;
   pangle: number;
   aimAngle: number;
@@ -152,6 +159,7 @@ export interface SessionStats {
   shots: number;
   hits: number;
   caught: number;
+  caughtBySeat: number[];
   points: number;
   coins: number;
   bossesCaught: number;
@@ -232,7 +240,7 @@ export interface SimState {
   freezeT: number;
   noCatchT: number;
   /** Special fish caught this tick, resolved after hit resolution so effects never recurse. */
-  pendingSpecials: { effect: SpecialEffect; x: number; y: number }[];
+  pendingSpecials: { effect: SpecialEffect; x: number; y: number; seat: number }[];
   bubblePop: BubblePopState | null;
   boss: Fish | null;
   bossTimer: number;
@@ -246,7 +254,7 @@ export interface SimState {
 }
 
 export function newSessionStats(): SessionStats {
-  return { shots: 0, hits: 0, caught: 0, points: 0, coins: 0, bossesCaught: 0, wavesCompleted: 0, byFish: {} };
+  return { shots: 0, hits: 0, caught: 0, caughtBySeat: [0, 0], points: 0, coins: 0, bossesCaught: 0, wavesCompleted: 0, byFish: {} };
 }
 
 export const isVisible = (s: SimState, f: Fish, margin = 0): boolean =>

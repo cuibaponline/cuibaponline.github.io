@@ -238,11 +238,11 @@ describe('bosses (7.1)', () => {
     boss.hp = boss.maxHp * 0.52;
     sim.drainEvents();
     const before = sim.s.fish.length;
-    damageFish(sim.s, boss, boss.maxHp * 0.01);
+    damageFish(sim.s, boss, boss.maxHp * 0.01, 0);
     expect(sim.s.fish.length).toBe(before);
-    damageFish(sim.s, boss, boss.maxHp * 0.02);
+    damageFish(sim.s, boss, boss.maxHp * 0.02, 0);
     expect(sim.s.fish.length).toBe(before + CONFIG.powerups.boss.whaleRingCount);
-    damageFish(sim.s, boss, boss.maxHp * 0.02);
+    damageFish(sim.s, boss, boss.maxHp * 0.02, 0);
     expect(sim.s.fish.length).toBe(before + CONFIG.powerups.boss.whaleRingCount);
     expect(sim.drainEvents().filter((e) => e.t === 'bossPhase' && e.kind === 'ring')).toHaveLength(1);
   });

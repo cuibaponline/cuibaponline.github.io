@@ -18,7 +18,7 @@ export function forEachCircle(s: SimState, f: Fish, visit: (x: number, y: number
     const ox = cx * scale;
     const oy = cy * scale;
     const wx = upright ? ox * f.face : ox * cos - oy * sin;
-    const wy = upright ? oy : ox * sin + oy * cos;
+    const wy = upright ? (f.turned ? -oy : oy) : ox * sin + oy * cos;
     if (visit(f.x + wx, f.y + wy, cr * scale)) return true;
   }
   const chain = f.def.chain;

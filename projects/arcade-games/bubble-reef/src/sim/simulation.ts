@@ -16,6 +16,8 @@ export interface SimOptions {
   view: ViewRect;
   unlocks: Unlocks;
   attract?: boolean;
+  /** One seat unless set to 2. */
+  players?: number;
   autoFire?: boolean;
   startLevel?: number;
   oceanIndex?: number;
@@ -47,10 +49,10 @@ export interface HudSnapshot {
   bubblePopLeft: number;
 }
 
-/** Seat positions: one seat now, bottom centre. More seats later only add entries here. */
-function seatPosition(view: ViewRect, index: number): { x: number; y: number } {
-  void index;
-  return { x: (view.left + view.right) / 2, y: view.bottom - (view.seatInset ?? 96) };
+/** The first seat has the bottom edge. A second sits across from it on the top edge, for an iPad flat on a table. */
+function seatPosition(view: ViewRect, id: number): { x: number; y: number } {
+  const inset = view.seatInset ?? 96;
+  return { x: view.left + (view.right - view.left) * 0.5, y: id === 0 ? view.bottom - inset : view.top + inset };
 }
 
 function newSeat(id: number, view: ViewRect, opts: SimOptions): Seat {
@@ -58,7 +60,7 @@ function newSeat(id: number, view: ViewRect, opts: SimOptions): Seat {
   const energy = CONFIG.difficulty[opts.difficulty].energy;
   const maxLevel = opts.unlocks.maxCannonLevel;
   return {
-    id, x: pos.x, y: pos.y, angle: 0, pangle: 0, aimAngle: 0, aimActive: false, holding: false,
+    id, x: pos.x, y: pos.y, facing: id === 0 ? 1 : -1, angle: 0, pangle: 0, aimAngle: 0, aimActive: false, holding: false,
     autoFire: opts.autoFire === true, pendingShot: false, cooldown: 0,
     level: Math.min(opts.startLevel ?? maxLevel, maxLevel), maxLevel,
     energy: energy ? energy.max : 0, lockMode: false, lockUid: 0, laserMeter: 0, laserT: 0,
@@ -98,10 +100,11 @@ export class Simulation {
 
   constructor(opts: SimOptions) {
     const cfg = CONFIG.difficulty[opts.difficulty];
+    const seats = opts.players === 2 ? 2 : 1;
     this.s = {
       difficulty: opts.difficulty, cfg, rng: new Rng(opts.seed), seed: opts.seed >>> 0, tick: 0,
       attract: opts.attract === true, view: { ...opts.view }, unlocks: opts.unlocks,
-      fish: [], bubbles: [], nets: [], seats: [newSeat(0, opts.view, opts)],
+      fish: [], bubbles: [], nets: [], seats: Array.from({ length: seats }, (_, id) => newSeat(id, opts.view, opts)),
       phase: 'wave', phaseT: 0, wave: 0, slotsUsed: 0, spawnCooldown: 0, specialT: 0, paradeQueue: [],
       oceanIndex: opts.oceanIndex ?? 0, freezeT: 0, noCatchT: 0, pendingSpecials: [], bubblePop: null, boss: null,
       bossTimer: 0, events: [], stats: newSessionStats(), waveShots: 0, waveHits: 0, nextUid: 1,
@@ -241,9 +244,9 @@ export class Simulation {
     startSwimAway(this.s);
   }
 
-  hud(): HudSnapshot {
+  hud(seatId = 0): HudSnapshot {
     const s = this.s;
-    const seat = this.localSeat;
+    const seat = s.seats[seatId] ?? this.localSeat;
     const boss = s.boss;
     const energy = s.cfg.energy;
     return {

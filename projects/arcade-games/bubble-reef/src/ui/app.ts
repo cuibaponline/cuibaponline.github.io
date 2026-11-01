@@ -4,6 +4,7 @@ import type { Difficulty } from '../config';
 import { shouldSuggestMedium, syncProgress, unlocksForLevel } from '../economy/economy';
 import { GameSession, type SessionResults, type WaveSummary } from '../game/session';
 import { InputSystem } from '../input/input';
+import { isCompact } from '../render/layout';
 import { World } from '../render/world';
 import { holdSingleInstance, mayReloadAfterContextLoss } from '../services/guard';
 import { ParentalService } from '../services/parental';
@@ -31,6 +32,8 @@ export class App {
   hud!: Hud;
   private input!: InputSystem;
   session: GameSession | null = null;
+  /** How many play next. Starts at one each launch, so a solo player never lands in a split game. */
+  players: 1 | 2 = 1;
   private attract!: Simulation;
   private readonly ui = document.getElementById('ui') as HTMLElement;
   private readonly stage = document.getElementById('stage') as HTMLElement;
@@ -109,11 +112,11 @@ export class App {
 
     this.hud = new Hud({
       pause: () => this.session?.actions().pause(),
-      lock: () => this.session?.actions().lock(),
-      auto: () => this.session?.actions().auto(),
-      laser: () => this.session?.actions().laser(),
-      levelUp: () => this.session?.actions().levelUp(),
-      levelDown: () => this.session?.actions().levelDown(),
+      lock: (seat) => this.session?.actions().lock(seat),
+      auto: (seat) => this.session?.actions().auto(seat),
+      laser: (seat) => this.session?.actions().laser(seat),
+      levelUp: (seat) => this.session?.actions().levelUp(seat),
+      levelDown: (seat) => this.session?.actions().levelDown(seat),
       fire: (down) => this.session?.actions().fire(down),
     });
     this.ui.append(this.hud.root);
@@ -331,6 +334,12 @@ export class App {
 
   /* ---------- Playing ---------- */
 
+  /** Two pairs of hands need a tablet: a phone has no room for a second set of buttons. */
+  get roomForTwo(): boolean {
+    const { cssW, cssH } = this.world.currentLayout;
+    return !isCompact(cssW, cssH);
+  }
+
   startGame(difficulty: Difficulty): void {
     if (!this.parental.status().allowed) {
       this.route();
@@ -346,6 +355,9 @@ export class App {
     bootStep(`game starting: ${difficulty}`);
     this.leave();
     const seed = crypto.getRandomValues(new Uint32Array(1))[0] ?? 1;
+    const players = this.players === 2 && this.roomForTwo ? 2 : 1;
+    // Blue and red tell the players apart, so the Workshop skin only applies to one player.
+    this.world.setCannonSkins(players === 2 ? ['classic', 'red'] : [this.save.get().profile.selectedSkin as SkinId]);
     const session = new GameSession(
       {
         world: this.world, hud: this.hud, input: this.input, audio: this.audio, save: this.save,
@@ -355,6 +367,7 @@ export class App {
       },
       difficulty,
       seed,
+      players,
     );
     this.session = session;
     this.world.setOcean(session.currentOcean, true);
@@ -391,7 +404,7 @@ export class App {
     session.paused = false;
     this.world.setPaused(false);
     this.leave();
-    if (session.sim.localSeat.laserT > 0) this.audio.setLaser(true);
+    if (session.sim.s.seats.some((seat) => seat.laserT > 0)) this.audio.setLaser(true);
   }
 
   private onWaveComplete(summary: WaveSummary): void {

@@ -1,6 +1,6 @@
 import Phaser from 'phaser';
 import * as art from '../art';
-import type { CannonBake, DigitStyle, FacingMode, FxId, OceanBake, OceanId, Sheet, SkinId, SpriteId } from '../art/types';
+import type { CannonBake, CannonSkinId, DigitStyle, FacingMode, FxId, OceanBake, OceanId, Sheet, SpriteId } from '../art/types';
 
 export const SPRITE_PPU = 1.25;
 export const OCEAN_PPU = 0.8;
@@ -13,7 +13,7 @@ export const SPRITE_IDS: SpriteId[] = [
 ];
 
 const FX_IDS: FxId[] = [
-  'bubble', 'net', 'coin', 'sparkle', 'softDot', 'trail', 'lockRing', 'hitRing', 'catchBubble', 'beamCore', 'beamGlow',
+  'bubble', 'net', 'coin', 'sparkle', 'softDot', 'trail', 'lockRing', 'hitRing', 'catchBubble', 'beamCore', 'beamGlow', 'beamGlowRed',
   'shellBadge', 'aura', 'popBubble', 'iconBurst', 'iconSnow', 'iconSpark', 'iconRainbow', 'iconChest', 'iconBeam',
   'frost', 'vignette', 'lightRay',
 ];
@@ -60,7 +60,7 @@ export class Assets {
   readonly digitAdvance = new Map<DigitStyle, number[]>();
   readonly digitHeight = 72;
   private readonly oceans = new Map<OceanId, OceanTextures>();
-  private readonly cannons = new Map<SkinId, CannonTextures>();
+  private readonly cannons = new Map<CannonSkinId, CannonTextures>();
 
   constructor(private readonly scene: Phaser.Scene) {}
 
@@ -149,7 +149,7 @@ export class Assets {
     }
   }
 
-  cannon(skin: SkinId): CannonTextures {
+  cannon(skin: CannonSkinId): CannonTextures {
     const known = this.cannons.get(skin);
     if (known) return known;
     const bake: CannonBake = art.bakeCannon(skin, SPRITE_PPU);

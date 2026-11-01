@@ -142,7 +142,7 @@ export class FxSystem {
   }
 
   /** Points popup: size scales with value, colour by band (15.3). */
-  popup(x: number, y: number, value: number): void {
+  popup(x: number, y: number, value: number, turned = false): void {
     const style: DigitStyle = value >= 200 ? 'rainbow' : value >= 50 ? 'orange' : value >= 10 ? 'yellow' : 'white';
     const pool = this.digits.get(style);
     const advance = this.assets.digitAdvance.get(style);
@@ -152,18 +152,19 @@ export class FxSystem {
     const size = clamp(0.72 + Math.log10(value) * 0.34, 0.72, 1.7);
     let width = 0;
     for (const ch of text) width += advance[ch === '+' ? 10 : Number(ch)] ?? 0;
-    let cx = x - (width * size) / 2;
+    const way = turned ? -1 : 1;
+    let cx = x - (way * width * size) / 2;
     for (const ch of text) {
       const index = ch === '+' ? 10 : Number(ch);
       const adv = (advance[index] ?? 0) * size;
-      const dx = cx + adv / 2;
-      cx += adv;
-      const img = pool.get(index).setPosition(dx, y).setDepth(10);
+      const dx = cx + (way * adv) / 2;
+      cx += way * adv;
+      const img = pool.get(index).setPosition(dx, y).setDepth(10).setRotation(turned ? Math.PI : 0);
       this.add({
         img, pool, life: 0.95,
         update: (i, t) => {
           const pop = t < 0.18 ? lerp(0.5, 1.15, t / 0.18) : t < 0.3 ? lerp(1.15, 1, (t - 0.18) / 0.12) : 1;
-          i.setScale(size * pop).setY(y - 70 * easeOut(t)).setAlpha(t > 0.72 ? (1 - t) / 0.28 : 1);
+          i.setScale(size * pop).setY(y - way * 70 * easeOut(t)).setAlpha(t > 0.72 ? (1 - t) / 0.28 : 1);
         },
       });
     }

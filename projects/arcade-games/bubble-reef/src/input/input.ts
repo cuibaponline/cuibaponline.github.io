@@ -14,10 +14,13 @@ const DEAD_ZONE = 0.12;
 
 /**
  * Pointer events to simulation commands (10.1). Every finger is tracked by pointerId so aiming, Laser and Lock can
- * be held at once. HUD buttons sit above the canvas, so a touch that starts on one never reaches this class.
+ * be held at once. HUD buttons sit above the canvas, so a touch that starts on one never reaches this class. A screen
+ * can't tell whose finger it is, so with two players a finger belongs to whoever's half it started on, and can then slide
+ * anywhere. Joystick mode is one player only.
  */
 export class InputSystem {
-  private aimPointer: number | null = null;
+  /** The finger aiming for each seat. */
+  private readonly aimPointers: (number | null)[] = [null, null];
   private stickPointer: number | null = null;
   private stickX = 0;
   private stickY = 0;
@@ -52,17 +55,18 @@ export class InputSystem {
     }
     const { cssX, cssY, world } = this.point(e);
     const tick = sim.tick;
+    const twoPlayers = sim.s.seats.length > 1;
+    const seatId = twoPlayers && cssY < this.el.clientHeight / 2 ? 1 : 0;
 
     if (sim.s.bubblePop) {
-      sim.enqueue({ tick, seatId: 0, type: 'PopBubble', x: world.x, y: world.y });
+      sim.enqueue({ tick, seatId, type: 'PopBubble', x: world.x, y: world.y });
       return;
     }
 
-    const seat = sim.localSeat;
-    if (seat.lockMode && !sim.s.cfg.autoLock) sim.enqueue({ tick, seatId: 0, type: 'LockTarget', x: world.x, y: world.y });
+    if (sim.s.seats[seatId]?.lockMode && !sim.s.cfg.autoLock) sim.enqueue({ tick, seatId, type: 'LockTarget', x: world.x, y: world.y });
 
     const { controlMode, leftHanded } = this.deps.settings();
-    if (controlMode === 'joystick') {
+    if (controlMode === 'joystick' && !twoPlayers) {
       const width = this.el.clientWidth;
       const inZone = leftHanded ? cssX > width * (2 / 3) : cssX < width / 3;
       if (inZone && this.stickPointer === null) {
@@ -74,18 +78,19 @@ export class InputSystem {
       return;
     }
 
-    if (this.aimPointer !== null) return;
-    this.aimPointer = e.pointerId;
-    sim.enqueue({ tick, seatId: 0, type: 'Aim', x: world.x, y: world.y });
-    sim.enqueue({ tick, seatId: 0, type: 'FireStart' });
+    if (this.aimPointers[seatId] !== null) return;
+    this.aimPointers[seatId] = e.pointerId;
+    sim.enqueue({ tick, seatId, type: 'Aim', x: world.x, y: world.y });
+    sim.enqueue({ tick, seatId, type: 'FireStart' });
   };
 
   private move = (e: PointerEvent): void => {
     const sim = this.deps.sim();
     if (!sim) return;
     const { cssX, cssY, world } = this.point(e);
-    if (e.pointerId === this.aimPointer) {
-      sim.enqueue({ tick: sim.tick, seatId: 0, type: 'Aim', x: world.x, y: world.y });
+    const aimSeat = this.aimPointers.indexOf(e.pointerId);
+    if (aimSeat >= 0) {
+      sim.enqueue({ tick: sim.tick, seatId: aimSeat, type: 'Aim', x: world.x, y: world.y });
     } else if (e.pointerId === this.stickPointer) {
       const dx = cssX - this.stickX;
       const dy = cssY - this.stickY;
@@ -104,9 +109,10 @@ export class InputSystem {
 
   private up = (e: PointerEvent): void => {
     const sim = this.deps.sim();
-    if (e.pointerId === this.aimPointer) {
-      this.aimPointer = null;
-      if (sim) sim.enqueue({ tick: sim.tick, seatId: 0, type: 'FireStop' });
+    const aimSeat = this.aimPointers.indexOf(e.pointerId);
+    if (aimSeat >= 0) {
+      this.aimPointers[aimSeat] = null;
+      if (sim) sim.enqueue({ tick: sim.tick, seatId: aimSeat, type: 'FireStop' });
     } else if (e.pointerId === this.stickPointer) {
       this.stickPointer = null;
       this.deps.onStick(null);
@@ -124,8 +130,10 @@ export class InputSystem {
   /** Lets go of everything, e.g. when pausing with a finger still down. */
   release(): void {
     const sim = this.deps.sim();
-    if (sim && (this.aimPointer !== null || this.fireHeld)) sim.enqueue({ tick: sim.tick, seatId: 0, type: 'FireStop' });
-    this.aimPointer = null;
+    this.aimPointers.forEach((pointer, seatId) => {
+      if (sim && (pointer !== null || (seatId === 0 && this.fireHeld))) sim.enqueue({ tick: sim.tick, seatId, type: 'FireStop' });
+      this.aimPointers[seatId] = null;
+    });
     this.stickPointer = null;
     this.fireHeld = false;
     this.deps.onStick(null);

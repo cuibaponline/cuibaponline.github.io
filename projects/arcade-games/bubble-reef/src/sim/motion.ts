@@ -174,10 +174,23 @@ export function beginDive(s: SimState, f: Fish): void {
 export const CAUGHT_FLOAT_SEC = 0.6;
 
 /** Advances one fish. Returns false when it should leave the simulation. */
+/** How far past the middle a creature's edge has to be before it turns, so one on the line can't flap back and forth. */
+const TURN_GAP = 60;
+
+/** With two players sitting across from each other, a creature turns to suit whoever's half it has swum into. */
+function stepTurned(s: SimState, f: Fish): void {
+  if (s.seats.length < 2) return;
+  const middle = (s.view.top + s.view.bottom) / 2;
+  const clear = f.def.size / 2 + TURN_GAP;
+  if (f.y < middle - clear) f.turned = true;
+  else if (f.y > middle + clear) f.turned = false;
+}
+
 export function stepFish(s: SimState, f: Fish, frozen: boolean): boolean {
   f.px = f.x;
   f.py = f.y;
   f.pheading = f.heading;
+  stepTurned(s, f);
   if (f.flash > 0) f.flash -= DT;
   if (f.hpRing > 0) f.hpRing -= DT;
 

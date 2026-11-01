@@ -25,6 +25,8 @@ interface FishView {
   segments: Img[];
   anim: number;
   flip: number;
+  /** How far an upright creature has swung round towards the far player, in radians. */
+  turn: number;
   wobble: number;
   lastHp: number;
   puffed: boolean;
@@ -88,7 +90,8 @@ export class FishViews {
 
     const view: FishView = {
       gen: this.gen, sheet, body, shadow, flash: null, aura: null, icon: null, shell: null, bubble: null,
-      segments: [], anim: f.phase * 3, flip: Math.cos(f.heading) >= 0 ? 1 : -1, wobble: 0, lastHp: f.hp, puffed: false,
+      segments: [], anim: f.phase * 3, flip: (Math.cos(f.heading) >= 0 ? 1 : -1) * (f.turned ? -1 : 1), turn: f.turned ? Math.PI : 0,
+      wobble: 0, lastHp: f.hp, puffed: false,
     };
 
     if (f.def.tier === 'special') {
@@ -127,25 +130,28 @@ export class FishViews {
   private bodyTransform(f: Fish, view: FishView, heading: number, dt: number, s: number): void {
     const { sheet, body } = view;
     const wobble = Math.sin(view.wobble * 40) * view.wobble * 1.4;
+    const way = f.turned ? -1 : 1;
     if (sheet.facing === 'side') {
-      const target = Math.cos(heading) >= 0 ? 1 : -1;
+      // Rolling over keeps the belly towards the nearer player, the way it already does when a fish turns back.
+      const target = (Math.cos(heading) >= 0 ? 1 : -1) * way;
       view.flip += (target - view.flip) * Math.min(1, dt * 11);
       const y = Math.abs(view.flip) < 0.12 ? 0.12 * Math.sign(view.flip || 1) : view.flip;
       body.setRotation(heading + wobble).setScale(s, s * y);
     } else if (sheet.facing === 'top') {
       body.setRotation(heading + wobble).setScale(s);
     } else {
-      view.flip += (f.face - view.flip) * Math.min(1, dt * 9);
+      view.turn += ((f.turned ? Math.PI : 0) - view.turn) * Math.min(1, dt * 6);
+      view.flip += (f.face * way - view.flip) * Math.min(1, dt * 9);
       const x = Math.abs(view.flip) < 0.12 ? 0.12 * Math.sign(view.flip || 1) : view.flip;
       const tilt = clamp(Math.cos(heading) * 0.12, -0.12, 0.12);
-      body.setRotation(tilt + wobble).setScale(s * x, s);
+      body.setRotation(view.turn + tilt + wobble).setScale(s * x, s);
     }
   }
 
   private syncCaught(f: Fish, view: FishView, x: number, y: number): void {
     const t = clamp(f.caughtAge / CAUGHT_FLOAT_SEC, 0, 1);
     const { body, sheet } = view;
-    const lift = 170 * t * t + 30 * t;
+    const lift = (170 * t * t + 30 * t) * (f.turned ? -1 : 1);
     const squish = sheet.scale * lerp(1.1, 0.72, t);
     body.setPosition(x, y - lift).setRotation(body.rotation + 0.26).setAlpha(1 - t * t).setScale(squish);
     view.shadow.setVisible(false);
@@ -224,7 +230,7 @@ export class FishViews {
       this.syncSegments(f, view, fadeOut);
 
       const lift = f.isBoss ? 46 : clamp(f.def.size * 0.16, 12, 34);
-      shadow.setPosition(x + lift * 0.7, y + lift).setRotation(sheet.facing === 'upright' ? 0 : heading).setAlpha(0.26 * fadeOut);
+      shadow.setPosition(x + lift * 0.7, y + lift).setRotation(sheet.facing === 'upright' ? view.turn : heading).setAlpha(0.26 * fadeOut);
 
       if (frozen) body.setTint(0xa8e4ff);
       else body.clearTint();
@@ -250,10 +256,12 @@ export class FishViews {
         const r = f.def.size * 1.05;
         view.aura.setPosition(x, y).setRotation(f.age * 0.8).setScale((r / 128) * (1 + Math.sin(f.age * 4) * 0.08)).setAlpha(0.75);
       }
-      if (view.icon) view.icon.setPosition(x, y - f.def.size * 0.72 - Math.sin(f.age * 3) * 6).setScale(0.62);
+      const way = f.turned ? -1 : 1;
+      const badgeTurn = f.turned ? Math.PI : 0;
+      if (view.icon) view.icon.setPosition(x, y - way * (f.def.size * 0.72 + Math.sin(f.age * 3) * 6)).setRotation(badgeTurn).setScale(0.62);
       if (view.shell) {
         const armoured = f.hp / f.maxHp >= CONFIG.powerups.armour.untilHpRatio;
-        view.shell.setVisible(armoured).setPosition(x + f.def.size * 0.3, y - f.def.size * 0.3).setScale(0.62);
+        view.shell.setVisible(armoured).setPosition(x + way * f.def.size * 0.3, y - way * f.def.size * 0.3).setRotation(badgeTurn).setScale(0.62);
       }
 
       this.positions.set(f.uid, { x, y, r: f.def.size * (isUpright(f.def.id) ? 0.56 : 0.5) });

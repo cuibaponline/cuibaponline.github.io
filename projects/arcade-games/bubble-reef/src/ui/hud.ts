@@ -7,11 +7,11 @@ import { drawOtto } from '../art';
 
 export interface HudActions {
   pause(): void;
-  lock(): void;
-  auto(): void;
-  laser(): void;
-  levelUp(): void;
-  levelDown(): void;
+  lock(seat: number): void;
+  auto(seat: number): void;
+  laser(seat: number): void;
+  levelUp(seat: number): void;
+  levelDown(seat: number): void;
   fire(down: boolean): void;
 }
 
@@ -22,8 +22,78 @@ function setClass(el: HTMLElement, name: string, on: boolean): void {
   if (el.classList.contains(name) !== on) el.classList.toggle(name, on);
 }
 
+/** Writes each field only when it changes. */
+class Fields {
+  protected last: Partial<Record<string, string | number | boolean>> = {};
+
+  protected changed(key: string, value: string | number | boolean): boolean {
+    if (this.last[key] === value) return false;
+    this.last[key] = value;
+    return true;
+  }
+}
+
+/** One player's own buttons: Laser, Lock, Auto and the cannon level. */
+class SeatPanel extends Fields {
+  /** Children of the HUD, so each can be placed on its own. */
+  readonly parts: HTMLElement[];
+  private readonly laserBtn: HTMLButtonElement;
+  private readonly laserRing: SVGCircleElement;
+  private readonly lockBtn: HTMLButtonElement;
+  private readonly autoBtn: HTMLButtonElement;
+  private readonly levelBox: HTMLDivElement;
+  private readonly levelValue: HTMLSpanElement;
+
+  constructor(seat: number, actions: HudActions) {
+    super();
+    const side = `p${seat + 1}`;
+    this.laserBtn = h('button', { class: `hud-btn laser ${side}`, label: 'Laser' });
+    this.laserBtn.innerHTML = `<svg class="ring" viewBox="0 0 96 96"><circle cx="48" cy="48" r="${RING_R}" class="ring-bg"/><circle cx="48" cy="48" r="${RING_R}" class="ring-fill" stroke-dasharray="${RING_LEN}" stroke-dashoffset="${RING_LEN}" transform="rotate(-90 48 48)"/></svg>${icon('laser')}`;
+    this.laserRing = this.laserBtn.querySelector('.ring-fill') as SVGCircleElement;
+    onPress(this.laserBtn, () => actions.laser(seat));
+
+    this.lockBtn = h('button', { class: 'hud-btn lock', html: icon('target'), label: 'Lock' });
+    onPress(this.lockBtn, () => actions.lock(seat));
+    this.autoBtn = h('button', { class: 'hud-btn auto', html: icon('auto'), label: 'Auto fire' });
+    onPress(this.autoBtn, () => actions.auto(seat));
+
+    const minus = h('button', { class: 'hud-btn level', html: icon('minus'), label: 'Weaker cannon' });
+    onPress(minus, () => actions.levelDown(seat));
+    const plus = h('button', { class: 'hud-btn level', html: icon('plus'), label: 'Stronger cannon' });
+    onPress(plus, () => actions.levelUp(seat));
+    this.levelValue = h('span', { class: 'level-value' }, '1');
+    this.levelBox = h('div', { class: `level-box ${side}` }, minus, this.levelValue, plus);
+
+    this.parts = [this.laserBtn, this.levelBox, h('div', { class: `hud-actions ${side}` }, this.lockBtn, this.autoBtn)];
+  }
+
+  configure(difficulty: Difficulty, laserUnlocked: boolean): void {
+    const cfg = CONFIG.difficulty[difficulty];
+    setClass(this.levelBox, 'hidden', !cfg.showLevelButtons);
+    this.lockBtn.setAttribute('aria-label', cfg.autoLock ? 'Auto-lock' : 'Lock');
+    setClass(this.lockBtn, 'autolock', cfg.autoLock);
+    this.setLaserUnlocked(laserUnlocked);
+    this.last = {};
+  }
+
+  setLaserUnlocked(on: boolean): void {
+    setClass(this.laserBtn, 'hidden', !on);
+  }
+
+  update(snap: HudSnapshot): void {
+    if (this.changed('level', snap.level)) this.levelValue.textContent = String(snap.level);
+    if (this.changed('lockOn', snap.lockMode)) setClass(this.lockBtn, 'on', snap.lockMode);
+    if (this.changed('autoOn', snap.autoFire)) setClass(this.autoBtn, 'on', snap.autoFire);
+
+    const ratio = Math.round(Math.min(1, snap.laserRatio) * 100) / 100;
+    if (this.changed('laserRatio', ratio)) this.laserRing.setAttribute('stroke-dashoffset', String(RING_LEN * (1 - ratio)));
+    if (this.changed('laserReady', snap.laserReady)) setClass(this.laserBtn, 'ready', snap.laserReady);
+    if (this.changed('laserActive', snap.laserActive)) setClass(this.laserBtn, 'firing', snap.laserActive);
+  }
+}
+
 /** The gameplay HUD (10.2). A DOM layer above the canvas; each field is written only when it changes. */
-export class Hud {
+export class Hud extends Fields {
   readonly root: HTMLDivElement;
   private readonly coinValue: HTMLSpanElement;
   readonly coinBox: HTMLDivElement;
@@ -35,12 +105,9 @@ export class Hud {
   private readonly bossFill: HTMLDivElement;
   private readonly bossName: HTMLSpanElement;
   private readonly timer: HTMLDivElement;
-  private readonly laserBtn: HTMLButtonElement;
-  private readonly laserRing: SVGCircleElement;
-  private readonly lockBtn: HTMLButtonElement;
-  private readonly autoBtn: HTMLButtonElement;
-  private readonly levelBox: HTMLDivElement;
-  private readonly levelValue: HTMLSpanElement;
+  private readonly panels: [SeatPanel, SeatPanel];
+  /** Player 2's buttons: the same layout as Player 1's, turned round to their edge of the screen. */
+  private readonly farSide: HTMLDivElement;
   private readonly fireBtn: HTMLButtonElement;
   private readonly banner: HTMLDivElement;
   private readonly bannerText: HTMLSpanElement;
@@ -51,9 +118,9 @@ export class Hud {
   private coinsTarget = 0;
   private coinsShown = 0;
   private coinsDrawn = -1;
-  private last: Partial<Record<string, string | number | boolean>> = {};
 
   constructor(actions: HudActions) {
+    super();
     this.coinValue = h('span', { class: 'coin-value' }, '0');
     this.coinBox = h('div', { class: 'coin-box', html: icon('coin') });
     this.coinBox.append(this.coinValue);
@@ -76,22 +143,8 @@ export class Hud {
     this.banner = h('div', { class: 'banner hidden' }, this.bannerText);
     this.toasts = h('div', { class: 'toasts' });
 
-    this.laserBtn = h('button', { class: 'hud-btn laser', label: 'Laser' });
-    this.laserBtn.innerHTML = `<svg class="ring" viewBox="0 0 96 96"><circle cx="48" cy="48" r="${RING_R}" class="ring-bg"/><circle cx="48" cy="48" r="${RING_R}" class="ring-fill" stroke-dasharray="${RING_LEN}" stroke-dashoffset="${RING_LEN}" transform="rotate(-90 48 48)"/></svg>${icon('laser')}`;
-    this.laserRing = this.laserBtn.querySelector('.ring-fill') as SVGCircleElement;
-    onPress(this.laserBtn, () => actions.laser());
-
-    this.lockBtn = h('button', { class: 'hud-btn lock', html: icon('target'), label: 'Lock' });
-    onPress(this.lockBtn, () => actions.lock());
-    this.autoBtn = h('button', { class: 'hud-btn auto', html: icon('auto'), label: 'Auto fire' });
-    onPress(this.autoBtn, () => actions.auto());
-
-    const minus = h('button', { class: 'hud-btn level', html: icon('minus'), label: 'Weaker cannon' });
-    onPress(minus, () => actions.levelDown());
-    const plus = h('button', { class: 'hud-btn level', html: icon('plus'), label: 'Stronger cannon' });
-    onPress(plus, () => actions.levelUp());
-    this.levelValue = h('span', { class: 'level-value' }, '1');
-    this.levelBox = h('div', { class: 'level-box' }, minus, this.levelValue, plus);
+    this.panels = [new SeatPanel(0, actions), new SeatPanel(1, actions)];
+    this.farSide = h('div', { class: 'hud-far' }, ...this.panels[1].parts);
 
     this.fireBtn = h('button', { class: 'hud-btn fire hidden', label: 'Fire' }, 'FIRE');
     onPress(this.fireBtn, () => actions.fire(true), () => actions.fire(false));
@@ -106,33 +159,25 @@ export class Hud {
       this.bossBar,
       this.banner,
       this.toasts,
-      this.laserBtn,
-      this.levelBox,
-      h('div', { class: 'hud-actions' }, this.lockBtn, this.autoBtn),
+      ...this.panels[0].parts,
       this.fireBtn,
       this.stick,
     );
   }
 
-  private changed(key: string, value: string | number | boolean): boolean {
-    if (this.last[key] === value) return false;
-    this.last[key] = value;
-    return true;
-  }
-
-  configure(difficulty: Difficulty, opts: { joystick: boolean; leftHanded: boolean; laserUnlocked: boolean }): void {
-    const cfg = CONFIG.difficulty[difficulty];
-    setClass(this.root, 'lefty', opts.leftHanded);
-    setClass(this.levelBox, 'hidden', !cfg.showLevelButtons);
-    setClass(this.fireBtn, 'hidden', !opts.joystick);
-    this.lockBtn.setAttribute('aria-label', cfg.autoLock ? 'Auto-lock' : 'Lock');
-    setClass(this.lockBtn, 'autolock', cfg.autoLock);
-    this.setLaserUnlocked(opts.laserUnlocked);
+  configure(difficulty: Difficulty, opts: { joystick: boolean; leftHanded: boolean; laserUnlocked: boolean; players: number }): void {
+    const two = opts.players === 2;
+    setClass(this.root, 'two', two);
+    setClass(this.root, 'lefty', opts.leftHanded && !two);
+    setClass(this.fireBtn, 'hidden', !opts.joystick || two);
+    if (two) this.root.append(this.farSide);
+    else this.farSide.remove();
+    for (const panel of this.panels) panel.configure(difficulty, opts.laserUnlocked);
     this.last = {};
   }
 
   setLaserUnlocked(on: boolean): void {
-    setClass(this.laserBtn, 'hidden', !on);
+    for (const panel of this.panels) panel.setLaserUnlocked(on);
   }
 
   show(on: boolean): void {
@@ -154,7 +199,9 @@ export class Hud {
     return { x: rect.left + 26, y: rect.top + rect.height / 2 };
   }
 
-  update(snap: HudSnapshot, dt: number): void {
+  /** `seats` holds one snapshot per player. */
+  update(seats: HudSnapshot[], dt: number): void {
+    const snap = seats[0]!;
     const diff = this.coinsTarget - this.coinsShown;
     if (diff !== 0) {
       const step = Math.max(1, Math.ceil(Math.abs(diff) * Math.min(1, dt * 9)));
@@ -179,14 +226,7 @@ export class Hud {
       if (this.changed('bossHp', ratio)) this.bossFill.style.width = `${Math.max(0, ratio)}%`;
     }
 
-    if (this.changed('level', snap.level)) this.levelValue.textContent = String(snap.level);
-    if (this.changed('lockOn', snap.lockMode)) setClass(this.lockBtn, 'on', snap.lockMode);
-    if (this.changed('autoOn', snap.autoFire)) setClass(this.autoBtn, 'on', snap.autoFire);
-
-    const ratio = Math.round(Math.min(1, snap.laserRatio) * 100) / 100;
-    if (this.changed('laserRatio', ratio)) this.laserRing.setAttribute('stroke-dashoffset', String(RING_LEN * (1 - ratio)));
-    if (this.changed('laserReady', snap.laserReady)) setClass(this.laserBtn, 'ready', snap.laserReady);
-    if (this.changed('laserActive', snap.laserActive)) setClass(this.laserBtn, 'firing', snap.laserActive);
+    seats.forEach((seat, i) => this.panels[i]?.update(seat));
   }
 
   setTimer(minutesLeft: number | null): void {

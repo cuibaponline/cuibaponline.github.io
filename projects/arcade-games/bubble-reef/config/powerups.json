@@ -13,5 +13,6 @@
   },
   "parade": { "durationSec": 25, "speedMul": 1.5, "pointsMul": 1.5 },
   "swimAway": { "durationSec": 3, "speed": 900 },
-  "lastCatchSec": 15
+  "lastCatchSec": 15,
+  "twoPlayer": { "bossHpMul": 1.6 }
 }

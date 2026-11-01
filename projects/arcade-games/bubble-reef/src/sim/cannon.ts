@@ -10,7 +10,7 @@ const MUZZLE = 110;
 export const clampAim = (angle: number): number => clamp(angle, -AIM_LIMIT, AIM_LIMIT);
 
 export function aimAt(seat: Seat, x: number, y: number): void {
-  seat.aimAngle = clampAim(angleToPoint(seat.x, seat.y, x, y));
+  seat.aimAngle = clampAim(angleToPoint(0, 0, (x - seat.x) * seat.facing, (y - seat.y) * seat.facing));
   seat.aimActive = true;
 }
 
@@ -33,17 +33,21 @@ export function fishAt(s: SimState, x: number, y: number): Fish | null {
   return best;
 }
 
-function bestTarget(s: SimState): Fish | null {
+/** The most valuable fish, leaving another player's target alone unless it is the only one. */
+function bestTarget(s: SimState, seat: Seat): Fish | null {
   let best: Fish | null = null;
+  let shared: Fish | null = null;
   let bestPoints = -1;
   for (const f of s.fish) {
     if (f.state !== 'swim' || f.leaving || !isVisible(s, f, 40)) continue;
-    if (f.def.points > bestPoints) {
+    if (s.seats.some((other) => other !== seat && other.lockUid === f.uid)) {
+      shared = f;
+    } else if (f.def.points > bestPoints) {
       best = f;
       bestPoints = f.def.points;
     }
   }
-  return best;
+  return best ?? shared;
 }
 
 function setLock(s: SimState, seat: Seat, uid: number): void {
@@ -68,7 +72,7 @@ function stepLock(s: SimState, seat: Seat): void {
   const target = findFish(s, seat.lockUid);
   if (seat.lockUid !== 0 && (!target || target.state !== 'swim' || !isVisible(s, target))) setLock(s, seat, 0);
   if (seat.lockMode && s.cfg.autoLock && seat.lockUid === 0) {
-    const best = bestTarget(s);
+    const best = bestTarget(s, seat);
     if (best) setLock(s, seat, best.uid);
   }
   const locked = findFish(s, seat.lockUid);
@@ -96,14 +100,16 @@ function canShoot(s: SimState): boolean {
 
 function spawnBubble(s: SimState, seat: Seat, level: number, damageMul: number, angle: number): void {
   const spec = cannon.levels[level - 1]!;
+  const dx = cannonDirX(angle) * seat.facing;
+  const dy = cannonDirY(angle) * seat.facing;
   const b: Bubble = {
     uid: s.nextUid++,
-    x: seat.x + cannonDirX(angle) * MUZZLE,
-    y: seat.y + cannonDirY(angle) * MUZZLE,
+    x: seat.x + dx * MUZZLE,
+    y: seat.y + dy * MUZZLE,
     px: 0,
     py: 0,
-    vx: cannonDirX(angle) * cannon.bubble.speed,
-    vy: cannonDirY(angle) * cannon.bubble.speed,
+    vx: dx * cannon.bubble.speed,
+    vy: dy * cannon.bubble.speed,
     r: cannon.bubble.radius + cannon.bubble.radiusPerLevel * (level - 1),
     level,
     damage: spec.damage * damageMul,
@@ -120,7 +126,9 @@ function spawnBubble(s: SimState, seat: Seat, level: number, damageMul: number, 
 }
 
 function tryFire(s: SimState, seat: Seat): void {
-  if (s.bubbles.length >= cannon.maxBubbles) return;
+  let mine = 0;
+  for (const b of s.bubbles) if (b.seatId === seat.id) mine++;
+  if (mine >= cannon.maxBubbles) return;
 
   let level = seat.level;
   let rate = cannon.fireRate;

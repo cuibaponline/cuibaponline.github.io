@@ -85,7 +85,26 @@ export function difficultyScreen(app: App): HTMLElement {
       locked && h('div', { class: 'padlock', html: icon('lock') }),
     );
   });
-  return h('div', { class: 'screen dim' }, topbar(app, 'How tricky?', () => app.show(homeScreen)), h('div', { class: 'cards' }, ...cards));
+  return h('div', { class: 'screen dim' }, topbar(app, 'How tricky?', () => app.show(homeScreen)), app.roomForTwo && playerChoice(app), h('div', { class: 'cards' }, ...cards));
+}
+
+function playerChoice(app: App): HTMLElement {
+  const dot = (seat: 1 | 2): HTMLElement => h('span', { class: `seat-dot p${seat}` });
+  const choice = (players: 1 | 2): HTMLElement =>
+    h(
+      'button',
+      {
+        class: app.players === players ? 'on' : '', id: `players-${players}`,
+        onTap: () => {
+          app.players = players;
+          app.show(difficultyScreen);
+        },
+      },
+      dot(1),
+      players === 2 && dot(2),
+      players === 1 ? '1 Player' : '2 Players',
+    );
+  return h('div', { class: 'segmented players' }, choice(1), choice(2));
 }
 
 export function pauseScreen(app: App): HTMLElement {
@@ -144,6 +163,14 @@ function fishThumb(id: string, size: number): HTMLCanvasElement {
   return hiDpiCanvas(size, size, (ctx) => drawCreature(ctx, id as CreatureId, size / 2, size / 2, size * 0.92));
 }
 
+/** How many fish, split into Blue and Red when two played. */
+function fishStats(r: Pick<SessionResults, 'caught' | 'players' | 'caughtBySeat'>): HTMLElement[] {
+  const stat = (name: string, caught: number, side = ''): HTMLElement =>
+    h('div', { class: `stat ${side}` }, h('b', { html: icon('fish') }, formatNumber(caught)), h('span', {}, name));
+  if (r.players < 2) return [stat('fish', r.caught)];
+  return [stat('Blue', r.caughtBySeat[0] ?? 0, 'p1'), stat('Red', r.caughtBySeat[1] ?? 0, 'p2')];
+}
+
 function unlockList(ups: LevelUp[]): HTMLElement | null {
   const lines = ups.flatMap((u) => u.unlocks);
   if (ups.length === 0) return null;
@@ -177,7 +204,7 @@ export function intermissionScreen(app: App, data: { summary: WaveSummary; sugge
       'div',
       { class: 'tally' },
       h('div', { class: 'stat' }, h('b', { html: icon('coin') }, formatNumber(summary.coins)), h('span', {}, 'coins')),
-      h('div', { class: 'stat' }, h('b', { html: icon('fish') }, formatNumber(summary.caught)), h('span', {}, 'fish')),
+      ...fishStats(summary),
     ),
     summary.newFish.length > 0 && h('div', { class: 'new-fish' }, ...summary.newFish.slice(0, 6).map((id) => fishThumb(id, 72))),
     unlockList(summary.levelUps),
@@ -211,7 +238,7 @@ export function resultsScreen(app: App, data: { results: SessionResults; then: (
       'div',
       { class: 'tally' },
       h('div', { class: 'stat' }, h('b', { html: icon('coin') }, formatNumber(results.coins)), h('span', {}, 'coins')),
-      h('div', { class: 'stat' }, h('b', { html: icon('fish') }, formatNumber(results.caught)), h('span', {}, 'fish')),
+      ...fishStats(results),
       h('div', { class: 'stat' }, h('b', { html: icon('star') }, formatNumber(results.wavesCompleted)), h('span', {}, 'waves')),
     ),
     results.newFish.length > 0 &&

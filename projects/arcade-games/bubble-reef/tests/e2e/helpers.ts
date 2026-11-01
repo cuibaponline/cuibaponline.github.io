@@ -14,6 +14,9 @@ declare global {
         level: number;
         phase: string | null;
         fps: number;
+        caughtBySeat: number[];
+        seats: { x: number; y: number; aimAngle: number; fired: boolean; level: number; autoFire: boolean }[];
+        bossMaxHp: number;
       };
       setUsed(sec: number): void;
       setXp(xp: number): void;
@@ -23,6 +26,8 @@ declare global {
       setControlMode(mode: 'tap' | 'joystick'): void;
       audio(): { state: string; currentTrack: string | null; sfxReady: number; warned: boolean };
       giveCoins(n: number): void;
+      catchFor(seat: number): void;
+      fillLasers(): void;
       flush(): Promise<void>;
       tick(): void;
     };
@@ -66,6 +71,23 @@ export async function completeSetup(page: Page): Promise<void> {
 export async function tapToHome(page: Page): Promise<void> {
   await page.locator('#title').click();
   await expect(page.locator('#home')).toBeVisible();
+}
+
+export async function startTwoPlayers(page: Page, difficulty: 'easy' | 'medium' = 'easy'): Promise<void> {
+  await page.locator('#play').click();
+  await page.locator('#players-2').click();
+  await page.locator(`#diff-${difficulty}`).click();
+  await expect(page.locator('#hud')).toBeVisible();
+  await page.waitForFunction(() => window.__br.state().phase === 'wave');
+}
+
+/** Enough XP for every button, which arrives with the next catch. */
+export async function startTwoPlayersAtHighLevel(page: Page): Promise<void> {
+  await page.evaluate(() => window.__br.setXp(60000));
+  await startTwoPlayers(page, 'medium');
+  await page.waitForFunction(() => window.__br.state().fish.length > 0);
+  await page.evaluate(() => window.__br.catchFor(0));
+  await expect(page.locator('.hud-btn.laser').first()).toBeVisible();
 }
 
 export async function startGame(page: Page, difficulty: 'easy' | 'medium' = 'easy'): Promise<void> {

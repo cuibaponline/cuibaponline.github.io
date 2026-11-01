@@ -56,6 +56,12 @@ deployed site rather than the dev server's Network URL once you reach the setup 
   `styles.css` uses 52 to 64 px buttons rather than 80.
 - Phaser's preFX, postFX and canvas MSAA are switched off. On an iPad screen the FX pipelines alone reserve over 800 MB
   of render targets, which crashes Safari and can restart the iPad. Leave them off unless the game really needs them.
+- Two players (not in the GDD) face each other across an iPad flat on a table, chosen on the "How tricky?" screen. A
+  screen can't tell whose finger it is, so each finger belongs to the half it started on. Player 2's cannon and buttons
+  are Player 1's layout turned round, and creatures turn to suit whichever half they have swum into. Menus and banners
+  still face Player 1. They share one profile, so coins, XP and the daily limit are shared, and their cannons are always
+  blue and red rather than Workshop skins. Bosses get 1.6 times the HP (`powerups.json`). Phones don't offer it, as
+  there is no room for two sets of buttons.
 - Music loops run 55 to 65 s instead of 90 to 120 s, which keeps each decoded track near 5 MB.
 
 Not built: Captain Otto's Aquarium (§12.5, US-26), a Could item for Phase 3.

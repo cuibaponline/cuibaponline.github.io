@@ -129,6 +129,7 @@ const powerupsSchema = z.object({
   parade: z.object({ durationSec: positive, speedMul: positive, pointsMul: positive }),
   swimAway: z.object({ durationSec: positive, speed: positive }),
   lastCatchSec: positive,
+  twoPlayer: z.object({ bossHpMul: positive }),
 });
 
 const wavesSchema = z.object({

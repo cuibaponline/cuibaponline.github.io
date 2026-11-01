@@ -225,6 +225,13 @@ input[type='range']::-webkit-slider-thumb { -webkit-appearance: none; width: 42p
 .segmented { display: flex; border-radius: 18px; overflow: hidden; box-shadow: inset 0 0 0 2px var(--line); flex: none; }
 .segmented button { min-width: 112px; min-height: 56px; padding: 0 14px; font-size: 21px; }
 .segmented button.on { background: var(--sea); color: #04344d; font-weight: 600; }
+.segmented.players { align-self: center; margin-top: 12px; }
+.segmented.players button { display: flex; align-items: center; justify-content: center; gap: 6px; min-width: 176px; }
+.seat-dot { width: 18px; height: 18px; border-radius: 50%; box-shadow: inset 0 0 0 2px rgba(255, 255, 255, 0.75); }
+.seat-dot.p1 { background: #2f7fd8; }
+.seat-dot.p2 { background: #d8342f; }
+.stat.p1 b { color: #8fd2ff; }
+.stat.p2 b { color: #ff9a9a; }
 
 /* PIN pad */
 .pin { display: flex; flex-direction: column; align-items: center; gap: 12px; }
@@ -332,6 +339,16 @@ input.code-input { width: 340px; height: 60px; font: inherit; font-size: 30px; l
 .hud.lefty .hud-btn.laser { left: auto; right: calc(var(--safe-r) + var(--edge)); }
 .hud.lefty .hud-actions { right: auto; left: calc(var(--safe-l) + var(--edge)); flex-direction: row-reverse; }
 .hud.lefty .hud-btn.fire { right: auto; left: calc(var(--safe-l) + var(--edge)); }
+
+/* Two players across a table: Player 2's buttons are Player 1's layout turned round, and the shared parts move to the
+   middle of the sides, where both can reach them. */
+.hud-far { position: absolute; inset: 0; transform: rotate(180deg); pointer-events: none; }
+.hud.two .hud-top { top: 50%; transform: translateY(-50%); }
+.hud.two .wave { flex: 0 1 200px; margin: 0 0 0 auto; }
+.hud.two .boss-bar { top: calc(50% + 40px); width: min(420px, 36vw); }
+.hud.two .toasts { top: calc(50% + 40px); }
+.hud.two .p1 .hud-btn:not(.on), .hud.two .hud-btn.laser.p1:not(.ready) { box-shadow: inset 0 0 0 3px #62b8ff, 0 6px 14px rgba(0, 20, 40, 0.3); }
+.hud.two .p2 .hud-btn:not(.on), .hud.two .hud-btn.laser.p2:not(.ready) { box-shadow: inset 0 0 0 3px #ff7a7a, 0 6px 14px rgba(0, 20, 40, 0.3); }
 
 /* Smaller windows: Safari tab with its toolbars, or the mini. */
 @media (max-height: 700px) {

@@ -11,6 +11,8 @@ export type SpriteId = CreatureId | ExtraSpriteId;
 
 export type OceanId = 'coral' | 'kelp' | 'ship' | 'glow' | 'arctic';
 export type SkinId = 'classic' | 'seashell' | 'coral' | 'submarine' | 'rainbow' | 'robotcrab' | 'golden';
+/** A Workshop skin, or Player 2's red cannon, which is not for sale. */
+export type CannonSkinId = SkinId | 'red';
 export type OttoPose = 'idle' | 'cheer' | 'sleep' | 'point';
 export type DigitStyle = 'white' | 'yellow' | 'orange' | 'rainbow';
 
@@ -50,6 +52,7 @@ export type FxId =
   | 'catchBubble' // big bubble a caught fish spins inside, 256 px
   | 'beamCore' // laser beam, tiles along +x: 64 x 64, white core
   | 'beamGlow' // laser beam glow, 64 x 64
+  | 'beamGlowRed' // the same for Player 2
   | 'shellBadge' // armour shell badge, 64 px
   | 'aura' // special fish sparkle aura, 256 px
   | 'popBubble' // Bubble Pop bonus bubble, 160 px
@@ -108,7 +111,7 @@ export interface ArtApi {
   bakeOcean(id: OceanId, widthU: number, heightU: number, ppu: number): OceanBake;
   /** Greyscale, seamlessly tiling, power-of-two caustics pattern on black. */
   bakeCausticsTile(size: number): HTMLCanvasElement;
-  bakeCannon(skin: SkinId, ppu: number): CannonBake;
+  bakeCannon(skin: CannonSkinId, ppu: number): CannonBake;
   /** (x, y) is the centre of the base; `size` is the base width in px. */
   drawCannonPreview(ctx: CanvasRenderingContext2D, skin: SkinId, level: number, x: number, y: number, size: number): void;
   bakeFx(ppu: number): Record<FxId, HTMLCanvasElement>;

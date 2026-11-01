@@ -1,6 +1,6 @@
 import { spawn } from 'node:child_process';
 import { expect, test } from '@playwright/test';
-import { completeSetup, enterPin, PIN, startGame, tapToHome, watchProblems } from './helpers';
+import { completeSetup, enterPin, PIN, startGame, startTwoPlayers, startTwoPlayersAtHighLevel, tapToHome, watchProblems } from './helpers';
 
 test.beforeEach(async ({ page }) => {
   await page.addInitScript(() => {
@@ -95,6 +95,84 @@ test.describe('playing', () => {
     await expect(page.locator('.hud-btn.lock')).toHaveClass(/on/);
     await expect(page.locator('.hud-btn.auto')).toHaveClass(/on/);
     expect((await page.evaluate(() => window.__br.state())).shots).toBeGreaterThan(0);
+  });
+
+  test('two players: each half of the screen works its own cannon and buttons', async ({ page, viewport }) => {
+    await completeSetup(page);
+    await tapToHome(page);
+    await startTwoPlayers(page);
+    const { width, height } = viewport!;
+    await expect(page.locator('.hud-btn.lock')).toHaveCount(2);
+
+    await page.evaluate(({ w, h }) => {
+      const stage = document.querySelector('#stage') as HTMLElement;
+      const fire = (type: string, pointerId: number, x: number, y: number) =>
+        stage.dispatchEvent(new PointerEvent(type, { bubbles: true, cancelable: true, pointerId, pointerType: 'touch', clientX: x, clientY: y, isPrimary: pointerId === 1 }));
+      fire('pointerdown', 1, w * 0.1, h * 0.75);
+      fire('pointerdown', 2, w * 0.1, h * 0.25);
+    }, { w: width, h: height });
+    await page.waitForFunction(() => window.__br.state().seats.every((seat) => seat.fired));
+    const held = (await page.evaluate(() => window.__br.state())).seats;
+    expect(held).toHaveLength(2);
+    expect(held[0]!.y).toBeGreaterThan(held[1]!.y);
+    // The same spot on the screen is to Blue's left and to Red's right.
+    expect(held[0]!.aimAngle).toBeLessThan(0);
+    expect(held[1]!.aimAngle).toBeGreaterThan(0);
+
+    // A finger keeps its cannon when it slides over to the other player's half.
+    await page.evaluate(({ w, h }) => {
+      const stage = document.querySelector('#stage') as HTMLElement;
+      stage.dispatchEvent(new PointerEvent('pointermove', { bubbles: true, cancelable: true, pointerId: 1, pointerType: 'touch', clientX: w * 0.9, clientY: h * 0.25 }));
+      for (const pointerId of [1, 2]) stage.dispatchEvent(new PointerEvent('pointerup', { bubbles: true, cancelable: true, pointerId, pointerType: 'touch' }));
+    }, { w: width, h: height });
+    await page.waitForFunction(() => window.__br.state().seats[0]!.aimAngle > 0);
+
+    await page.locator('.hud-btn.auto').nth(1).dispatchEvent('pointerdown');
+    await page.locator('.hud-btn.auto').nth(1).dispatchEvent('pointerup');
+    await page.waitForFunction(() => window.__br.state().seats[1]!.autoFire);
+    expect((await page.evaluate(() => window.__br.state())).seats[0]!.autoFire).toBe(false);
+  });
+
+  test('two players see their own catches, and the next solo game goes back to one cannon', async ({ page }) => {
+    await completeSetup(page);
+    await tapToHome(page);
+    await startTwoPlayers(page);
+    await page.waitForFunction(() => window.__br.state().fish.length > 2);
+    await page.evaluate(() => {
+      window.__br.catchFor(0);
+      window.__br.catchFor(0);
+      window.__br.catchFor(1);
+    });
+    await page.waitForFunction(() => window.__br.state().caught === 3);
+
+    await page.locator('.hud-btn.pause').dispatchEvent('pointerdown');
+    await page.locator('#pause-home').click();
+    await page.locator('#confirm-yes').click();
+    await expect(page.locator('#results .stat.p1 b')).toHaveText('2');
+    await expect(page.locator('#results .stat.p2 b')).toHaveText('1');
+
+    await page.locator('#results-done').click();
+    await page.locator('#play').click();
+    await page.locator('#players-1').click();
+    await page.locator('#diff-easy').click();
+    await expect(page.locator('#hud')).toBeVisible();
+    await expect(page.locator('.hud-btn.lock')).toHaveCount(1);
+    await expect(page.locator('#hud')).not.toHaveClass(/two/);
+    expect((await page.evaluate(() => window.__br.state())).seats).toHaveLength(1);
+  });
+
+  test('each player fires their own laser', async ({ page }) => {
+    await completeSetup(page);
+    await tapToHome(page);
+    await startTwoPlayersAtHighLevel(page);
+    await page.evaluate(() => window.__br.fillLasers());
+    await expect(page.locator('.hud-btn.laser.p2')).toHaveClass(/ready/);
+
+    await page.locator('.hud-btn.laser.p2').dispatchEvent('pointerdown');
+    await page.locator('.hud-btn.laser.p2').dispatchEvent('pointerup');
+    await expect(page.locator('.hud-btn.laser.p2')).toHaveClass(/firing/);
+    await expect(page.locator('.hud-btn.laser.p1')).not.toHaveClass(/firing/);
+    await expect(page.locator('.hud-btn.laser.p1')).toHaveClass(/ready/);
   });
 
   test('joystick mode: touching the left side aims only, and FIRE shoots (10.3)', async ({ page }) => {
@@ -318,6 +396,37 @@ test.describe('device', () => {
     const box = await page.locator('#stage canvas').boundingBox();
     expect(box?.width).toBeCloseTo(viewport!.height, 0);
     expect(box?.height).toBeCloseTo(viewport!.width, 0);
+  });
+
+  test('2 Players is offered only where there is room for two sets of buttons @responsive', async ({ page, viewport }) => {
+    await completeSetup(page);
+    await tapToHome(page);
+    await page.locator('#play').click();
+    const compact = viewport!.width <= 740 || viewport!.height <= 500;
+    await expect(page.locator('#players-2')).toHaveCount(compact ? 0 : 1);
+  });
+
+  test('two sets of buttons stay on screen and clear of each other @responsive', async ({ page, viewport }) => {
+    test.skip(viewport!.width <= 740 || viewport!.height <= 500, 'Phones play alone');
+    await completeSetup(page);
+    await tapToHome(page);
+    await startTwoPlayersAtHighLevel(page);
+    const boxes = await page.locator('.hud-btn:not(.pause):not(.fire)').evaluateAll((els) =>
+      els.filter((el) => el.getClientRects().length > 0).map((el) => {
+        const { left, top, right, bottom } = el.getBoundingClientRect();
+        return { name: el.getAttribute('aria-label'), left, top, right, bottom };
+      }),
+    );
+    expect(boxes).toHaveLength(10);
+    for (const box of boxes) {
+      expect(box.left).toBeGreaterThanOrEqual(0);
+      expect(box.right).toBeLessThanOrEqual(viewport!.width);
+      expect(box.bottom).toBeLessThanOrEqual(viewport!.height);
+    }
+    const touching = boxes.flatMap((a, i) =>
+      boxes.slice(i + 1).filter((b) => a.left < b.right && b.left < a.right && a.top < b.bottom && b.top < a.bottom).map((b) => `${a.name} / ${b.name}`),
+    );
+    expect(touching).toEqual([]);
   });
 
   test('every screen a child needs fits this size @responsive', async ({ page, viewport }) => {

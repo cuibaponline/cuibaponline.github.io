@@ -360,6 +360,22 @@ function iconBeam(x: Ctx, r: number): void {
   x.restore();
 }
 
+/** A tint can't turn this art's blue into red, so Player 2's laser has a glow of its own. */
+function bakeBeamGlow(edge: string, near: string, centre: string): Cnv {
+  const c = newCanvas(64, 64);
+  const x = ctxOf(c);
+  x.fillStyle = linear(x, 0, 0, 0, 64, [[0, `rgba(${edge},0)`], [0.26, `rgba(${near},0.22)`], [0.5, `rgba(${centre},0.72)`], [0.74, `rgba(${near},0.22)`], [1, `rgba(${edge},0)`]]);
+  x.fillRect(0, 0, 64, 64);
+  // energy ripple, whole cycles across the tile so it repeats cleanly
+  x.globalCompositeOperation = 'lighter';
+  for (let i = 0; i < 64; i++) {
+    const a = 0.08 + 0.08 * Math.sin((i / 64) * TAU * 2);
+    x.fillStyle = `rgba(255,255,255,${a})`;
+    x.fillRect(i, 18, 1, 28);
+  }
+  return c;
+}
+
 function bakeFrost(size: number): Cnv {
   const c = newCanvas(size, size);
   const x = ctxOf(c);
@@ -480,20 +496,8 @@ export function bakeFx(ppu: number): Record<FxId, Cnv> {
     x.fillRect(0, 0, 64, 64);
     return c;
   })();
-  fx.beamGlow = (() => {
-    const c = newCanvas(64, 64);
-    const x = ctxOf(c);
-    x.fillStyle = linear(x, 0, 0, 0, 64, [[0, 'rgba(90,200,255,0)'], [0.26, 'rgba(100,210,255,0.22)'], [0.5, 'rgba(150,235,255,0.72)'], [0.74, 'rgba(100,210,255,0.22)'], [1, 'rgba(90,200,255,0)']]);
-    x.fillRect(0, 0, 64, 64);
-    // energy ripple, whole cycles across the tile so it repeats cleanly
-    x.globalCompositeOperation = 'lighter';
-    for (let i = 0; i < 64; i++) {
-      const a = 0.08 + 0.08 * Math.sin((i / 64) * TAU * 2);
-      x.fillStyle = `rgba(255,255,255,${a})`;
-      x.fillRect(i, 18, 1, 28);
-    }
-    return c;
-  })();
+  fx.beamGlow = bakeBeamGlow('90,200,255', '100,210,255', '150,235,255');
+  fx.beamGlowRed = bakeBeamGlow('255,80,70', '255,95,85', '255,160,150');
   fx.shellBadge = bakeShellBadge(p(64));
   fx.aura = (() => {
     const c = square(256, (x, r) => {

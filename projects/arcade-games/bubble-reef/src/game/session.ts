@@ -18,6 +18,8 @@ export interface SessionResults {
   bossesCaught: number;
   newFish: string[];
   levelUps: LevelUp[];
+  players: number;
+  caughtBySeat: number[];
 }
 
 export interface WaveSummary {
@@ -27,6 +29,8 @@ export interface WaveSummary {
   newFish: string[];
   levelUps: LevelUp[];
   boss: boolean;
+  players: number;
+  caughtBySeat: number[];
 }
 
 export interface SessionDeps {
@@ -52,6 +56,7 @@ export class GameSession {
   private readonly levelUps: LevelUp[] = [];
   private waveCoinsAt = 0;
   private waveCaughtAt = 0;
+  private waveCaughtBySeatAt = [0, 0];
   private waveNewAt = 0;
   private waveLevelAt = 0;
   private lastHitSfx = 0;
@@ -62,13 +67,13 @@ export class GameSession {
   paused = false;
   private ocean: string;
 
-  constructor(private readonly deps: SessionDeps, readonly difficulty: Difficulty, seed: number) {
+  constructor(private readonly deps: SessionDeps, readonly difficulty: Difficulty, seed: number, readonly players = 1) {
     const { profile, settings } = deps.save.get();
     const unlocks = this.unlocks();
     this.ocean = unlocks.oceans[seed % unlocks.oceans.length] ?? 'coral';
     this.sim = new Simulation({
-      difficulty, seed, view: deps.world.currentLayout.view, unlocks,
-      autoFire: settings.autoFire[difficulty],
+      difficulty, seed, view: deps.world.currentLayout.view, unlocks, players,
+      autoFire: players === 1 && settings.autoFire[difficulty],
       startLevel: profile.maxCannonLevel,
       oceanIndex: unlocks.oceans.indexOf(this.ocean),
     });
@@ -76,6 +81,7 @@ export class GameSession {
       joystick: settings.controlMode === 'joystick',
       leftHanded: settings.leftHanded,
       laserUnlocked: unlocks.laser,
+      players,
     });
     deps.hud.setCoins(profile.coins, true);
     deps.hud.setBanner(null);
@@ -106,31 +112,32 @@ export class GameSession {
   }
 
   actions(): HudActions {
-    const cmd = (type: 'ToggleLock' | 'ToggleAuto' | 'Laser' | 'LevelUp' | 'LevelDown') => {
-      this.sim.enqueue({ tick: this.sim.tick, seatId: 0, type });
+    const cmd = (seatId: number, type: 'ToggleLock' | 'ToggleAuto' | 'Laser' | 'LevelUp' | 'LevelDown') => {
+      this.sim.enqueue({ tick: this.sim.tick, seatId, type });
     };
     return {
       pause: () => this.deps.onPause(),
-      lock: () => {
+      lock: (seat) => {
         this.deps.audio.sfx('buttonTap');
-        cmd('ToggleLock');
+        cmd(seat, 'ToggleLock');
       },
-      auto: () => {
+      auto: (seat) => {
         this.deps.audio.sfx('buttonTap');
-        cmd('ToggleAuto');
+        cmd(seat, 'ToggleAuto');
+        if (this.players > 1) return;
         this.deps.save.update((d) => {
           d.settings.autoFire[this.difficulty] = !this.sim.localSeat.autoFire;
         });
         this.deps.save.saveSoon();
       },
-      laser: () => cmd('Laser'),
-      levelUp: () => {
+      laser: (seat) => cmd(seat, 'Laser'),
+      levelUp: (seat) => {
         this.deps.audio.sfx('buttonTap');
-        cmd('LevelUp');
+        cmd(seat, 'LevelUp');
       },
-      levelDown: () => {
+      levelDown: (seat) => {
         this.deps.audio.sfx('buttonTap');
-        cmd('LevelDown');
+        cmd(seat, 'LevelDown');
       },
       fire: (down) => this.deps.input.setFireButton(down),
     };
@@ -201,9 +208,12 @@ export class GameSession {
       newFish: this.newFish.slice(this.waveNewAt),
       levelUps: this.levelUps.slice(this.waveLevelAt),
       boss: wave % CONFIG.waves.bossEveryWaves === 0,
+      players: this.players,
+      caughtBySeat: stats.caughtBySeat.map((caught, seat) => caught - this.waveCaughtBySeatAt[seat]!),
     };
     this.waveCoinsAt = stats.coins;
     this.waveCaughtAt = stats.caught;
+    this.waveCaughtBySeatAt = [...stats.caughtBySeat];
     this.waveNewAt = this.newFish.length;
     this.waveLevelAt = this.levelUps.length;
     this.inIntermission = true;
@@ -252,7 +262,7 @@ export class GameSession {
           audio.setLaser(true);
           break;
         case 'laserEnd':
-          audio.setLaser(false);
+          if (!this.sim.s.seats.some((seat) => seat.laserT > 0)) audio.setLaser(false);
           break;
         case 'laserReady':
         case 'laserFilled':
@@ -305,7 +315,7 @@ export class GameSession {
 
   frame(dt: number): void {
     const { hud } = this.deps;
-    hud.update(this.sim.hud(), this.paused ? 0 : dt);
+    hud.update(this.sim.s.seats.map((seat) => this.sim.hud(seat.id)), this.paused ? 0 : dt);
 
     if (this.lastCatchLeft !== null && this.lastCatchLeft > 0) {
       this.lastCatchLeft -= dt;
@@ -369,6 +379,8 @@ export class GameSession {
       bossesCaught: stats.bossesCaught,
       newFish: this.newFish,
       levelUps: this.levelUps,
+      players: this.players,
+      caughtBySeat: stats.caughtBySeat,
     });
   }
 }

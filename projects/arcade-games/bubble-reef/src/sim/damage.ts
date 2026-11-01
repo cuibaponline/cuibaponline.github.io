@@ -20,6 +20,7 @@ export function catchFish(s: SimState, f: Fish): void {
   const points = catchPoints(f);
   const coins = Math.round(points * s.cfg.coinMul);
   s.stats.caught++;
+  s.stats.caughtBySeat[f.lastHitSeat] = (s.stats.caughtBySeat[f.lastHitSeat] ?? 0) + 1;
   s.stats.points += points;
   s.stats.coins += coins;
   s.stats.byFish[f.def.id] = (s.stats.byFish[f.def.id] ?? 0) + 1;
@@ -36,13 +37,14 @@ export function catchFish(s: SimState, f: Fish): void {
   }
 
   s.events.push({ t: 'caught', uid: f.uid, id: f.def.id, x: f.x, y: f.y, points, coins, parade: f.parade });
-  if (f.def.effect) s.pendingSpecials.push({ effect: f.def.effect, x: f.x, y: f.y });
+  if (f.def.effect) s.pendingSpecials.push({ effect: f.def.effect, x: f.x, y: f.y, seat: f.lastHitSeat });
   if (s.boss === f) endBoss(s, true);
 }
 
-/** Applies damage, handling armour, feedback and boss thresholds. `quiet` skips per-hit feedback for the laser's ticks. */
-export function damageFish(s: SimState, f: Fish, amount: number, quiet = false): void {
+/** Applies damage from a seat, handling armour, feedback and boss thresholds. `quiet` skips per-hit feedback for the laser's ticks. */
+export function damageFish(s: SimState, f: Fish, amount: number, seat: number, quiet = false): void {
   if (!isCatchable(f)) return;
+  f.lastHitSeat = seat;
 
   let dealt = amount;
   if (f.armoured && f.hp / f.maxHp >= powerups.armour.untilHpRatio) dealt *= powerups.armour.damageMul;

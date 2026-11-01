@@ -9,11 +9,11 @@ const { waves, powerups } = CONFIG;
 
 function blankFish(): Fish {
   return {
-    uid: 0, def: CONFIG.fish[0]!, state: 'swim', x: 0, y: 0, px: 0, py: 0, heading: 0, pheading: 0, face: 1,
+    uid: 0, def: CONFIG.fish[0]!, state: 'swim', x: 0, y: 0, px: 0, py: 0, heading: 0, pheading: 0, face: 1, turned: false,
     hp: 1, maxHp: 1, armoured: false, parade: false, slots: 0, path: null, dist: 0, speed: 0, rush: 1, lateral: 0,
     phase: 0, age: 0, burstSpeed: false, flash: 0, hpRing: 0, puff: 0, caughtAge: 0, diveT: 0, isBoss: false,
     waypointX: 0, waypointY: 0, thresholds: [], trailX: [], trailY: [], chainX: [], chainY: [], escortOf: 0,
-    orbitAngle: 0, orbitRadius: 0, beamHitTick: -999, leaving: false,
+    orbitAngle: 0, orbitRadius: 0, beamHitTick: -999, lastHitSeat: 0, leaving: false,
   };
 }
 
@@ -38,6 +38,7 @@ function placeOnPath(f: Fish): void {
   f.px = f.x;
   f.py = f.y;
   f.face = Math.cos(f.heading) >= 0 ? 1 : -1;
+  f.turned = false;
 }
 
 function samplePoint(path: Path, dist: number): { x: number; y: number } {
@@ -60,7 +61,8 @@ function samplePoint(path: Path, dist: number): { x: number; y: number } {
 
 export function spawnFish(s: SimState, def: CreatureDef, o: SpawnOpts): Fish {
   const f = s.pool.pop() ?? blankFish();
-  const hp = def.hp[s.difficulty];
+  const bossMul = def.tier === 'boss' && s.seats.length > 1 ? powerups.twoPlayer.bossHpMul : 1;
+  const hp = def.hp[s.difficulty] * bossMul;
   f.uid = s.nextUid++;
   f.def = def;
   f.state = 'swim';
@@ -90,6 +92,7 @@ export function spawnFish(s: SimState, def: CreatureDef, o: SpawnOpts): Fish {
   f.chainY.length = 0;
   f.escortOf = 0;
   f.beamHitTick = -999;
+  f.lastHitSeat = 0;
   f.leaving = false;
   s.slotsUsed += o.slots;
   placeOnPath(f);
